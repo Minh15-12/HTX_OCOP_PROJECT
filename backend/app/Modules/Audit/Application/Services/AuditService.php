@@ -1,0 +1,53 @@
+<?php
+
+namespace Modules\Audit\Application\Services;
+
+use Illuminate\Support\Facades\Log;
+
+class AuditService
+{
+    public function log(
+        string $action,
+        string $entityType,
+        ?string $entityId = null,
+        ?array $before = null,
+        ?array $after = null,
+        ?string $actorId = null,
+        ?string $cooperativeId = null
+    ): void {
+        try {
+            $user = auth()->user();
+            $currentActorId = $actorId ?: ($user ? $user->id : null);
+            $currentCoopId = $cooperativeId ?: ($user ? $user->cooperative_id : null);
+            $requestId = request()->header('X-Request-ID');
+            $ipAddress = request()->ip();
+
+            // Append-only audit record creation (catches exceptions gracefully to avoid breaking main transaction)
+            if (\Illuminate\Support\Facades\Schema::hasTable('audit_events')) {
+                \Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel::create([
+                    'actor_id' => $currentActorId,
+                    'action' => $action,
+                    'entity_type' => $entityType,
+                    'entity_id' => $entityId,
+                    'before_reference' => $before,
+                    'after_reference' => $after,
+                    'cooperative_id' => $currentCoopId,
+                    'ip_address' => $ipAddress,
+                    'request_id' => $requestId,
+                    'created_at' => now(),
+                ]);
+            }
+
+            Log::info("AUDIT EVENT: [{$action}] on [{$entityType}:{$entityId}] by User [{$currentActorId}]", [
+                'action' => $action,
+                'entity_type' => $entityType,
+                'entity_id' => $entityId,
+                'actor_id' => $currentActorId,
+                'cooperative_id' => $currentCoopId,
+                'request_id' => $requestId,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("AUDIT LOG ERROR: " . $e->getMessage(), ['exception' => $e]);
+        }
+    }
+}

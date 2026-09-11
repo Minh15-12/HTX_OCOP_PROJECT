@@ -1,0 +1,33 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('production_units', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('cooperative_id');
+            $table->string('unit_code', 50);
+            $table->string('name', 255);
+            $table->string('crop', 100);
+            $table->decimal('area', 18, 4); // Hectares
+            $table->jsonb('location')->nullable();
+            $table->string('status', 30)->default('ACTIVE');
+            $table->jsonb('registration_information')->nullable();
+            $table->timestamps();
+
+            $table->foreign('cooperative_id')->references('id')->on('cooperatives')->onDelete('restrict');
+            $table->unique(['cooperative_id', 'unit_code']);
+            $table->index('cooperative_id');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('production_units');
+    }
+};

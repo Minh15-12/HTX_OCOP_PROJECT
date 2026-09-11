@@ -1,0 +1,3376 @@
+import React, { useState } from 'react';
+import {
+  Users,
+  Search,
+  Plus,
+  Eye,
+  Pencil,
+  Trash2,
+  Wallet,
+  Building,
+  Phone,
+  Mail,
+  MapPin,
+  X,
+  CreditCard,
+  Calculator,
+  ShieldCheck,
+  TrendingUp,
+  FileSpreadsheet,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  ArrowLeft,
+  Upload,
+  Calendar,
+  UserCheck,
+  AlertTriangle,
+  Save,
+  Download,
+  Printer,
+  RotateCcw,
+  FileText,
+  PieChart,
+  BarChart3,
+  Filter,
+  ChevronRight,
+  Check,
+  MoreVertical,
+  Layers,
+  Award,
+} from 'lucide-react';
+import {
+  mockMembersList,
+  mockCapitalTransactions,
+  mockSurplusPlan,
+  mockSurplusItems,
+} from '@/services/memberService';
+import {
+  Member,
+  CapitalTransaction,
+  SurplusDistributionPlan,
+  SurplusDistributionItem,
+  MEMBER_TYPE_LABELS,
+  MemberType,
+  MemberStatus,
+} from '@/types/memberTypes';
+
+export const MembersPage: React.FC = () => {
+  const [members, setMembers] = useState<Member[]>(mockMembersList);
+  const [transactions, setTransactions] = useState<CapitalTransaction[]>(mockCapitalTransactions);
+  const [surplusPlan, setSurplusPlan] = useState<SurplusDistributionPlan>(mockSurplusPlan);
+  const [surplusItems, setSurplusItems] = useState<SurplusDistributionItem[]>(mockSurplusItems);
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState<'members' | 'capital' | 'profit' | 'coop'>('members');
+
+  // Search & Filter State
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [capitalStatusFilter, setCapitalStatusFilter] = useState<string>('ALL');
+  const [profitStatusFilter, setProfitStatusFilter] = useState<string>('ALL');
+  const [payoutMethodFilter, setPayoutMethodFilter] = useState<string>('ALL');
+
+  // Selected Row for Drawer State
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedCapitalMember, setSelectedCapitalMember] = useState<Member | null>(null);
+  const [selectedSurplusItem, setSelectedSurplusItem] = useState<SurplusDistributionItem | null>(null);
+
+  // Toast State
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
+
+  const triggerToast = (message: string, type: 'success' | 'danger' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  // Modals & Wizard state
+  const [showWizardModal, setShowWizardModal] = useState(false);
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [showRecordCapitalModal, setShowRecordCapitalModal] = useState(false);
+  const [showCreateProfitModal, setShowCreateProfitModal] = useState(false);
+
+  // Edit & Delete Member Modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [editTab, setEditTab] = useState<'personal' | 'contact' | 'capital' | 'profit'>('personal');
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingMember, setDeletingMember] = useState<Member | null>(null);
+
+  // Approve Member Modal state
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [approvingMember, setApprovingMember] = useState<Member | null>(null);
+
+  // Pending Capital Transactions Modal State
+  const [showPendingCapitalModal, setShowPendingCapitalModal] = useState(false);
+
+  // Capital Form State (Ghi nhận góp vốn)
+  const [capitalForm, setCapitalForm] = useState({
+    member_id: members[0]?.id || '',
+    amount: 10000000,
+    contribution_date: new Date().toISOString().split('T')[0],
+    payment_method: 'CASH' as 'CASH' | 'BANK_TRANSFER',
+    receipt_number: 'PT000126',
+    content: 'Góp vốn đợt bổ sung',
+    notes: '',
+    fileName: '',
+  });
+
+  // Profit Plan Form State (Cập nhật thông tin kỳ phân chia)
+  const [profitPlanForm, setProfitPlanForm] = useState({
+    fiscal_year: surplusPlan.fiscal_year,
+    total_net_profit: surplusPlan.total_net_profit,
+    reserve_fund_rate: surplusPlan.reserve_fund_rate,
+    member_share_rate: surplusPlan.member_share_rate,
+    welfare_fund_rate: surplusPlan.welfare_fund_rate,
+    planned_payout_date: surplusPlan.planned_payout_date,
+    notes: surplusPlan.notes,
+  });
+
+  // Wizard Form State (5-Step Add Member)
+  const [wizardForm, setWizardForm] = useState({
+    full_name: '',
+    gender: 'Nam' as 'Nam' | 'Nữ' | 'Khác',
+    dob: '',
+    cccd: '',
+    cccd_issue_date: '',
+    cccd_issue_place: '',
+    education_level: 'Chưa xác định',
+    occupation: '',
+    province: 'Lâm Đồng',
+    district: 'Huyện Lâm Hà',
+    ward: 'Xã Mê Linh',
+    detail_address: '',
+    phone: '',
+    email: '',
+    zalo: '',
+    facebook: '',
+    capital_form: 'TIEN_MAT' as 'TIEN_MAT' | 'HIEN_VAT',
+    initial_capital: 10000000,
+    capital_in_words: 'Mười triệu đồng',
+    contribution_date: new Date().toISOString().split('T')[0],
+    contribution_method: 'Góp một lần',
+    member_type: 'CHINH_THUC' as MemberType,
+    profit_share_rate: 2.85,
+    payout_method: 'CASH' as 'CASH' | 'BANK_TRANSFER',
+    notes: '',
+  });
+
+  // Drawer Sub-tab state inside Capital Detail Drawer
+  const [capitalDrawerTab, setCapitalDrawerTab] = useState<'history' | 'docs' | 'info'>('history');
+
+  // Calculations for Member Management Tab KPIs
+  const totalMembersCount = members.length;
+  const officialMembersCount = members.filter((m) => m.member_type === 'CHINH_THUC').length;
+  const associatedMembersCount = members.filter((m) => m.member_type !== 'CHINH_THUC').length;
+  const pendingMembersCount = members.filter((m) => m.status === 'PENDING').length;
+  const activeMembersCount = members.filter((m) => m.status === 'ACTIVE').length;
+  const totalMemberCapital = members.reduce((sum, m) => sum + (m.total_capital_contributed || m.contributed_capital || 0), 0);
+
+  // Calculations for Capital Tab KPIs
+  const totalCommittedCapital = members.reduce((sum, m) => sum + (m.committed_capital || 0), 0);
+  const totalContributedCapital = members.reduce((sum, m) => sum + (m.contributed_capital || 0), 0);
+  const totalRemainingCapital = totalCommittedCapital - totalContributedCapital;
+  const overallCapitalPct = Number(((totalContributedCapital / totalCommittedCapital) * 100).toFixed(2));
+  const fullCapitalCount = members.filter((m) => m.capital_status === 'DU_VON').length;
+  const partialCapitalCount = members.filter((m) => m.capital_status === 'CHUA_DU').length;
+
+  // Calculations for Profit Tab KPIs
+  const distributedProfitAmount = surplusItems
+    .filter((i) => i.payout_status === 'DA_NHAN')
+    .reduce((sum, i) => sum + i.total_payout_amount, 0);
+  const remainingProfitAmount = surplusPlan.total_net_profit - distributedProfitAmount;
+  const distributedProfitPct = Math.round((distributedProfitAmount / surplusPlan.total_net_profit) * 100);
+  const paidMemberCount = surplusItems.filter((i) => i.payout_status === 'DA_NHAN').length;
+  const unpaidMemberCount = surplusItems.filter((i) => i.payout_status === 'CHUA_NHAN').length;
+
+  // Handlers
+  const handleWizardSubmit = () => {
+    const nextNum = members.length + 1;
+    const newCode = `TV00${nextNum}`;
+    const sharesCount = Math.floor(wizardForm.initial_capital / 100000);
+    const newCapitalTotal = totalContributedCapital + wizardForm.initial_capital;
+    const ownPct = Number(((wizardForm.initial_capital / newCapitalTotal) * 100).toFixed(2));
+    const fullAddr = `${wizardForm.detail_address ? wizardForm.detail_address + ', ' : ''}${wizardForm.ward}, ${wizardForm.district}, ${wizardForm.province}`;
+
+    const newMem: Member = {
+      id: `mem-00${nextNum}`,
+      cooperative_id: 'coop-01',
+      member_code: newCode,
+      full_name: wizardForm.full_name,
+      gender: wizardForm.gender,
+      dob: wizardForm.dob || '1992-06-15',
+      cccd: wizardForm.cccd,
+      cccd_issue_date: wizardForm.cccd_issue_date || '2021-01-01',
+      cccd_issue_place: wizardForm.cccd_issue_place || 'Cục Cảnh sát QLHC về trật tự xã hội',
+      education_level: wizardForm.education_level,
+      occupation: wizardForm.occupation || 'Nông dân',
+      province: wizardForm.province,
+      district: wizardForm.district,
+      ward: wizardForm.ward,
+      detail_address: wizardForm.detail_address,
+      address: fullAddr,
+      phone: wizardForm.phone,
+      email: wizardForm.email,
+      zalo: wizardForm.zalo,
+      facebook: wizardForm.facebook,
+      capital_form: wizardForm.capital_form,
+      contribution_date: wizardForm.contribution_date,
+      contribution_method: wizardForm.contribution_method,
+      member_type: wizardForm.member_type,
+      committed_capital: wizardForm.initial_capital,
+      contributed_capital: wizardForm.initial_capital,
+      remaining_capital: 0,
+      total_capital_contributed: wizardForm.initial_capital,
+      capital_in_words: wizardForm.capital_in_words,
+      total_shares_held: sharesCount,
+      ownership_percentage: ownPct,
+      capital_status: 'DU_VON',
+      profit_share_rate: wizardForm.profit_share_rate,
+      payout_method: wizardForm.payout_method,
+      bank_account: '',
+      bank_name: '',
+      notes: wizardForm.notes,
+      status: 'PENDING',
+      join_date: new Date().toISOString().split('T')[0],
+      current_debt: 0,
+      annual_product_output_kg: 0,
+    };
+
+    setMembers([...members, newMem]);
+    setShowWizardModal(false);
+    setWizardStep(1);
+    triggerToast(`Đã thêm thành công xã viên mới ${newMem.full_name} (${newMem.member_code})!`);
+  };
+
+  const handleOpenEdit = (m: Member) => {
+    setEditingMember({ ...m });
+    setEditTab('personal');
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember) return;
+
+    const fullAddr = `${editingMember.detail_address ? editingMember.detail_address + ', ' : ''}${editingMember.ward}, ${editingMember.district}, ${editingMember.province}`;
+    const updated: Member = {
+      ...editingMember,
+      address: fullAddr,
+      remaining_capital: Math.max(0, (editingMember.committed_capital || 0) - (editingMember.contributed_capital || 0)),
+      capital_status: ((editingMember.contributed_capital || 0) >= (editingMember.committed_capital || 0) && editingMember.committed_capital > 0) ? 'DU_VON' : 'CHUA_DU',
+    };
+
+    setMembers(members.map((m) => (m.id === updated.id ? updated : m)));
+    if (selectedMember?.id === updated.id) setSelectedMember(updated);
+    if (selectedCapitalMember?.id === updated.id) setSelectedCapitalMember(updated);
+    setShowEditModal(false);
+    triggerToast(`Cập nhật thành công hồ sơ xã viên ${updated.full_name} (${updated.member_code})!`);
+  };
+
+  const handleOpenDelete = (m: Member) => {
+    setDeletingMember(m);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingMember) return;
+    setMembers(members.filter((m) => m.id !== deletingMember.id));
+    if (selectedMember?.id === deletingMember.id) setSelectedMember(null);
+    if (selectedCapitalMember?.id === deletingMember.id) setSelectedCapitalMember(null);
+    setShowDeleteModal(false);
+    triggerToast(`Đã xóa thành công xã viên ${deletingMember.full_name} khỏi hệ thống.`, 'danger');
+  };
+
+  const handleOpenApprove = (m: Member) => {
+    setApprovingMember(m);
+    setShowApproveModal(true);
+  };
+
+  const handleConfirmApprove = () => {
+    if (!approvingMember) return;
+    setMembers((prev) =>
+      prev.map((m) => (m.id === approvingMember.id ? { ...m, status: 'ACTIVE' as MemberStatus } : m))
+    );
+    if (selectedMember?.id === approvingMember.id) {
+      setSelectedMember({ ...selectedMember, status: 'ACTIVE' });
+    }
+    if (selectedCapitalMember?.id === approvingMember.id) {
+      setSelectedCapitalMember({ ...selectedCapitalMember, status: 'ACTIVE' });
+    }
+    triggerToast(`Đã phê duyệt thành công xã viên ${approvingMember.full_name} (${approvingMember.member_code})! Trạng thái chuyển sang Đang hoạt động.`, 'success');
+    setShowApproveModal(false);
+    setApprovingMember(null);
+  };
+
+  const handleApproveCapitalTx = (txId: string) => {
+    const tx = transactions.find((t) => t.id === txId);
+    if (!tx) return;
+
+    setTransactions((prev) =>
+      prev.map((t) =>
+        t.id === txId
+          ? {
+              ...t,
+              status: 'APPROVED' as const,
+              recorded_by: 'Kế toán trưởng',
+              recorded_date: new Date().toLocaleDateString('vi-VN'),
+            }
+          : t
+      )
+    );
+
+    setMembers((prev) =>
+      prev.map((m) => {
+        if (m.id === tx.member_id || m.member_code === tx.member_code) {
+          const newContributed = (m.contributed_capital || m.total_capital_contributed || 0) + tx.amount;
+          const newCommitted = m.committed_capital || newContributed;
+          const newRemaining = Math.max(0, newCommitted - newContributed);
+          return {
+            ...m,
+            contributed_capital: newContributed,
+            total_capital_contributed: newContributed,
+            remaining_capital: newRemaining,
+            capital_status: newContributed >= newCommitted && newCommitted > 0 ? ('DU_VON' as const) : ('CHUA_DU' as const),
+          };
+        }
+        return m;
+      })
+    );
+
+    triggerToast(`Đã phê duyệt thành công giao dịch góp vốn ${tx.transaction_code} (${tx.amount.toLocaleString('vi-VN')} ₫) cho ${tx.member_name}!`, 'success');
+  };
+
+  const handleRejectCapitalTx = (txId: string) => {
+    const tx = transactions.find((t) => t.id === txId);
+    if (!tx) return;
+    setTransactions((prev) => prev.filter((t) => t.id !== txId));
+    triggerToast(`Đã từ chối giao dịch ${tx.transaction_code} của ${tx.member_name}.`, 'danger');
+  };
+
+  const handleSaveCapitalTransaction = (e: React.FormEvent) => {
+    e.preventDefault();
+    const mem = members.find((m) => m.id === capitalForm.member_id);
+    if (!mem) return;
+
+    const newTx: CapitalTransaction = {
+      id: `CC-00${transactions.length + 1}`,
+      member_id: mem.id,
+      member_code: mem.member_code,
+      member_name: mem.full_name,
+      transaction_code: capitalForm.receipt_number,
+      amount: capitalForm.amount,
+      share_quantity: Math.floor(capitalForm.amount / 100000),
+      contribution_date: capitalForm.contribution_date,
+      payment_method: capitalForm.payment_method,
+      receipt_number: capitalForm.receipt_number,
+      content: capitalForm.content,
+      notes: capitalForm.notes,
+      status: 'APPROVED',
+      recorded_by: 'Nguyễn Văn A (Kế toán)',
+      recorded_date: new Date().toLocaleDateString('vi-VN'),
+    };
+
+    setTransactions([newTx, ...transactions]);
+
+    // Update member's capital
+    setMembers(
+      members.map((m) => {
+        if (m.id === mem.id) {
+          const newContributed = m.contributed_capital + capitalForm.amount;
+          const newRemaining = Math.max(0, m.committed_capital - newContributed);
+          return {
+            ...m,
+            contributed_capital: newContributed,
+            remaining_capital: newRemaining,
+            total_capital_contributed: newContributed,
+            capital_status: newRemaining === 0 ? 'DU_VON' : 'CHUA_DU',
+          };
+        }
+        return m;
+      })
+    );
+
+    setShowRecordCapitalModal(false);
+    triggerToast(`Đã ghi nhận góp vốn thành công cho xã viên ${mem.full_name}!`);
+  };
+
+  const handleUpdateProfitPlan = (e: React.FormEvent) => {
+    e.preventDefault();
+    const reserveAmt = (profitPlanForm.total_net_profit * profitPlanForm.reserve_fund_rate) / 100;
+    const memberAmt = (profitPlanForm.total_net_profit * profitPlanForm.member_share_rate) / 100;
+    const welfareAmt = (profitPlanForm.total_net_profit * profitPlanForm.welfare_fund_rate) / 100;
+
+    setSurplusPlan({
+      ...surplusPlan,
+      fiscal_year: profitPlanForm.fiscal_year,
+      total_net_profit: profitPlanForm.total_net_profit,
+      reserve_fund_rate: profitPlanForm.reserve_fund_rate,
+      reserve_fund_amount: reserveAmt,
+      member_share_rate: profitPlanForm.member_share_rate,
+      member_share_amount: memberAmt,
+      welfare_fund_rate: profitPlanForm.welfare_fund_rate,
+      welfare_fund_amount: welfareAmt,
+      planned_payout_date: profitPlanForm.planned_payout_date,
+      notes: profitPlanForm.notes,
+    });
+
+    triggerToast(`Đã cập nhật phương án phân chia lợi nhuận năm ${profitPlanForm.fiscal_year}!`);
+  };
+
+  // Filters
+  const filteredMembersTab1 = members.filter((m) => {
+    const matchSearch =
+      m.full_name.toLowerCase().includes(search.toLowerCase()) ||
+      m.member_code.toLowerCase().includes(search.toLowerCase()) ||
+      m.phone.includes(search) ||
+      m.cccd.includes(search);
+    const matchType = typeFilter === 'ALL' || m.member_type === typeFilter;
+    const matchStatus = statusFilter === 'ALL' || m.status === statusFilter;
+    return matchSearch && matchType && matchStatus;
+  });
+
+  const filteredMembersTab2 = members.filter((m) => {
+    const matchSearch =
+      m.full_name.toLowerCase().includes(search.toLowerCase()) ||
+      m.member_code.toLowerCase().includes(search.toLowerCase());
+    const matchCapitalStatus = capitalStatusFilter === 'ALL' || m.capital_status === capitalStatusFilter;
+    return matchSearch && matchCapitalStatus;
+  });
+
+  const filteredSurplusItems = surplusItems.filter((i) => {
+    const matchSearch =
+      i.member_name.toLowerCase().includes(search.toLowerCase()) ||
+      i.member_code.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = profitStatusFilter === 'ALL' || i.payout_status === profitStatusFilter;
+    const matchMethod = payoutMethodFilter === 'ALL' || i.payout_method === payoutMethodFilter;
+    return matchSearch && matchStatus && matchMethod;
+  });
+
+  return (
+    <div className="space-y-4 pb-12">
+      {/* Toast Notification Floating */}
+      {toast && (
+        <div
+          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-modal text-white text-xs font-extrabold flex items-center gap-2 animate-bounce ${
+            toast.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'
+          }`}
+        >
+          {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {toast.message}
+        </div>
+      )}
+
+      {/* PAGE HEADER & TOP NAVIGATION TABS */}
+      <div className="bg-white border border-[#e7e9ec] rounded-xl p-4 shadow-subtle flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Quản lý Xã viên Hợp tác xã</h1>
+          <p className="text-[12.8px] text-slate-500 mt-0.5">
+            Quản lý danh sách, phân loại thành viên &amp; kiểm soát quyền biểu quyết (Luật HTX 2023)
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowWizardModal(true)}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[12.8px] rounded-lg shadow-sm inline-flex items-center gap-1.5 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Thêm xã viên mới
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* TAB 1: DANH SÁCH XÃ VIÊN (VỚI BẢNG THỐNG KÊ CHỈ SỐ KPI ĐẦU TRANG) */}
+      {/* ========================================================================= */}
+      {activeTab === 'members' && (
+        <div className="space-y-4 animate-fade-in">
+          {/* TOP 5 KPI SUMMARY CARDS FOR MEMBER MANAGEMENT */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {/* Card 1: Tổng số Xã viên */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">TỔNG XÃ VIÊN</span>
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-xl font-black text-slate-900">{totalMembersCount} người</div>
+              <div className="text-[11.5px] font-bold text-emerald-600 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> {activeMembersCount} đang hoạt động
+              </div>
+            </div>
+
+            {/* Card 2: Xã viên Chính thức */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">CHÍNH THỨC</span>
+                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <Award className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-xl font-black text-slate-900">{officialMembersCount} người</div>
+              <div className="text-[11.5px] text-slate-500 font-medium">Có quyền biểu quyết</div>
+            </div>
+
+            {/* Card 3: Xã viên Liên kết */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">LIÊN KẾT</span>
+                <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <Layers className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-xl font-black text-slate-900">{associatedMembersCount} người</div>
+              <div className="text-[11.5px] text-slate-500 font-medium">Góp vốn &amp; tiêu thụ</div>
+            </div>
+
+            {/* Card 4: Hồ sơ Chờ duyệt */}
+            <div
+              onClick={() => setStatusFilter('PENDING')}
+              className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider group-hover:text-amber-700 transition-colors">CHỜ PHÊ DUYỆT</span>
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <ClockIcon className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-xl font-black text-amber-700">{pendingMembersCount} hồ sơ</div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setStatusFilter('PENDING');
+                }}
+                className="text-[11.5px] text-emerald-700 hover:underline font-bold inline-flex items-center gap-0.5"
+              >
+                Lọc chưa duyệt &rarr;
+              </button>
+            </div>
+
+            {/* Card 5: Tổng vốn góp Xã viên */}
+            <div
+              onClick={() => setActiveTab('capital')}
+              className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider group-hover:text-emerald-700 transition-colors">VỐN GÓP XÃ VIÊN</span>
+                <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Wallet className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-xl font-black text-emerald-800">{totalMemberCapital.toLocaleString('vi-VN')} ₫</div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTab('capital');
+                }}
+                className="text-[11.5px] text-emerald-700 hover:underline font-bold inline-flex items-center gap-0.5"
+              >
+                Quản lý vốn &rarr;
+              </button>
+            </div>
+          </div>
+
+          {/* MAIN MEMBER TABLE & DRAWER GRID */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+          <div className={`${selectedMember ? 'lg:col-span-2' : 'lg:col-span-3'} bg-white border border-[#e7e9ec] rounded-b-xl shadow-subtle overflow-hidden`}>
+            {/* Filter Bar */}
+            <div className="p-3.5 border-b border-[#e7e9ec] bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên xã viên, mã XV, CCCD..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12.8px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12.5px] text-slate-700 font-medium focus:outline-none"
+                >
+                  <option value="ALL">Trạng thái: Tất cả</option>
+                  <option value="ACTIVE">Đang hoạt động</option>
+                  <option value="PENDING">Chờ duyệt</option>
+                </select>
+
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12.5px] text-slate-700 font-medium focus:outline-none"
+                >
+                  <option value="ALL">Loại xã viên: Tất cả (3 loại)</option>
+                  <option value="CHINH_THUC">Chính thức</option>
+                  <option value="LIEN_KET_GOP_VON">Liên kết góp vốn</option>
+                  <option value="LIEN_KET_KHONG_GOP_VON">Liên kết không góp vốn</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-[12.9px]">
+                <thead>
+                  <tr className="border-b border-[#e7e9ec] text-[11px] uppercase tracking-wider text-slate-400 font-bold bg-slate-50">
+                    <th className="py-2.5 px-3">Mã xã viên</th>
+                    <th className="py-2.5 px-3">Họ và tên</th>
+                    <th className="py-2.5 px-3">Giới tính</th>
+                    <th className="py-2.5 px-3">Ngày tham gia</th>
+                    <th className="py-2.5 px-3">Loại xã viên</th>
+                    <th className="py-2.5 px-3 text-right">Vốn góp (đồng)</th>
+                    <th className="py-2.5 px-3 text-right">Tỷ lệ (%)</th>
+                    <th className="py-2.5 px-3">Trạng thái</th>
+                    <th className="py-2.5 px-3 text-center w-[120px]">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredMembersTab1.map((m) => (
+                    <tr
+                      key={m.id}
+                      onClick={() => setSelectedMember(m)}
+                      className={`cursor-pointer hover:bg-slate-50 transition-colors ${
+                        selectedMember?.id === m.id ? 'bg-emerald-50/60 font-semibold' : ''
+                      }`}
+                    >
+                      <td className="py-3 px-3 font-mono text-[12px] font-bold text-slate-600">{m.member_code}</td>
+                      <td className="py-3 px-3 font-bold text-slate-900">{m.full_name}</td>
+                      <td className="py-3 px-3 text-slate-600">{m.gender}</td>
+                      <td className="py-3 px-3 text-slate-600">{m.join_date}</td>
+                      <td className="py-3 px-3">
+                        {m.member_type === 'CHINH_THUC' && <span className="pill-badge pill-green">Chính thức</span>}
+                        {m.member_type === 'LIEN_KET_GOP_VON' && <span className="pill-badge pill-blue">LK góp vốn</span>}
+                        {m.member_type === 'LIEN_KET_KHONG_GOP_VON' && <span className="pill-badge pill-purple">LK không góp vốn</span>}
+                      </td>
+                      <td className="py-3 px-3 text-right font-extrabold text-emerald-700">
+                        {m.total_capital_contributed.toLocaleString('vi-VN')} ₫
+                      </td>
+                      <td className="py-3 px-3 text-right font-bold text-slate-800">{m.ownership_percentage}%</td>
+                      <td className="py-3 px-3">
+                        {m.status === 'ACTIVE' && <span className="pill-badge pill-green">Đang hoạt động</span>}
+                        {m.status === 'PENDING' && <span className="pill-badge pill-amber">Chờ duyệt</span>}
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <div className="inline-flex items-center justify-center gap-1.5">
+                          {m.status === 'PENDING' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenApprove(m);
+                              }}
+                              className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-extrabold rounded-md text-[11px] inline-flex items-center gap-1 transition-colors shadow-2xs"
+                              title="Phê duyệt xã viên này"
+                            >
+                              <UserCheck className="w-3.5 h-3.5" /> Duyệt
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedMember(m);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="Xem thông tin chi tiết"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenEdit(m);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Cập nhật thông tin xã viên"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDelete(m);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Xóa xã viên"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Drawer Details Member - COMPREHENSIVE VIEW MATCHING ALL WIZARD FIELDS */}
+          {selectedMember && (
+            <div className="bg-white border border-[#e7e9ec] rounded-b-xl shadow-subtle p-4 space-y-4 animate-fade-in max-h-[calc(100vh-180px)] overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-start justify-between border-b border-[#e7e9ec] pb-3 sticky top-0 bg-white z-10 pt-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white font-extrabold flex items-center justify-center text-base shadow-sm shrink-0">
+                    {selectedMember.full_name.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-[15px] text-slate-900 flex items-center gap-2">
+                      {selectedMember.full_name}
+                      {selectedMember.status === 'ACTIVE' ? (
+                        <span className="pill-badge pill-green text-[10px]">Đang hoạt động</span>
+                      ) : (
+                        <span className="pill-badge pill-amber text-[10px]">Chờ duyệt</span>
+                      )}
+                    </h3>
+                    <p className="text-[11.8px] text-slate-500 font-mono">
+                      Mã: <strong>{selectedMember.member_code}</strong> &bull; Tham gia: {selectedMember.join_date}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleOpenEdit(selectedMember)}
+                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Chỉnh sửa thông tin"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setSelectedMember(null)}
+                    className="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-lg"
+                    title="Đóng"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Approval Notice Banner */}
+              {selectedMember.status === 'PENDING' && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[12px] flex items-center justify-between gap-2 shadow-2xs">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <div>
+                      <strong className="text-amber-900 font-extrabold block">Hồ sơ chưa được phê duyệt</strong>
+                      <span className="text-amber-700 text-[11px]">Cần Chủ tịch/HĐQT phê duyệt để kích hoạt thành viên.</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleOpenApprove(selectedMember)}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11.5px] rounded-lg shadow-xs shrink-0 flex items-center gap-1.5 transition-all"
+                  >
+                    <UserCheck className="w-4 h-4" /> Duyệt hồ sơ ngay
+                  </button>
+                </div>
+              )}
+
+              {/* Badges Summary Bar */}
+              <div className="grid grid-cols-2 gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11.5px]">
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Loại xã viên:</span>
+                  <strong className="text-emerald-800">{MEMBER_TYPE_LABELS[selectedMember.member_type]}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Tỷ lệ sở hữu:</span>
+                  <strong className="text-slate-900">{selectedMember.ownership_percentage}% vốn HTX</strong>
+                </div>
+              </div>
+
+              {/* 1. THÔNG TIN CÁ NHÂN */}
+              <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
+                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                  <Users className="w-3.5 h-3.5 text-emerald-600" /> 1. Thông tin cá nhân
+                </div>
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Họ và tên:</span>
+                    <strong className="text-slate-900">{selectedMember.full_name}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Giới tính:</span>
+                    <span className="font-medium text-slate-800">{selectedMember.gender}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Ngày sinh:</span>
+                    <span className="font-medium text-slate-800">{selectedMember.dob || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Số CCCD/CMND:</span>
+                    <span className="font-mono font-bold text-slate-900">{selectedMember.cccd || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Ngày cấp:</span>
+                    <span className="text-slate-700">{selectedMember.cccd_issue_date || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Nơi cấp:</span>
+                    <span className="text-slate-700 truncate block" title={selectedMember.cccd_issue_place}>{selectedMember.cccd_issue_place || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Trình độ học vấn:</span>
+                    <span className="font-medium text-slate-800">{selectedMember.education_level || 'Chưa xác định'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Nghề nghiệp:</span>
+                    <span className="font-medium text-slate-800">{selectedMember.occupation || 'Nông dân'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. THÔNG TIN LIÊN HỆ & ĐỊA CHỈ */}
+              <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
+                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600" /> 2. Thông tin liên hệ &amp; Địa chỉ
+                </div>
+                <div className="space-y-1.5">
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Địa chỉ thường trú:</span>
+                    <span className="font-medium text-slate-800 leading-snug">{selectedMember.address}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 pt-1">
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Số điện thoại:</span>
+                      <strong className="font-mono text-emerald-800">{selectedMember.phone}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Email:</span>
+                      <span className="text-slate-700 truncate block" title={selectedMember.email}>{selectedMember.email || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Zalo:</span>
+                      <span className="text-slate-700">{selectedMember.zalo || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Facebook:</span>
+                      <span className="text-slate-700 truncate block" title={selectedMember.facebook}>{selectedMember.facebook || '—'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. THÔNG TIN VỐN GÓP */}
+              <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
+                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Wallet className="w-3.5 h-3.5 text-emerald-600" /> 3. Thông tin vốn góp
+                  </span>
+                  {selectedMember.capital_status === 'DU_VON' ? (
+                    <span className="pill-badge pill-green text-[9.5px]">Đủ vốn</span>
+                  ) : (
+                    <span className="pill-badge pill-amber text-[9.5px]">Chưa đủ</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Hình thức góp:</span>
+                    <span className="font-medium text-slate-800">{selectedMember.capital_form === 'TIEN_MAT' ? 'Tiền mặt' : 'Hiện vật'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Phương thức góp:</span>
+                    <span className="font-medium text-slate-800">{selectedMember.contribution_method || 'Góp một lần'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Vốn cam kết:</span>
+                    <strong className="text-slate-900">{(selectedMember.committed_capital || selectedMember.total_capital_contributed)?.toLocaleString('vi-VN')} ₫</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Đã thực góp:</span>
+                    <strong className="text-emerald-700">{(selectedMember.contributed_capital || selectedMember.total_capital_contributed)?.toLocaleString('vi-VN')} ₫</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Ngày góp vốn:</span>
+                    <span className="text-slate-700">{selectedMember.contribution_date || selectedMember.join_date}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Số cổ phần:</span>
+                    <strong className="text-slate-900">{selectedMember.total_shares_held} cổ phần</strong>
+                  </div>
+                  {selectedMember.capital_in_words && (
+                    <div className="col-span-2">
+                      <span className="text-slate-400 block text-[10.5px]">Bằng chữ:</span>
+                      <span className="italic text-slate-600 text-[11.5px]">"{selectedMember.capital_in_words}"</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. PHÂN CHIA LỢI NHUẬN & NGÂN HÀNG */}
+              <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
+                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                  <Calculator className="w-3.5 h-3.5 text-emerald-600" /> 4. Phân chia lợi nhuận &amp; Ngân hàng
+                </div>
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Tỷ lệ chia lợi nhuận:</span>
+                    <strong className="text-emerald-800 text-[13px]">{selectedMember.profit_share_rate}%</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Hình thức nhận:</span>
+                    <span className="font-medium text-slate-800">{selectedMember.payout_method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}</span>
+                  </div>
+                  {selectedMember.bank_account && (
+                    <div className="col-span-2 space-y-1 pt-1 border-t border-slate-100">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 text-[10.5px]">Ngân hàng:</span>
+                        <span className="font-semibold text-slate-800 text-right">{selectedMember.bank_name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 text-[10.5px]">Số tài khoản:</span>
+                        <span className="font-mono font-bold text-slate-900">{selectedMember.bank_account}</span>
+                      </div>
+                      {selectedMember.account_holder && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-400 text-[10.5px]">Chủ tài khoản:</span>
+                          <span className="font-bold text-slate-800">{selectedMember.account_holder}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {selectedMember.notes && (
+                    <div className="col-span-2 pt-1 border-t border-slate-100">
+                      <span className="text-slate-400 block text-[10.5px]">Ghi chú:</span>
+                      <p className="text-slate-600 text-[11.5px] italic leading-relaxed">{selectedMember.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 5. THỐNG KÊ HOẠT ĐỘNG */}
+              <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl space-y-2 text-[12px]">
+                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-blue-600" /> 5. Hoạt động &amp; Sản lượng
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Sản lượng cung ứng:</span>
+                    <strong className="text-slate-900">{(selectedMember.annual_product_output_kg || 0).toLocaleString('vi-VN')} kg/năm</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10.5px]">Công nợ hiện tại:</span>
+                    <strong className={selectedMember.current_debt > 0 ? 'text-rose-600' : 'text-emerald-700'}>
+                      {selectedMember.current_debt ? `${selectedMember.current_debt.toLocaleString('vi-VN')} ₫` : 'Không có nợ'}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Quick Actions */}
+              <div className="pt-2 flex justify-between gap-2 border-t border-slate-200 sticky bottom-0 bg-white z-10 pb-1">
+                <button
+                  onClick={() => triggerToast(`Đã xuất file Hồ sơ xã viên ${selectedMember.member_code} PDF thành công!`)}
+                  className="flex-1 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-[12px] rounded-lg inline-flex items-center justify-center gap-1.5"
+                >
+                  <Printer className="w-3.5 h-3.5 text-emerald-600" /> In hồ sơ
+                </button>
+                <button
+                  onClick={() => handleOpenEdit(selectedMember)}
+                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[12px] rounded-lg inline-flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Chỉnh sửa
+                </button>
+              </div>
+            </div>
+          )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: QUẢN LÝ VỐN GÓP (MATCHING IMAGE 2 EXACTLY 100%) */}
+      {/* ========================================================================= */}
+      {activeTab === 'capital' && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Breadcrumb Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+              <span>Vốn góp</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-slate-800">Tổng quan</span>
+            </div>
+            <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-emerald-600" />
+              <span>01/01/2025 - 31/12/2025</span>
+            </div>
+          </div>
+
+          {/* TOP 6 KPI STATS CARDS MATCHING IMAGE 2 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            {/* Card 1: Tổng vốn góp */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Tổng vốn góp</span>
+                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <Wallet className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-lg font-black text-slate-900">{totalCommittedCapital.toLocaleString('vi-VN')} ₫</div>
+              <div className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" /> +8,5% so với năm trước
+              </div>
+            </div>
+
+            {/* Card 2: Đã góp */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Đã góp</span>
+                <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-lg font-black text-slate-900">{totalContributedCapital.toLocaleString('vi-VN')} ₫</div>
+              <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${overallCapitalPct}%` }}></div>
+              </div>
+            </div>
+
+            {/* Card 3: Còn phải góp */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Còn phải góp</span>
+                <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-lg font-black text-amber-800">{totalRemainingCapital.toLocaleString('vi-VN')} ₫</div>
+              <div className="text-[11px] text-slate-500 font-semibold">{partialCapitalCount} xã viên chưa đủ</div>
+            </div>
+
+            {/* Card 4: Số xã viên */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Số xã viên</span>
+                <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-lg font-black text-slate-900">125 người</div>
+              <div className="text-[11px] text-slate-500 font-medium">
+                Đã đủ: <strong className="text-emerald-700">102</strong> &bull; Chưa đủ: <strong className="text-amber-700">23</strong>
+              </div>
+            </div>
+
+            {/* Card 5: Giao dịch */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Giao dịch</span>
+                <div className="w-7 h-7 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center">
+                  <Layers className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-lg font-black text-slate-900">386 giao dịch</div>
+              <div className="text-[11px] text-slate-500 font-semibold">Tháng này: +28</div>
+            </div>
+
+            {/* Card 6: Chờ duyệt */}
+            <div
+              onClick={() => setShowPendingCapitalModal(true)}
+              className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase group-hover:text-amber-700 transition-colors">Chờ duyệt</span>
+                <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <ClockIcon className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-lg font-black text-rose-700">
+                {transactions.filter((t) => t.status === 'PENDING').length} giao dịch
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPendingCapitalModal(true);
+                }}
+                className="text-[11px] text-emerald-700 hover:underline font-bold inline-flex items-center gap-0.5"
+              >
+                Xem chi tiết &rarr;
+              </button>
+            </div>
+          </div>
+
+          {/* MAIN CAPITAL TABLE & DRAWER GRID */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+            <div className={`${selectedCapitalMember ? 'lg:col-span-2' : 'lg:col-span-3'} bg-white border border-[#e7e9ec] rounded-xl shadow-subtle overflow-hidden`}>
+              {/* Table Action & Filter Bar */}
+              <div className="p-3.5 border-b border-[#e7e9ec] bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm theo tên, mã xã viên..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12.8px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={capitalStatusFilter}
+                    onChange={(e) => setCapitalStatusFilter(e.target.value)}
+                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12.5px] text-slate-700 font-medium focus:outline-none"
+                  >
+                    <option value="ALL">Trạng thái: Tất cả</option>
+                    <option value="DU_VON">Đủ vốn</option>
+                    <option value="CHUA_DU">Chưa đủ</option>
+                  </select>
+
+                  <button
+                    onClick={() => {
+                      setSearch('');
+                      setCapitalStatusFilter('ALL');
+                    }}
+                    className="px-3 py-1.5 border border-slate-200 hover:bg-slate-100 text-slate-600 font-bold text-[12px] rounded-lg inline-flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Đặt lại
+                  </button>
+                </div>
+              </div>
+
+              {/* Capital Table matching Image 2 */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-[12.8px]">
+                  <thead>
+                    <tr className="border-b border-[#e7e9ec] text-[11px] uppercase tracking-wider text-slate-400 font-bold bg-slate-50">
+                      <th className="py-2.5 px-3">STT</th>
+                      <th className="py-2.5 px-3">Mã xã viên</th>
+                      <th className="py-2.5 px-3">Họ và tên</th>
+                      <th className="py-2.5 px-3">Ngày tham gia</th>
+                      <th className="py-2.5 px-3 text-right">Vốn cam kết (đ)</th>
+                      <th className="py-2.5 px-3 text-right">Đã góp (đ)</th>
+                      <th className="py-2.5 px-3 text-right">Còn thiếu (đ)</th>
+                      <th className="py-2.5 px-3 text-right">Tỷ lệ (%)</th>
+                      <th className="py-2.5 px-3">Trạng thái</th>
+                      <th className="py-2.5 px-3 text-center">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredMembersTab2.map((m, idx) => (
+                      <tr
+                        key={m.id}
+                        onClick={() => setSelectedCapitalMember(m)}
+                        className={`cursor-pointer hover:bg-slate-50 transition-colors ${
+                          selectedCapitalMember?.id === m.id ? 'bg-emerald-50/60 font-semibold' : ''
+                        }`}
+                      >
+                        <td className="py-3 px-3 text-slate-500 font-medium">{idx + 1}</td>
+                        <td className="py-3 px-3 font-mono font-bold text-slate-600">{m.member_code}</td>
+                        <td className="py-3 px-3 font-bold text-slate-900">{m.full_name}</td>
+                        <td className="py-3 px-3 text-slate-600">{m.join_date}</td>
+                        <td className="py-3 px-3 text-right font-bold text-slate-900">
+                          {m.committed_capital?.toLocaleString('vi-VN')} ₫
+                        </td>
+                        <td className="py-3 px-3 text-right font-extrabold text-emerald-700">
+                          {m.contributed_capital?.toLocaleString('vi-VN')} ₫
+                        </td>
+                        <td className="py-3 px-3 text-right font-bold text-amber-800">
+                          {m.remaining_capital?.toLocaleString('vi-VN')} ₫
+                        </td>
+                        <td className="py-3 px-3 text-right font-bold text-slate-800">
+                          {Math.round(((m.contributed_capital || 0) / (m.committed_capital || 1)) * 100)}%
+                        </td>
+                        <td className="py-3 px-3">
+                          {m.capital_status === 'DU_VON' ? (
+                            <span className="pill-badge pill-green">Đủ vốn</span>
+                          ) : (
+                            <span className="pill-badge pill-amber">Chưa đủ</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCapitalMember(m);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+
+                  {/* Summary Total Row matching Image 2 */}
+                  <tfoot>
+                    <tr className="bg-slate-100/80 font-extrabold text-slate-900 border-t-2 border-slate-200 text-[12.8px]">
+                      <td colSpan={4} className="py-3 px-3 text-slate-900">Tổng cộng</td>
+                      <td className="py-3 px-3 text-right">{totalCommittedCapital.toLocaleString('vi-VN')} ₫</td>
+                      <td className="py-3 px-3 text-right text-emerald-700">{totalContributedCapital.toLocaleString('vi-VN')} ₫</td>
+                      <td className="py-3 px-3 text-right text-amber-800">{totalRemainingCapital.toLocaleString('vi-VN')} ₫</td>
+                      <td className="py-3 px-3 text-right">{overallCapitalPct}%</td>
+                      <td colSpan={2}></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            {/* SIDE DRAWER CHI TIẾT VỐN GÓP MATCHING IMAGE 2 EXACTLY */}
+            {selectedCapitalMember && (
+              <div className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle p-4 space-y-4 animate-fade-in">
+                <div className="flex items-start justify-between border-b border-[#e7e9ec] pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-base border border-emerald-200 shrink-0">
+                      {selectedCapitalMember.full_name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-extrabold text-[15px] text-slate-900">{selectedCapitalMember.full_name}</h3>
+                        <span className="pill-badge pill-green text-[10.5px]">Đã góp đủ</span>
+                      </div>
+                      <p className="text-[11.8px] text-slate-500">Mã xã viên: {selectedCapitalMember.member_code} &bull; Tham gia: {selectedCapitalMember.join_date}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedCapitalMember(null)} className="text-slate-400 hover:text-slate-600 p-1">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Progress Box */}
+                <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl space-y-2">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-[11.5px] font-bold text-slate-500">Tổng vốn:</span>
+                    <span className="text-lg font-black text-emerald-800">
+                      {selectedCapitalMember.contributed_capital?.toLocaleString('vi-VN')} ₫
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                    <div className="bg-emerald-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 text-[11.8px] border-t border-emerald-200/60">
+                    <div>
+                      <span className="text-slate-500">Vốn cam kết:</span>{' '}
+                      <strong className="text-slate-900">{selectedCapitalMember.committed_capital?.toLocaleString('vi-VN')} ₫</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Lần góp gần nhất:</span>{' '}
+                      <strong className="text-slate-900">15/05/2025</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Đã góp:</span>{' '}
+                      <strong className="text-emerald-700">{selectedCapitalMember.contributed_capital?.toLocaleString('vi-VN')} ₫</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Tổng số lần góp:</span>{' '}
+                      <strong className="text-slate-900">3 lần</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Drawer Inner Tabs */}
+                <div className="border-b border-[#e7e9ec] flex gap-4 text-[12px] font-bold">
+                  <button
+                    onClick={() => setCapitalDrawerTab('history')}
+                    className={`pb-2 border-b-2 ${capitalDrawerTab === 'history' ? 'border-emerald-600 text-emerald-800' : 'border-transparent text-slate-400'}`}
+                  >
+                    Lịch sử góp vốn
+                  </button>
+                  <button
+                    onClick={() => setCapitalDrawerTab('docs')}
+                    className={`pb-2 border-b-2 ${capitalDrawerTab === 'docs' ? 'border-emerald-600 text-emerald-800' : 'border-transparent text-slate-400'}`}
+                  >
+                    Chứng từ
+                  </button>
+                  <button
+                    onClick={() => setCapitalDrawerTab('info')}
+                    className={`pb-2 border-b-2 ${capitalDrawerTab === 'info' ? 'border-emerald-600 text-emerald-800' : 'border-transparent text-slate-400'}`}
+                  >
+                    Thông tin
+                  </button>
+                </div>
+
+                {/* Tab Content: Lịch sử góp vốn */}
+                {capitalDrawerTab === 'history' && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[12px] font-bold text-slate-700">Lịch sử giao dịch</span>
+                      <button
+                        onClick={() => setShowRecordCapitalModal(true)}
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11.5px] rounded-lg inline-flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Ghi nhận góp vốn
+                      </button>
+                    </div>
+
+                    <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                      <table className="w-full text-left text-[11.8px]">
+                        <thead className="bg-slate-50 text-[10.5px] uppercase font-bold text-slate-400">
+                          <tr>
+                            <th className="py-2 px-2.5">Ngày</th>
+                            <th className="py-2 px-2.5">Số tiền</th>
+                            <th className="py-2 px-2.5">Hình thức</th>
+                            <th className="py-2 px-2.5">Chứng từ</th>
+                            <th className="py-2 px-2.5">Trạng thái</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {transactions.map((tx) => (
+                            <tr key={tx.id}>
+                              <td className="py-2 px-2.5 text-slate-600">{tx.contribution_date}</td>
+                              <td className="py-2 px-2.5 font-bold text-emerald-700">+{tx.amount.toLocaleString('vi-VN')} ₫</td>
+                              <td className="py-2 px-2.5 text-slate-600">
+                                {tx.payment_method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}
+                              </td>
+                              <td className="py-2 px-2.5 font-mono text-emerald-700 font-semibold">{tx.receipt_number}</td>
+                              <td className="py-2 px-2.5">
+                                <span className="pill-badge pill-green text-[10px]">Đã duyệt</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Section: Thông tin bổ sung */}
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-[11.8px]">
+                      <div className="font-bold text-slate-800">Thông tin bổ sung</div>
+                      <p className="text-slate-600 italic">"{selectedCapitalMember.notes}"</p>
+                      <div className="text-slate-500 pt-1 text-[11px]">
+                        Người ghi nhận: <strong>Nguyễn Văn A (Kế toán)</strong> &bull; Ngày ghi nhận: 15/05/2025
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* CHARTS GRID MATCHING IMAGE 2 BOTTOM */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Chart 1: Biểu đồ vốn góp theo thời gian */}
+            <div className="bg-white border border-[#e7e9ec] p-4 rounded-xl shadow-subtle space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="font-extrabold text-slate-900 text-sm">Biểu đồ vốn góp theo thời gian</h3>
+                <div className="flex items-center gap-3 text-[11px] font-bold">
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Vốn cam kết</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Vốn đã góp</span>
+                </div>
+              </div>
+              <div className="h-44 flex items-end justify-between gap-1 pt-6 px-2 border-b border-slate-200">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+                  <div key={m} className="flex-1 flex items-end justify-center gap-0.5 group relative">
+                    <div className="w-2 bg-emerald-600 rounded-t-xs" style={{ height: `${40 + (m * 4) % 50}%` }}></div>
+                    <div className="w-2 bg-blue-500 rounded-t-xs" style={{ height: `${35 + (m * 3.8) % 45}%` }}></div>
+                    <span className="absolute -bottom-5 text-[10px] font-bold text-slate-400">T{m}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Chart 2: Cơ cấu vốn góp */}
+            <div className="bg-white border border-[#e7e9ec] p-4 rounded-xl shadow-subtle space-y-3">
+              <h3 className="font-extrabold text-slate-900 text-sm">Cơ cấu vốn góp</h3>
+              <div className="flex items-center justify-center py-2 relative">
+                <div className="w-32 h-32 rounded-full border-[14px] border-emerald-600 border-t-amber-500 flex flex-col items-center justify-center text-center">
+                  <span className="text-[12px] font-extrabold text-slate-900">2.450.000.000 ₫</span>
+                  <span className="text-[9.5px] text-slate-400 uppercase font-bold">Tổng vốn góp</span>
+                </div>
+              </div>
+              <div className="space-y-1.5 text-[12px] pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-2 text-slate-600">
+                    <span className="w-3 h-3 rounded-full bg-emerald-600"></span> Đã góp
+                  </span>
+                  <strong className="text-slate-900">2.180.000.000 ₫ (88,98%)</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-2 text-slate-600">
+                    <span className="w-3 h-3 rounded-full bg-amber-500"></span> Còn phải góp
+                  </span>
+                  <strong className="text-amber-800">270.000.000 ₫ (11,02%)</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Widget 3: Top 5 xã viên góp vốn nhiều nhất */}
+            <div className="bg-white border border-[#e7e9ec] p-4 rounded-xl shadow-subtle space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="font-extrabold text-slate-900 text-sm">Top 5 xã viên góp vốn nhiều nhất</h3>
+                <button
+                  onClick={() => setSelectedCapitalMember(members[0])}
+                  className="text-[11.5px] text-emerald-700 font-bold hover:underline"
+                >
+                  Xem chi tiết &rarr;
+                </button>
+              </div>
+              <div className="space-y-2 text-[12.5px]">
+                {[
+                  { rank: 1, name: 'Nguyễn Văn A', amount: 120000000 },
+                  { rank: 2, name: 'Trần Thị B', amount: 100000000 },
+                  { rank: 3, name: 'Lê Văn C', amount: 80000000 },
+                  { rank: 4, name: 'Phạm Thị D', amount: 75000000 },
+                  { rank: 5, name: 'Hoàng Văn E', amount: 60000000 },
+                ].map((item, idx) => (
+                  <div
+                    key={item.rank}
+                    onClick={() => setSelectedCapitalMember(members[idx] || members[0])}
+                    className="flex justify-between items-center p-2 rounded-lg bg-slate-50 hover:bg-emerald-50 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black flex items-center justify-center">
+                        {item.rank}
+                      </span>
+                      <span className="font-bold text-slate-800">{item.name}</span>
+                    </div>
+                    <span className="font-extrabold text-emerald-700">{item.amount.toLocaleString('vi-VN')} ₫</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: PHÂN CHIA LỢI NHUẬN (MATCHING IMAGE 1 EXACTLY 100%) */}
+      {/* ========================================================================= */}
+      {activeTab === 'profit' && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Breadcrumb Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+              <span>Trang chủ</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span>Quản lý HTX</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-slate-800">Phân chia lợi nhuận</span>
+            </div>
+          </div>
+
+          {/* TOP 5 KPI STATS CARDS MATCHING IMAGE 1 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {/* Card 1: Tổng lợi nhuận năm */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Tổng lợi nhuận năm</span>
+                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <Wallet className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-lg font-black text-slate-900">{surplusPlan.total_net_profit.toLocaleString('vi-VN')} ₫</div>
+              <div className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" /> +12,5% so với năm trước
+              </div>
+            </div>
+
+            {/* Card 2: Đã phân chia */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Đã phân chia</span>
+                <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-lg font-black text-slate-900">{distributedProfitAmount.toLocaleString('vi-VN')} ₫</div>
+              <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${distributedProfitPct}%` }}></div>
+              </div>
+            </div>
+
+            {/* Card 3: Còn lại */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Còn lại</span>
+                <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-lg font-black text-orange-700">{remainingProfitAmount.toLocaleString('vi-VN')} ₫</div>
+              <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                <div className="bg-orange-500 h-1.5 rounded-full" style={{ width: '16%' }}></div>
+              </div>
+            </div>
+
+            {/* Card 4: Số xã viên nhận */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Số xã viên nhận</span>
+                <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-lg font-black text-slate-900">125 người</div>
+              <div className="text-[11px] text-slate-500 font-medium">
+                Đã nhận: <strong className="text-emerald-700">{paidMemberCount}</strong> &bull; Chưa nhận: <strong className="text-orange-700">{unpaidMemberCount}</strong>
+              </div>
+            </div>
+
+            {/* Card 5: Kỳ phân chia */}
+            <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Kỳ phân chia</span>
+                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+                  <Calendar className="w-4 h-4" />
+                </div>
+              </div>
+              <select className="w-full mt-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800">
+                <option value="2024">Năm 2024</option>
+                <option value="2023">Năm 2023</option>
+              </select>
+            </div>
+          </div>
+
+          {/* CARD: THÔNG TIN KỲ PHÂN CHIA MATCHING IMAGE 1 */}
+          <div className="bg-white border border-[#e7e9ec] rounded-xl p-4 shadow-subtle space-y-4">
+            <h3 className="font-extrabold text-slate-900 text-sm border-b border-[#e7e9ec] pb-2">
+              Thông tin kỳ phân chia
+            </h3>
+
+            <form onSubmit={handleUpdateProfitPlan} className="space-y-4 text-[12.8px]">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Năm tài chính *</label>
+                  <select
+                    value={profitPlanForm.fiscal_year}
+                    onChange={(e) => setProfitPlanForm({ ...profitPlanForm, fiscal_year: Number(e.target.value) })}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-bold"
+                  >
+                    <option value={2024}>2024</option>
+                    <option value={2025}>2025</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tổng lợi nhuận sau thuế (đ)</label>
+                  <input
+                    type="number"
+                    value={profitPlanForm.total_net_profit}
+                    onChange={(e) => setProfitPlanForm({ ...profitPlanForm, total_net_profit: Number(e.target.value) })}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-bold text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tỷ lệ trích lập quỹ (%)</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={profitPlanForm.reserve_fund_rate}
+                      onChange={(e) => setProfitPlanForm({ ...profitPlanForm, reserve_fund_rate: Number(e.target.value) })}
+                      className="w-20 px-3 py-1.5 border border-slate-200 rounded-lg font-bold"
+                    />
+                    <span className="text-[11.5px] text-slate-400 font-semibold">(125.000.000 đ)</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tỷ lệ chia cho xã viên (%)</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={profitPlanForm.member_share_rate}
+                      onChange={(e) => setProfitPlanForm({ ...profitPlanForm, member_share_rate: Number(e.target.value) })}
+                      className="w-20 px-3 py-1.5 border border-slate-200 rounded-lg font-bold text-emerald-800"
+                    />
+                    <span className="text-[11.5px] text-slate-400 font-semibold">(1.062.500.000 đ)</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tỷ lệ quỹ khen thưởng, phúc lợi (%)</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={profitPlanForm.welfare_fund_rate}
+                      onChange={(e) => setProfitPlanForm({ ...profitPlanForm, welfare_fund_rate: Number(e.target.value) })}
+                      className="w-20 px-3 py-1.5 border border-slate-200 rounded-lg font-bold"
+                    />
+                    <span className="text-[11.5px] text-slate-400 font-semibold">(62.500.000 đ)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Ngày dự kiến phân chia *</label>
+                  <input
+                    type="text"
+                    value={profitPlanForm.planned_payout_date}
+                    onChange={(e) => setProfitPlanForm({ ...profitPlanForm, planned_payout_date: e.target.value })}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="block font-bold text-slate-700 mb-1">Ghi chú</label>
+                    <input
+                      type="text"
+                      value={profitPlanForm.notes}
+                      onChange={(e) => setProfitPlanForm({ ...profitPlanForm, notes: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="mt-6 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm text-[12.8px] whitespace-nowrap transition-all"
+                  >
+                    Cập nhật thông tin
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* MAIN PROFIT TABLE & DRAWER GRID MATCHING IMAGE 1 */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+            <div className={`${selectedSurplusItem ? 'lg:col-span-2' : 'lg:col-span-3'} bg-white border border-[#e7e9ec] rounded-xl shadow-subtle overflow-hidden`}>
+              <div className="p-3 border-b border-[#e7e9ec] bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3 text-[12.5px] font-bold text-slate-600">
+                  <span className="text-emerald-800 border-b-2 border-emerald-600 pb-1">Tất cả (125)</span>
+                  <span className="hover:text-slate-900 cursor-pointer">Đã nhận (102)</span>
+                  <span className="hover:text-slate-900 cursor-pointer">Chưa nhận (23)</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Tìm theo tên xã viên, mã xã viên..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-8 pr-3 py-1 bg-white border border-slate-200 rounded-lg text-[12px]"
+                    />
+                  </div>
+
+                  <select
+                    value={profitStatusFilter}
+                    onChange={(e) => setProfitStatusFilter(e.target.value)}
+                    className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[12px] font-medium"
+                  >
+                    <option value="ALL">Trạng thái: Tất cả</option>
+                    <option value="DA_NHAN">Đã nhận</option>
+                    <option value="CHUA_NHAN">Chưa nhận</option>
+                  </select>
+
+                  <button
+                    onClick={() => triggerToast('Đã tạo đợt phân chia mới!')}
+                    className="px-3 py-1 bg-emerald-600 text-white font-bold text-[12px] rounded-lg inline-flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Tạo đợt phân chia
+                  </button>
+                </div>
+              </div>
+
+              {/* Profit Table matching Image 1 */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-[12.8px]">
+                  <thead>
+                    <tr className="border-b border-[#e7e9ec] text-[11px] uppercase tracking-wider text-slate-400 font-bold bg-slate-50">
+                      <th className="py-2.5 px-3">STT</th>
+                      <th className="py-2.5 px-3">Mã xã viên</th>
+                      <th className="py-2.5 px-3">Họ và tên</th>
+                      <th className="py-2.5 px-3 text-right">Vốn góp (đ)</th>
+                      <th className="py-2.5 px-3 text-right">Tỷ lệ chia (%)</th>
+                      <th className="py-2.5 px-3 text-right">Số tiền được nhận (đ)</th>
+                      <th className="py-2.5 px-3">Hình thức nhận</th>
+                      <th className="py-2.5 px-3">Trạng thái</th>
+                      <th className="py-2.5 px-3 text-center">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredSurplusItems.map((item, idx) => (
+                      <tr
+                        key={item.id}
+                        onClick={() => setSelectedSurplusItem(item)}
+                        className={`cursor-pointer hover:bg-slate-50 transition-colors ${
+                          selectedSurplusItem?.id === item.id ? 'bg-emerald-50/60 font-semibold' : ''
+                        }`}
+                      >
+                        <td className="py-3 px-3 text-slate-500 font-medium">{idx + 1}</td>
+                        <td className="py-3 px-3 font-mono font-bold text-slate-600">{item.member_code}</td>
+                        <td className="py-3 px-3 font-bold text-slate-900">{item.member_name}</td>
+                        <td className="py-3 px-3 text-right text-slate-800">
+                          {item.capital_contributed?.toLocaleString('vi-VN')} ₫
+                        </td>
+                        <td className="py-3 px-3 text-right font-bold text-slate-800">{item.share_percentage}%</td>
+                        <td className="py-3 px-3 text-right font-extrabold text-slate-900">
+                          {item.total_payout_amount.toLocaleString('vi-VN')} ₫
+                        </td>
+                        <td className="py-3 px-3 text-slate-700 font-medium">
+                          {item.payout_method === 'BANK_TRANSFER' ? 'Chuyển khoản' : 'Tiền mặt'}
+                        </td>
+                        <td className="py-3 px-3">
+                          {item.payout_status === 'DA_NHAN' ? (
+                            <span className="pill-badge pill-green">Đã nhận</span>
+                          ) : (
+                            <span className="pill-badge pill-amber">Chưa nhận</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSurplusItem(item);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* SIDE DRAWER CHI TIẾT PHÂN CHIA LỢI NHUẬN MATCHING IMAGE 1 EXACTLY */}
+            {selectedSurplusItem && (
+              <div className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle p-4 space-y-4 animate-fade-in">
+                <div className="flex items-start justify-between border-b border-[#e7e9ec] pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-sm border border-emerald-200 shrink-0">
+                      {selectedSurplusItem.member_name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-extrabold text-[15px] text-slate-900">{selectedSurplusItem.member_name}</h3>
+                        <span className="pill-badge pill-green text-[10.5px]">Đã nhận</span>
+                      </div>
+                      <p className="text-[11.8px] text-slate-500">
+                        {selectedSurplusItem.member_code} &bull; Thành viên chính thức &bull; Tham gia: 10/01/2024
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedSurplusItem(null)} className="text-slate-400 hover:text-slate-600 p-1">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Section 1: Thông tin lợi nhuận */}
+                <div className="space-y-2 text-[12.5px] border-b border-slate-200 pb-3">
+                  <div className="font-bold text-slate-800 text-[12px] uppercase">Thông tin lợi nhuận</div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Vốn góp:</span>
+                    <span className="font-bold text-slate-900">{selectedSurplusItem.capital_contributed?.toLocaleString('vi-VN')} ₫</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Tỷ lệ chia:</span>
+                    <span className="font-bold text-slate-900">{selectedSurplusItem.share_percentage}%</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-800 font-extrabold text-sm">
+                    <span>Số tiền được nhận:</span>
+                    <span>{selectedSurplusItem.total_payout_amount.toLocaleString('vi-VN')} ₫</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Hình thức nhận:</span>
+                    <span className="font-medium text-slate-800">
+                      {selectedSurplusItem.payout_method === 'BANK_TRANSFER' ? 'Chuyển khoản' : 'Tiền mặt'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Ngày nhận:</span>
+                    <span className="font-medium text-slate-800">15/03/2025</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Mã giao dịch:</span>
+                    <span className="font-mono font-bold text-emerald-700">LN2025-001</span>
+                  </div>
+                </div>
+
+                {/* Section 2: Thông tin tài khoản nhận */}
+                <div className="space-y-2 text-[12.5px] border-b border-slate-200 pb-3">
+                  <div className="font-bold text-slate-800 text-[12px] uppercase">Thông tin tài khoản nhận</div>
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                    <div className="font-bold text-emerald-800 text-[12px]">Ngân hàng TMCP Ngoại thương Việt Nam (VCB)</div>
+                    <div className="text-[12px] text-slate-700 font-mono font-bold">STK: 1234567890</div>
+                    <div className="text-[11.5px] text-slate-500">Chủ tài khoản: <strong>Nguyễn Văn A</strong></div>
+                  </div>
+                </div>
+
+                {/* Section 3: Chứng từ liên quan */}
+                <div className="space-y-2 text-[12.5px] border-b border-slate-200 pb-3">
+                  <div className="font-bold text-slate-800 text-[12px] uppercase">Chứng từ liên quan</div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-rose-600" />
+                        <div>
+                          <div className="font-bold text-[12px] text-slate-800">Quyết định phân chia lợi nhuận.pdf</div>
+                          <div className="text-[10.5px] text-slate-400">1.2 MB</div>
+                        </div>
+                      </div>
+                      <button className="p-1 text-slate-400 hover:text-emerald-700">
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                        <div>
+                          <div className="font-bold text-[12px] text-slate-800">Danh sách xã viên nhận lợi nhuận.xlsx</div>
+                          <div className="text-[10.5px] text-slate-400">856 KB</div>
+                        </div>
+                      </div>
+                      <button className="p-1 text-slate-400 hover:text-emerald-700">
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 4: Lịch sử giao dịch Timeline */}
+                <div className="space-y-2 text-[12.5px]">
+                  <div className="font-bold text-slate-800 text-[12px] uppercase">Lịch sử giao dịch</div>
+                  <div className="space-y-3 pl-2">
+                    <div className="flex items-start gap-2 text-[11.8px]">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 mt-1"></div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-slate-900">15/03/2025 10:30</span>
+                          <span className="pill-badge pill-green text-[9.5px]">Đã duyệt</span>
+                        </div>
+                        <div className="text-slate-600">Đã chi trả lợi nhuận</div>
+                        <div className="text-slate-400 text-[11px]">Nguyễn Văn A (Kế toán)</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 text-[11.8px]">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1"></div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-slate-900">12/03/2025 14:15</span>
+                          <span className="pill-badge pill-green text-[9.5px]">Đã duyệt</span>
+                        </div>
+                        <div className="text-slate-600">Tạo giao dịch phân chia</div>
+                        <div className="text-slate-400 text-[11px]">Nguyễn Văn A (Kế toán)</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-2 flex justify-between gap-2 border-t border-slate-200">
+                  <button className="px-3 py-1.5 border border-rose-300 text-rose-700 font-bold hover:bg-rose-50 text-[12px] rounded-lg inline-flex items-center gap-1">
+                    <Trash2 className="w-3.5 h-3.5" /> Hủy giao dịch
+                  </button>
+                  <button className="px-3 py-1.5 border border-blue-300 text-blue-700 font-bold hover:bg-blue-50 text-[12px] rounded-lg inline-flex items-center gap-1">
+                    <Printer className="w-3.5 h-3.5" /> In biên lai
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* CHARTS GRID MATCHING IMAGE 1 BOTTOM */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Chart 1: Cơ cấu phân chia lợi nhuận */}
+            <div className="bg-white border border-[#e7e9ec] p-4 rounded-xl shadow-subtle space-y-3">
+              <h3 className="font-extrabold text-slate-900 text-sm">Cơ cấu phân chia lợi nhuận</h3>
+              <div className="flex items-center justify-between">
+                <div className="w-36 h-36 rounded-full border-[16px] border-emerald-600 border-l-blue-500 border-b-orange-400 flex flex-col items-center justify-center text-center">
+                  <span className="text-[12px] font-extrabold text-slate-900">1.250.000.000 ₫</span>
+                  <span className="text-[9.5px] text-slate-400 uppercase font-bold">Tổng lợi nhuận</span>
+                </div>
+                <div className="space-y-2 text-[12px]">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="flex items-center gap-2 text-slate-600">
+                      <span className="w-3 h-3 rounded-full bg-emerald-600"></span> Chia cho xã viên (85%)
+                    </span>
+                    <strong className="text-slate-900">1.062.500.000 ₫</strong>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="flex items-center gap-2 text-slate-600">
+                      <span className="w-3 h-3 rounded-full bg-blue-500"></span> Quỹ trích lập (10%)
+                    </span>
+                    <strong className="text-slate-900">125.000.000 ₫</strong>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="flex items-center gap-2 text-slate-600">
+                      <span className="w-3 h-3 rounded-full bg-orange-400"></span> Quỹ khen thưởng, phúc lợi (5%)
+                    </span>
+                    <strong className="text-slate-900">62.500.000 ₫</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Chart 2: Tình hình nhận lợi nhuận */}
+            <div className="bg-white border border-[#e7e9ec] p-4 rounded-xl shadow-subtle space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="font-extrabold text-slate-900 text-sm">Tình hình nhận lợi nhuận</h3>
+                <div className="flex items-center gap-3 text-[11px] font-bold">
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Đã nhận</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span> Chưa nhận</span>
+                </div>
+              </div>
+              <div className="h-44 flex items-end justify-between gap-2 pt-6 px-2 border-b border-slate-200">
+                {['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6'].map((m, i) => (
+                  <div key={m} className="flex-1 flex items-end justify-center gap-1">
+                    <div className="w-3 bg-emerald-600 rounded-t-xs" style={{ height: `${60 + i * 5}%` }}></div>
+                    <div className="w-3 bg-orange-500 rounded-t-xs" style={{ height: `${20 + i * 3}%` }}></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 4: HỒ SƠ HỢP TÁC XÃ NÔNG NGHIỆP */}
+      {/* ========================================================================= */}
+      {activeTab === 'coop' && (
+        <div className="bg-white border border-[#e7e9ec] rounded-b-xl p-6 shadow-subtle space-y-6 animate-fade-in">
+          <div className="flex items-center gap-4 border-b border-[#e7e9ec] pb-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-xl border border-emerald-200">
+              HTX
+            </div>
+            <div>
+              <h2 className="text-lg font-extrabold text-slate-900">Hồ sơ Hợp tác xã Nông nghiệp</h2>
+              <p className="text-[12.8px] text-slate-500">Thông tin pháp lý &amp; Danh sách Ban Quản trị HTX</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL POPUP: GHI NHẬN GÓP VỐN (MATCHING IMAGE 2 BOTTOM LEFT POPUP) */}
+      {/* ========================================================================= */}
+      {showRecordCapitalModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-xl w-full shadow-modal overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+              <h3 className="font-extrabold text-slate-900 text-base">Ghi nhận góp vốn</h3>
+              <button onClick={() => setShowRecordCapitalModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCapitalTransaction} className="p-5 space-y-4 text-[12.8px]">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Xã viên *</label>
+                  <select
+                    value={capitalForm.member_id}
+                    onChange={(e) => setCapitalForm({ ...capitalForm, member_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-slate-800"
+                  >
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.full_name} ({m.member_code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Số tiền góp *</label>
+                  <input
+                    type="number"
+                    step={1000000}
+                    required
+                    value={capitalForm.amount}
+                    onChange={(e) => setCapitalForm({ ...capitalForm, amount: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-emerald-800"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Ngày góp *</label>
+                  <input
+                    type="date"
+                    required
+                    value={capitalForm.contribution_date}
+                    onChange={(e) => setCapitalForm({ ...capitalForm, contribution_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Hình thức *</label>
+                  <div className="flex items-center gap-4 pt-2 font-medium">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="pm"
+                        checked={capitalForm.payment_method === 'CASH'}
+                        onChange={() => setCapitalForm({ ...capitalForm, payment_method: 'CASH' })}
+                      />
+                      Tiền mặt
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="pm"
+                        checked={capitalForm.payment_method === 'BANK_TRANSFER'}
+                        onChange={() => setCapitalForm({ ...capitalForm, payment_method: 'BANK_TRANSFER' })}
+                      />
+                      Chuyển khoản
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Số chứng từ</label>
+                  <input
+                    type="text"
+                    value={capitalForm.receipt_number}
+                    onChange={(e) => setCapitalForm({ ...capitalForm, receipt_number: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg font-mono font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Nội dung</label>
+                  <input
+                    type="text"
+                    value={capitalForm.content}
+                    onChange={(e) => setCapitalForm({ ...capitalForm, content: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">File chứng từ</label>
+                <div className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-4 text-center bg-slate-50/50 cursor-pointer">
+                  <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                  <div className="text-slate-600 font-medium text-[12px]">Kéo thả file hoặc chọn file</div>
+                  <div className="text-slate-400 text-[10.5px]">PDF, JPG, PNG (Tối đa 10MB)</div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Ghi chú</label>
+                <textarea
+                  rows={2}
+                  placeholder="Nhập ghi chú (nếu có)..."
+                  value={capitalForm.notes}
+                  onChange={(e) => setCapitalForm({ ...capitalForm, notes: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                ></textarea>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowRecordCapitalModal(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-lg text-slate-600 font-bold hover:bg-slate-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
+                >
+                  Lưu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5-STEP WIZARD MODAL: THÊM XÃ VIÊN MỚI */}
+      {/* ========================================================================= */}
+      {showWizardModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-modal overflow-hidden my-6">
+            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-white">
+              <h3 className="font-extrabold text-slate-900 text-lg">Thêm xã viên mới</h3>
+              <button onClick={() => setShowWizardModal(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Stepper Header */}
+            <div className="px-6 py-4 bg-slate-50/70 border-b border-slate-200/80">
+              <div className="flex items-center justify-between text-center relative">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <React.Fragment key={s}>
+                    <div className="flex flex-col items-center gap-1 z-10">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                          wizardStep === s
+                            ? 'bg-emerald-600 text-white ring-4 ring-emerald-100'
+                            : wizardStep > s
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-slate-200 text-slate-500'
+                        }`}
+                      >
+                        {wizardStep > s ? <CheckCircle2 className="w-5 h-5" /> : s}
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-700 max-w-[70px] leading-tight">
+                        {s === 1 && 'Thông tin cá nhân'}
+                        {s === 2 && 'Thông tin liên hệ'}
+                        {s === 3 && 'Thông tin vốn góp'}
+                        {s === 4 && 'Phân chia lợi nhuận'}
+                        {s === 5 && 'Xác nhận'}
+                      </span>
+                    </div>
+                    {s < 5 && (
+                      <div className={`flex-1 h-0.5 mx-2 ${wizardStep > s ? 'bg-emerald-600' : 'bg-slate-200'}`}></div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            {/* Step Body */}
+            <div className="p-6 space-y-4 text-[12.8px]">
+              {/* BƯỚC 1: THÔNG TIN CÁ NHÂN (MATCHING SCREENSHOT 1) */}
+              {wizardStep === 1 && (
+                <div className="space-y-3 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Mã xã viên</label>
+                      <input
+                        type="text"
+                        disabled
+                        value="Tự động"
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-400 font-medium cursor-not-allowed text-[12.5px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Họ và tên *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Nhập họ và tên"
+                        value={wizardForm.full_name}
+                        onChange={(e) => setWizardForm({ ...wizardForm, full_name: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Giới tính *</label>
+                    <div className="flex items-center gap-6 pt-1 font-medium text-slate-800">
+                      {['Nam', 'Nữ', 'Khác'].map((g) => (
+                        <label key={g} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="wizardGender"
+                            checked={wizardForm.gender === g}
+                            onChange={() => setWizardForm({ ...wizardForm, gender: g as any })}
+                            className="accent-emerald-600"
+                          />
+                          {g}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Ngày sinh *</label>
+                      <input
+                        type="date"
+                        required
+                        value={wizardForm.dob}
+                        onChange={(e) => setWizardForm({ ...wizardForm, dob: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Số CCCD/CMND *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Nhập số CCCD/CMND"
+                        value={wizardForm.cccd}
+                        onChange={(e) => setWizardForm({ ...wizardForm, cccd: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Ngày cấp *</label>
+                      <input
+                        type="date"
+                        required
+                        value={wizardForm.cccd_issue_date}
+                        onChange={(e) => setWizardForm({ ...wizardForm, cccd_issue_date: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Nơi cấp *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Nhập nơi cấp"
+                        value={wizardForm.cccd_issue_place}
+                        onChange={(e) => setWizardForm({ ...wizardForm, cccd_issue_place: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Trình độ học vấn</label>
+                      <select
+                        value={wizardForm.education_level}
+                        onChange={(e) => setWizardForm({ ...wizardForm, education_level: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
+                      >
+                        <option value="Chưa xác định">Chưa xác định</option>
+                        <option value="THPT">THPT (12/12)</option>
+                        <option value="Trung cấp">Trung cấp</option>
+                        <option value="Cao đẳng">Cao đẳng</option>
+                        <option value="Đại học">Đại học</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Nghề nghiệp</label>
+                      <input
+                        type="text"
+                        placeholder="Nhập nghề nghiệp"
+                        value={wizardForm.occupation}
+                        onChange={(e) => setWizardForm({ ...wizardForm, occupation: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* BƯỚC 2: THÔNG TIN LIÊN HỆ (MATCHING SCREENSHOT 2) */}
+              {wizardStep === 2 && (
+                <div className="space-y-4 animate-fade-in">
+                  <div>
+                    <h4 className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider mb-2">
+                      ĐỊA CHỈ THƯỜNG TRÚ
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Tỉnh/Thành phố *</label>
+                        <select
+                          value={wizardForm.province}
+                          onChange={(e) => setWizardForm({ ...wizardForm, province: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
+                        >
+                          <option value="Lâm Đồng">Lâm Đồng</option>
+                          <option value="Đắc Lắk">Đắc Lắk</option>
+                          <option value="Gia Lai">Gia Lai</option>
+                          <option value="Đồng Nai">Đồng Nai</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Quận/Huyện *</label>
+                        <select
+                          value={wizardForm.district}
+                          onChange={(e) => setWizardForm({ ...wizardForm, district: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
+                        >
+                          <option value="Huyện Lâm Hà">Huyện Lâm Hà</option>
+                          <option value="Huyện Đức Trọng">Huyện Đức Trọng</option>
+                          <option value="Huyện Di Linh">Huyện Di Linh</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Xã/Phường *</label>
+                        <select
+                          value={wizardForm.ward}
+                          onChange={(e) => setWizardForm({ ...wizardForm, ward: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
+                        >
+                          <option value="Xã Mê Linh">Xã Mê Linh</option>
+                          <option value="Xã Tân Hà">Xã Tân Hà</option>
+                          <option value="Xã Đinh Văn">Xã Đinh Văn</option>
+                          <option value="Xã Liên Hà">Xã Liên Hà</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Địa chỉ chi tiết *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Số nhà, thôn/xóm"
+                          value={wizardForm.detail_address}
+                          onChange={(e) => setWizardForm({ ...wizardForm, detail_address: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100">
+                    <h4 className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider mb-2">
+                      THÔNG TIN LIÊN HỆ
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Số điện thoại *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Nhập số điện thoại"
+                          value={wizardForm.phone}
+                          onChange={(e) => setWizardForm({ ...wizardForm, phone: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-slate-900"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          placeholder="Nhập email"
+                          value={wizardForm.email}
+                          onChange={(e) => setWizardForm({ ...wizardForm, email: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Zalo (nếu có)</label>
+                        <input
+                          type="text"
+                          placeholder="SĐT Zalo"
+                          value={wizardForm.zalo}
+                          onChange={(e) => setWizardForm({ ...wizardForm, zalo: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Facebook (nếu có)</label>
+                        <input
+                          type="text"
+                          placeholder="facebook.com/..."
+                          value={wizardForm.facebook}
+                          onChange={(e) => setWizardForm({ ...wizardForm, facebook: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* BƯỚC 3: THÔNG TIN VỐN GÓP (MATCHING SCREENSHOT 3) */}
+              {wizardStep === 3 && (
+                <div className="space-y-4 animate-fade-in">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Hình thức góp vốn *</label>
+                    <div className="flex items-center gap-6 pt-1 font-medium text-slate-800">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="capitalFormRadio"
+                          checked={wizardForm.capital_form === 'TIEN_MAT'}
+                          onChange={() => setWizardForm({ ...wizardForm, capital_form: 'TIEN_MAT' })}
+                          className="accent-emerald-600"
+                        />
+                        Tiền mặt
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="capitalFormRadio"
+                          checked={wizardForm.capital_form === 'HIEN_VAT'}
+                          onChange={() => setWizardForm({ ...wizardForm, capital_form: 'HIEN_VAT' })}
+                          className="accent-emerald-600"
+                        />
+                        Hiện vật
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Số vốn góp (VND) *</label>
+                      <input
+                        type="number"
+                        step={1000000}
+                        required
+                        value={wizardForm.initial_capital}
+                        onChange={(e) => setWizardForm({ ...wizardForm, initial_capital: Number(e.target.value) })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-emerald-800 text-base"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Bằng chữ</label>
+                      <input
+                        type="text"
+                        placeholder="Nhập bằng chữ"
+                        value={wizardForm.capital_in_words}
+                        onChange={(e) => setWizardForm({ ...wizardForm, capital_in_words: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Ngày góp vốn *</label>
+                      <input
+                        type="date"
+                        required
+                        value={wizardForm.contribution_date}
+                        onChange={(e) => setWizardForm({ ...wizardForm, contribution_date: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Phương thức góp vốn</label>
+                      <select
+                        value={wizardForm.contribution_method}
+                        onChange={(e) => setWizardForm({ ...wizardForm, contribution_method: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
+                      >
+                        <option value="Góp một lần">Góp một lần</option>
+                        <option value="Theo đợt">Theo đợt (Cam kết góp tiếp)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Loại xã viên *</label>
+                    <select
+                      value={wizardForm.member_type}
+                      onChange={(e) => setWizardForm({ ...wizardForm, member_type: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-bold text-slate-900"
+                    >
+                      <option value="CHINH_THUC">Chính thức</option>
+                      <option value="LIEN_KET_GOP_VON">Liên kết góp vốn</option>
+                      <option value="LIEN_KET_KHONG_GOP_VON">Liên kết không góp vốn</option>
+                    </select>
+
+                    <p className="text-[11.5px] text-slate-500 mt-1.5 leading-relaxed">
+                      <em>Chính thức: Có quyền biểu quyết và hưởng lợi nhuận. Liên kết: Hợp tác sản xuất, không có quyền biểu quyết.</em>
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Giấy biên nhận / Chứng từ (nếu có)</label>
+                    <div className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-5 text-center bg-slate-50/50 cursor-pointer transition-colors">
+                      <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1.5" />
+                      <div className="text-slate-600 font-medium text-[12px]">
+                        Kéo thả file vào đây hoặc <span className="text-emerald-700 font-bold underline">Chọn file</span>
+                      </div>
+                      <div className="text-slate-400 text-[10.5px] mt-0.5">Định dạng: PDF, JPG, PNG (Tối đa 10MB)</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* BƯỚC 4: PHÂN CHIA LỢI NHUẬN (MATCHING SCREENSHOT 4) */}
+              {wizardStep === 4 && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Tỷ lệ phân chia lợi nhuận *</label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step={0.1}
+                          required
+                          value={wizardForm.profit_share_rate}
+                          onChange={(e) => setWizardForm({ ...wizardForm, profit_share_rate: Number(e.target.value) })}
+                          className="w-full px-3 py-2 pr-8 border border-slate-200 rounded-lg font-bold text-slate-900"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">Dựa trên tỷ lệ vốn góp và mức độ tham gia hoạt động của HTX</p>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Hình thức nhận lợi nhuận *</label>
+                      <div className="flex items-center gap-6 pt-2 font-medium text-slate-800">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="payoutMethodRadio"
+                            checked={wizardForm.payout_method === 'CASH'}
+                            onChange={() => setWizardForm({ ...wizardForm, payout_method: 'CASH' })}
+                            className="accent-emerald-600"
+                          />
+                          Bằng tiền mặt
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="payoutMethodRadio"
+                            checked={wizardForm.payout_method === 'BANK_TRANSFER'}
+                            onChange={() => setWizardForm({ ...wizardForm, payout_method: 'BANK_TRANSFER' })}
+                            className="accent-emerald-600"
+                          />
+                          Chuyển khoản
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Ghi chú</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Ví dụ: Nhận lợi nhuận hằng năm vào cuối quý IV"
+                      value={wizardForm.notes}
+                      onChange={(e) => setWizardForm({ ...wizardForm, notes: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                    ></textarea>
+                  </div>
+                </div>
+              )}
+
+              {/* BƯỚC 5: XÁC NHẬN (MATCHING SCREENSHOT 5 EXACTLY) */}
+              {wizardStep === 5 && (
+                <div className="space-y-4 animate-fade-in text-[12px]">
+                  <div className="grid grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded-xl border border-slate-200/80">
+                    {/* Column 1: THÔNG TIN CÁ NHÂN & THÔNG TIN LIÊN HỆ */}
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <h4 className="font-extrabold text-[11px] uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-emerald-600" /> THÔNG TIN CÁ NHÂN
+                        </h4>
+                        <div className="space-y-1 pl-1">
+                          <div className="flex justify-between"><span className="text-slate-500">Họ và tên:</span> <strong className="text-slate-900">{wizardForm.full_name || 'Nguyễn Thành Minh'}</strong></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Giới tính:</span> <span>{wizardForm.gender}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Ngày sinh:</span> <span className="text-slate-400">{wizardForm.dob || '—'}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">CCCD/CMND:</span> <span className="text-slate-400 font-mono">{wizardForm.cccd || '—'}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Ngày cấp:</span> <span className="text-slate-400">{wizardForm.cccd_issue_date || '—'}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Nơi cấp:</span> <span className="text-slate-400">{wizardForm.cccd_issue_place || '—'}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Trình độ học vấn:</span> <span>{wizardForm.education_level}</span></div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/60">
+                        <h4 className="font-extrabold text-[11px] uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-600" /> THÔNG TIN LIÊN HỆ
+                        </h4>
+                        <div className="space-y-1 pl-1">
+                          <div className="flex justify-between"><span className="text-slate-500">Địa chỉ:</span> <span className="text-slate-800">{wizardForm.detail_address}, {wizardForm.ward}, {wizardForm.district}, {wizardForm.province}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">SĐT:</span> <strong className="font-mono text-slate-900">{wizardForm.phone || '03732937532'}</strong></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Email:</span> <span className="text-slate-400">{wizardForm.email || '—'}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Zalo:</span> <span className="text-slate-400">{wizardForm.zalo || '—'}</span></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Column 2: THÔNG TIN VỐN GÓP & PHÂN CHIA LỢI NHUẬN */}
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <h4 className="font-extrabold text-[11px] uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                          <Wallet className="w-3.5 h-3.5 text-emerald-600" /> THÔNG TIN VỐN GÓP
+                        </h4>
+                        <div className="space-y-1 pl-1">
+                          <div className="flex justify-between"><span className="text-slate-500">Loại xã viên:</span> <strong className="text-emerald-800">{MEMBER_TYPE_LABELS[wizardForm.member_type]}</strong></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Hình thức:</span> <span>{wizardForm.capital_form === 'TIEN_MAT' ? 'Tiền mặt' : 'Hiện vật'}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Số vốn góp:</span> <strong className="text-emerald-700">{wizardForm.initial_capital.toLocaleString('vi-VN')} ₫</strong></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Ngày góp vốn:</span> <span>{wizardForm.contribution_date}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Phương thức:</span> <span>{wizardForm.contribution_method}</span></div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/60">
+                        <h4 className="font-extrabold text-[11px] uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                          <Calculator className="w-3.5 h-3.5 text-emerald-600" /> PHÂN CHIA LỢI NHUẬN
+                        </h4>
+                        <div className="space-y-1 pl-1">
+                          <div className="flex justify-between"><span className="text-slate-500">Tỷ lệ phân chia:</span> <strong className="text-slate-900">{wizardForm.profit_share_rate}%</strong></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Hình thức nhận:</span> <span>{wizardForm.payout_method === 'CASH' ? 'Bằng tiền mặt' : 'Chuyển khoản'}</span></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status Notification Banner matching Screenshot 5 */}
+                  <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-[12px] text-slate-700 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span>Hồ sơ sẽ được lưu ở trạng thái</span>
+                      <span className="pill-badge pill-amber text-[10.5px]">Chờ duyệt</span>
+                      <span>— cần chủ tịch xác nhận trước khi chuyển sang Đang hoạt động.</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Stepper Footer Buttons */}
+            <div className="p-4 border-t border-slate-200 flex justify-between items-center bg-slate-50">
+              {wizardStep > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setWizardStep((wizardStep - 1) as any)}
+                  className="px-5 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-white text-[12.8px]"
+                >
+                  Quay lại
+                </button>
+              ) : (
+                <div></div>
+              )}
+
+              {wizardStep < 5 ? (
+                <button
+                  type="button"
+                  onClick={() => setWizardStep((wizardStep + 1) as any)}
+                  className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[12.8px] shadow-sm transition-all"
+                >
+                  Tiếp tục
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleWizardSubmit}
+                  className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[12.8px] shadow-sm transition-all"
+                >
+                  Xác nhận và lưu
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REDESIGNED EDIT MEMBER MODAL */}
+      {showEditModal && editingMember && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-modal overflow-hidden my-6">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/80">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-200">
+                  <Pencil className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                    Cập nhật xã viên: {editingMember.full_name}
+                    <span className="font-mono text-[11.5px] px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md">
+                      {editingMember.member_code}
+                    </span>
+                  </h3>
+                  <p className="text-[11.5px] text-slate-500">Chỉnh sửa đầy đủ thông tin định danh, liên hệ, vốn góp &amp; nhận lợi nhuận</p>
+                </div>
+              </div>
+              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Sub-Tabs Bar Inside Edit Modal */}
+            <div className="bg-slate-100/60 border-b border-slate-200 px-4 pt-2 flex gap-2 text-[12.5px] font-bold overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setEditTab('personal')}
+                className={`px-3 py-2 border-b-2 transition-all flex items-center gap-1.5 ${
+                  editTab === 'personal'
+                    ? 'border-blue-600 text-blue-700 font-extrabold bg-white rounded-t-lg'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" /> 1. Cá nhân
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditTab('contact')}
+                className={`px-3 py-2 border-b-2 transition-all flex items-center gap-1.5 ${
+                  editTab === 'contact'
+                    ? 'border-blue-600 text-blue-700 font-extrabold bg-white rounded-t-lg'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5" /> 2. Liên hệ &amp; Địa chỉ
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditTab('capital')}
+                className={`px-3 py-2 border-b-2 transition-all flex items-center gap-1.5 ${
+                  editTab === 'capital'
+                    ? 'border-blue-600 text-blue-700 font-extrabold bg-white rounded-t-lg'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Wallet className="w-3.5 h-3.5" /> 3. Vốn góp &amp; Loại XV
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditTab('profit')}
+                className={`px-3 py-2 border-b-2 transition-all flex items-center gap-1.5 ${
+                  editTab === 'profit'
+                    ? 'border-blue-600 text-blue-700 font-extrabold bg-white rounded-t-lg'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Calculator className="w-3.5 h-3.5" /> 4. Lợi nhuận &amp; Ngân hàng
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4 text-[12.8px]">
+              {/* TAB 1: CÁ NHÂN */}
+              {editTab === 'personal' && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Mã xã viên</label>
+                      <input
+                        type="text"
+                        disabled
+                        value={editingMember.member_code}
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 font-mono font-bold text-[12.5px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Họ và tên *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editingMember.full_name}
+                        onChange={(e) => setEditingMember({ ...editingMember, full_name: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-slate-900 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Giới tính *</label>
+                    <div className="flex items-center gap-6 pt-1 font-medium text-slate-800">
+                      {['Nam', 'Nữ', 'Khác'].map((g) => (
+                        <label key={g} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="editGender"
+                            checked={editingMember.gender === g}
+                            onChange={() => setEditingMember({ ...editingMember, gender: g as any })}
+                            className="accent-blue-600"
+                          />
+                          {g}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Ngày sinh *</label>
+                      <input
+                        type="date"
+                        required
+                        value={editingMember.dob}
+                        onChange={(e) => setEditingMember({ ...editingMember, dob: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Số CCCD/CMND *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editingMember.cccd}
+                        onChange={(e) => setEditingMember({ ...editingMember, cccd: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-900 font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Ngày cấp *</label>
+                      <input
+                        type="date"
+                        required
+                        value={editingMember.cccd_issue_date}
+                        onChange={(e) => setEditingMember({ ...editingMember, cccd_issue_date: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Nơi cấp *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editingMember.cccd_issue_place}
+                        onChange={(e) => setEditingMember({ ...editingMember, cccd_issue_place: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Trình độ học vấn</label>
+                      <select
+                        value={editingMember.education_level}
+                        onChange={(e) => setEditingMember({ ...editingMember, education_level: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
+                      >
+                        <option value="Chưa xác định">Chưa xác định</option>
+                        <option value="THPT">THPT (12/12)</option>
+                        <option value="Trung cấp">Trung cấp</option>
+                        <option value="Cao đẳng">Cao đẳng</option>
+                        <option value="Đại học">Đại học</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Nghề nghiệp</label>
+                      <input
+                        type="text"
+                        value={editingMember.occupation}
+                        onChange={(e) => setEditingMember({ ...editingMember, occupation: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: LIÊN HỆ & ĐỊA CHỈ */}
+              {editTab === 'contact' && (
+                <div className="space-y-4 animate-fade-in">
+                  <div>
+                    <h4 className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider mb-2">
+                      ĐỊA CHỈ THƯỜNG TRÚ
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Tỉnh/Thành phố *</label>
+                        <select
+                          value={editingMember.province}
+                          onChange={(e) => setEditingMember({ ...editingMember, province: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
+                        >
+                          <option value="Lâm Đồng">Lâm Đồng</option>
+                          <option value="Đắc Lắk">Đắc Lắk</option>
+                          <option value="Gia Lai">Gia Lai</option>
+                          <option value="Đồng Nai">Đồng Nai</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Quận/Huyện *</label>
+                        <select
+                          value={editingMember.district}
+                          onChange={(e) => setEditingMember({ ...editingMember, district: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
+                        >
+                          <option value="Huyện Lâm Hà">Huyện Lâm Hà</option>
+                          <option value="Huyện Đức Trọng">Huyện Đức Trọng</option>
+                          <option value="Huyện Di Linh">Huyện Di Linh</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Xã/Phường *</label>
+                        <select
+                          value={editingMember.ward}
+                          onChange={(e) => setEditingMember({ ...editingMember, ward: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
+                        >
+                          <option value="Xã Mê Linh">Xã Mê Linh</option>
+                          <option value="Xã Tân Hà">Xã Tân Hà</option>
+                          <option value="Xã Đinh Văn">Xã Đinh Văn</option>
+                          <option value="Xã Liên Hà">Xã Liên Hà</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Địa chỉ chi tiết *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Số nhà, thôn/xóm"
+                          value={editingMember.detail_address}
+                          onChange={(e) => setEditingMember({ ...editingMember, detail_address: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100">
+                    <h4 className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider mb-2">
+                      THÔNG TIN LIÊN HỆ
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Số điện thoại *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingMember.phone}
+                          onChange={(e) => setEditingMember({ ...editingMember, phone: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-slate-900"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          value={editingMember.email}
+                          onChange={(e) => setEditingMember({ ...editingMember, email: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Zalo (nếu có)</label>
+                        <input
+                          type="text"
+                          value={editingMember.zalo}
+                          onChange={(e) => setEditingMember({ ...editingMember, zalo: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Facebook (nếu có)</label>
+                        <input
+                          type="text"
+                          value={editingMember.facebook}
+                          onChange={(e) => setEditingMember({ ...editingMember, facebook: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: VỐN GÓP & LOẠI XÃ VIÊN */}
+              {editTab === 'capital' && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Loại xã viên *</label>
+                      <select
+                        value={editingMember.member_type}
+                        onChange={(e) => setEditingMember({ ...editingMember, member_type: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-bold text-emerald-800"
+                      >
+                        <option value="CHINH_THUC">1. Chính thức (Biểu quyết + Vốn góp)</option>
+                        <option value="LIEN_KET_GOP_VON">2. Liên kết góp vốn (Không biểu quyết)</option>
+                        <option value="LIEN_KET_KHONG_GOP_VON">3. Liên kết không góp vốn (Tiêu thụ)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Trạng thái hồ sơ *</label>
+                      <select
+                        value={editingMember.status}
+                        onChange={(e) => setEditingMember({ ...editingMember, status: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-bold text-slate-900"
+                      >
+                        <option value="ACTIVE">Đang hoạt động</option>
+                        <option value="PENDING">Chờ duyệt</option>
+                        <option value="INACTIVE">Ngừng hoạt động</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Hình thức góp vốn *</label>
+                    <div className="flex items-center gap-6 pt-1 font-medium text-slate-800">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="editCapitalFormRadio"
+                          checked={editingMember.capital_form === 'TIEN_MAT'}
+                          onChange={() => setEditingMember({ ...editingMember, capital_form: 'TIEN_MAT' })}
+                          className="accent-blue-600"
+                        />
+                        Tiền mặt
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="editCapitalFormRadio"
+                          checked={editingMember.capital_form === 'HIEN_VAT'}
+                          onChange={() => setEditingMember({ ...editingMember, capital_form: 'HIEN_VAT' })}
+                          className="accent-blue-600"
+                        />
+                        Hiện vật
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Vốn cam kết (VND) *</label>
+                      <input
+                        type="number"
+                        step={1000000}
+                        required
+                        value={editingMember.committed_capital || editingMember.total_capital_contributed}
+                        onChange={(e) => setEditingMember({ ...editingMember, committed_capital: Number(e.target.value) })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-slate-900 text-base"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Đã thực góp (VND) *</label>
+                      <input
+                        type="number"
+                        step={1000000}
+                        required
+                        value={editingMember.contributed_capital || editingMember.total_capital_contributed}
+                        onChange={(e) => setEditingMember({ ...editingMember, contributed_capital: Number(e.target.value), total_capital_contributed: Number(e.target.value) })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-emerald-800 text-base"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Bằng chữ</label>
+                      <input
+                        type="text"
+                        value={editingMember.capital_in_words || ''}
+                        onChange={(e) => setEditingMember({ ...editingMember, capital_in_words: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Ngày góp vốn *</label>
+                      <input
+                        type="date"
+                        required
+                        value={editingMember.contribution_date || editingMember.join_date}
+                        onChange={(e) => setEditingMember({ ...editingMember, contribution_date: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: LỢI NHUẬN & NGÂN HÀNG */}
+              {editTab === 'profit' && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Tỷ lệ phân chia lợi nhuận *</label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step={0.1}
+                          required
+                          value={editingMember.profit_share_rate}
+                          onChange={(e) => setEditingMember({ ...editingMember, profit_share_rate: Number(e.target.value) })}
+                          className="w-full px-3 py-2 pr-8 border border-slate-200 rounded-lg font-bold text-slate-900"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Hình thức nhận lợi nhuận *</label>
+                      <div className="flex items-center gap-6 pt-2 font-medium text-slate-800">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="editPayoutMethodRadio"
+                            checked={editingMember.payout_method === 'CASH'}
+                            onChange={() => setEditingMember({ ...editingMember, payout_method: 'CASH' })}
+                            className="accent-blue-600"
+                          />
+                          Bằng tiền mặt
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="editPayoutMethodRadio"
+                            checked={editingMember.payout_method === 'BANK_TRANSFER'}
+                            onChange={() => setEditingMember({ ...editingMember, payout_method: 'BANK_TRANSFER' })}
+                            className="accent-blue-600"
+                          />
+                          Chuyển khoản
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 space-y-3">
+                    <h4 className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider">
+                      THÔNG TIN TÀI KHOẢN NGÂN HÀNG
+                    </h4>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Tên Ngân hàng</label>
+                        <input
+                          type="text"
+                          placeholder="Ví dụ: Agribank, Vietcombank..."
+                          value={editingMember.bank_name || ''}
+                          onChange={(e) => setEditingMember({ ...editingMember, bank_name: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg font-medium"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Số tài khoản</label>
+                        <input
+                          type="text"
+                          placeholder="Nhập STK ngân hàng"
+                          value={editingMember.bank_account || ''}
+                          onChange={(e) => setEditingMember({ ...editingMember, bank_account: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Tên chủ tài khoản</label>
+                      <input
+                        type="text"
+                        placeholder="Tên in trên thẻ ngân hàng"
+                        value={editingMember.account_holder || ''}
+                        onChange={(e) => setEditingMember({ ...editingMember, account_holder: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Ghi chú</label>
+                      <textarea
+                        rows={2}
+                        placeholder="Ghi chú quá trình tham gia hoặc nhận lợi nhuận..."
+                        value={editingMember.notes || ''}
+                        onChange={(e) => setEditingMember({ ...editingMember, notes: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Footer */}
+              <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-5 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-50 text-[12.8px]"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-[12.8px] shadow-sm inline-flex items-center gap-1.5 transition-all"
+                >
+                  <Save className="w-4 h-4" /> Lưu thay đổi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {showDeleteModal && deletingMember && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-modal overflow-hidden p-6 space-y-4 text-center">
+            <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-slate-900">Xác nhận xóa xã viên?</h3>
+              <p className="text-[13px] text-slate-600 mt-1">
+                Bạn có chắc chắn muốn xóa xã viên <strong className="text-slate-900">{deletingMember.full_name}</strong> (<span className="font-mono">{deletingMember.member_code}</span>)?
+              </p>
+            </div>
+            <div className="pt-2 flex justify-center gap-3">
+              <button onClick={() => setShowDeleteModal(false)} className="px-5 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-50 text-[12.8px]">
+                Hủy bỏ
+              </button>
+              <button onClick={handleConfirmDelete} className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[12.8px] shadow-sm inline-flex items-center gap-1.5">
+                <Trash2 className="w-4 h-4" /> Đồng ý xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* APPROVE MEMBER CONFIRMATION MODAL */}
+      {showApproveModal && approvingMember && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-modal overflow-hidden p-6 space-y-4 text-center">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200">
+              <UserCheck className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-slate-900">Phê duyệt xã viên mới</h3>
+              <p className="text-[13px] text-slate-600 mt-1">
+                Xác nhận phê duyệt hồ sơ cho xã viên <strong className="text-slate-900">{approvingMember.full_name}</strong> (<span className="font-mono">{approvingMember.member_code}</span>)?
+              </p>
+            </div>
+
+            <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-[12px] text-slate-700 text-left space-y-1">
+              <div className="flex justify-between"><span className="text-slate-500">Loại xã viên:</span> <strong>{MEMBER_TYPE_LABELS[approvingMember.member_type]}</strong></div>
+              <div className="flex justify-between"><span className="text-slate-500">Vốn góp:</span> <strong className="text-emerald-800">{(approvingMember.committed_capital || approvingMember.total_capital_contributed)?.toLocaleString('vi-VN')} ₫</strong></div>
+              <div className="flex justify-between"><span className="text-slate-500">SĐT liên hệ:</span> <span className="font-mono">{approvingMember.phone}</span></div>
+            </div>
+
+            <p className="text-[11.5px] text-slate-400 italic">
+              Sau khi phê duyệt, xã viên sẽ chính thức chuyển sang trạng thái <strong>Đang hoạt động</strong> và có quyền lợi trong HTX.
+            </p>
+
+            <div className="pt-2 flex justify-center gap-3">
+              <button
+                onClick={() => setShowApproveModal(false)}
+                className="px-5 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-50 text-[12.8px]"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleConfirmApprove}
+                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[12.8px] shadow-sm inline-flex items-center gap-1.5 transition-all"
+              >
+                <UserCheck className="w-4 h-4" /> Đồng ý phê duyệt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PENDING CAPITAL TRANSACTIONS APPROVAL MODAL */}
+      {showPendingCapitalModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-3xl w-full shadow-modal overflow-hidden my-6">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold border border-amber-200">
+                  <ClockIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">
+                    Giao dịch Góp vốn chờ Phê duyệt ({transactions.filter((t) => t.status === 'PENDING').length})
+                  </h3>
+                  <p className="text-[11.5px] text-slate-500">
+                    Danh sách chứng từ nộp vốn mới của xã viên chờ Kế toán/HĐQT đối soát và phê duyệt nhập quỹ
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPendingCapitalModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 max-h-[calc(100vh-220px)] overflow-y-auto">
+              {transactions.filter((t) => t.status === 'PENDING').length === 0 ? (
+                <div className="text-center py-10 space-y-2">
+                  <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
+                  <p className="font-extrabold text-slate-800 text-sm">Tất cả giao dịch góp vốn đã được phê duyệt thành công!</p>
+                  <p className="text-[12px] text-slate-400">Không còn chứng từ góp vốn nào ở trạng thái chờ duyệt.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-left border-collapse text-[12.5px]">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 font-extrabold">
+                        <th className="py-2.5 px-3">Mã CT</th>
+                        <th className="py-2.5 px-3">Xã viên</th>
+                        <th className="py-2.5 px-3 text-right">Số tiền góp</th>
+                        <th className="py-2.5 px-3">Hình thức</th>
+                        <th className="py-2.5 px-3">Ngày nộp</th>
+                        <th className="py-2.5 px-3">Chứng từ</th>
+                        <th className="py-2.5 px-3 text-center">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {transactions
+                        .filter((t) => t.status === 'PENDING')
+                        .map((tx) => (
+                          <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3 px-3 font-mono font-bold text-slate-700">{tx.transaction_code}</td>
+                            <td className="py-3 px-3">
+                              <strong className="text-slate-900 block">{tx.member_name}</strong>
+                              <span className="text-[11px] font-mono text-slate-400">{tx.member_code}</span>
+                            </td>
+                            <td className="py-3 px-3 text-right font-black text-emerald-700">
+                              {tx.amount.toLocaleString('vi-VN')} ₫
+                            </td>
+                            <td className="py-3 px-3">
+                              {tx.payment_method === 'CASH' ? (
+                                <span className="pill-badge pill-green text-[10px]">Tiền mặt</span>
+                              ) : (
+                                <span className="pill-badge pill-blue text-[10px]">Chuyển khoản</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 text-slate-600 font-mono text-[11.8px]">{tx.contribution_date}</td>
+                            <td className="py-3 px-3">
+                              {tx.receipt_file_name ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-700 font-mono text-[11px] rounded border border-slate-200">
+                                  <FileText className="w-3 h-3 text-emerald-600" /> {tx.receipt_file_name}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 text-[11px]">Không có file</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <div className="inline-flex items-center justify-center gap-1.5">
+                                <button
+                                  onClick={() => handleApproveCapitalTx(tx.id)}
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-md text-[11.5px] inline-flex items-center gap-1 shadow-xs transition-all"
+                                  title="Phê duyệt giao dịch nộp vốn này"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> Duyệt
+                                </button>
+                                <button
+                                  onClick={() => handleRejectCapitalTx(tx.id)}
+                                  className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold rounded-md text-[11.5px] border border-rose-200 transition-colors"
+                                  title="Hủy/Từ chối giao dịch"
+                                >
+                                  Từ chối
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+              <button
+                onClick={() => setShowPendingCapitalModal(false)}
+                className="px-5 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-white text-[12.8px]"
+              >
+                Đóng cửa sổ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ClockIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
