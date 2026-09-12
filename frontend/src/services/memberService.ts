@@ -503,16 +503,21 @@ export const mockSurplusPlan: SurplusDistributionPlan = {
   id: 'SDP-2024',
   fiscal_year: 2024,
   plan_name: 'Phương án Phân chia Lợi nhuận năm 2024 theo Nghị quyết HĐQT số 01/NQ-HĐQT',
+  internal_service_surplus: 850000000, // 850.000.000 đ (TK 512 - Miễn thuế TNDN)
+  external_service_surplus: 400000000, // 400.000.000 đ (TK 511 - Nộp thuế 20%)
   total_net_profit: 1250000000, // 1.250.000.000 đ
+  unallocated_common_fund_rate: 5, // Trích Quỹ chung không chia 5% từ thu nhập bên ngoài (miễn thuế)
+  unallocated_common_fund_amount: 20000000, // 20.000.000 đ
   reserve_fund_rate: 10,
   reserve_fund_amount: 125000000, // 125.000.000 đ
+  patronage_rebate_rate: 55, // Tỷ lệ chia theo mức độ sử dụng dịch vụ nội bộ (min 51%)
   member_share_rate: 85,
-  member_share_amount: 1062500000, // 1.062.500.000 đ
+  member_share_amount: 1042500000, // 1.042.500.000 đ
   welfare_fund_rate: 5,
   welfare_fund_amount: 62500000, // 62.500.000 đ
   planned_payout_date: '15/03/2025',
   resolution_number: '01/NQ-HĐQT',
-  notes: 'Phân chia lợi nhuận năm 2024 theo Nghị quyết HĐQT số 01/NQ-HĐQT',
+  notes: 'Phân chia lợi nhuận năm 2024 theo Luật HTX 2023 & Thông tư 71/2024/TT-BTC',
   status: 'APPROVED',
 };
 

@@ -20,6 +20,9 @@ class MemberModel extends Model
         'user_id',
         'identity_information',
         'member_type',
+        'is_foreign_investor',
+        'committed_capital',
+        'commitment_deadline',
         'status',
         'admission_date',
         'termination_date',
@@ -27,9 +30,17 @@ class MemberModel extends Model
 
     protected $casts = [
         'identity_information' => 'array',
+        'is_foreign_investor' => 'boolean',
+        'committed_capital' => 'decimal:2',
+        'commitment_deadline' => 'date:Y-m-d',
         'admission_date' => 'date:Y-m-d',
         'termination_date' => 'date:Y-m-d',
     ];
+
+    public function capitalContributions()
+    {
+        return $this->hasMany(CapitalContributionModel::class, 'member_id');
+    }
 
     public function cooperative(): BelongsTo
     {

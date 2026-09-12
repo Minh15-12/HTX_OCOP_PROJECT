@@ -65,7 +65,13 @@ class CapitalContributionController extends BaseController
             amount: (float) $request->input('amount'),
             transactionDate: $request->input('transaction_date'),
             valueDescription: $request->input('value_description'),
-            evidenceReference: $request->input('evidence_reference')
+            evidenceReference: $request->input('evidence_reference'),
+            landCertificateNo: $request->input('land_certificate_no'),
+            plotNumber: $request->input('plot_number'),
+            mapSheetNumber: $request->input('map_sheet_number'),
+            landAreaSqm: $request->input('land_area_sqm') ? (float) $request->input('land_area_sqm') : null,
+            landUseType: $request->input('land_use_type'),
+            appraisedUnitPrice: $request->input('appraised_unit_price') ? (float) $request->input('appraised_unit_price') : null
         );
 
         $contribution = $this->contributionService->createContribution($dto);

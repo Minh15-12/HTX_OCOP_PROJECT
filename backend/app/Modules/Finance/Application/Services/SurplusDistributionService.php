@@ -177,6 +177,9 @@ class SurplusDistributionService
                     'capital_share_amount' => $capShare,
                     'service_share_amount' => $svcShare,
                     'total_allocated_amount' => $totalAllocated,
+                    'debt_deduction' => 0.00,
+                    'net_payout_amount' => $totalAllocated,
+                    'reinvest_as_capital' => false,
                 ]);
             }
 
