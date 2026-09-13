@@ -209,8 +209,147 @@ export const MembersPage: React.FC = () => {
   const paidMemberCount = surplusItems.filter((i) => i.payout_status === 'DA_NHAN').length;
   const unpaidMemberCount = surplusItems.filter((i) => i.payout_status === 'CHUA_NHAN').length;
 
+  // Wizard Validation State
+  const [wizardStepError, setWizardStepError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const openAddMemberModal = () => {
+    setWizardStep(1);
+    setWizardStepError(null);
+    setFieldErrors({});
+    setWizardForm({
+      full_name: '',
+      gender: 'Nam',
+      dob: '',
+      cccd: '',
+      cccd_issue_date: '',
+      cccd_issue_place: '',
+      education_level: 'Chưa xác định',
+      occupation: '',
+      province: 'Lâm Đồng',
+      district: 'Huyện Lâm Hà',
+      ward: 'Xã Mê Linh',
+      detail_address: '',
+      phone: '',
+      email: '',
+      zalo: '',
+      facebook: '',
+      capital_form: 'TIEN_MAT',
+      initial_capital: 10000000,
+      capital_in_words: 'Mười triệu đồng',
+      contribution_date: new Date().toISOString().split('T')[0],
+      contribution_method: 'Góp một lần',
+      member_type: 'CHINH_THUC',
+      profit_share_rate: 2.85,
+      payout_method: 'CASH',
+      notes: '',
+    });
+    setShowWizardModal(true);
+  };
+
+  const validateWizardStep = (step: number): boolean => {
+    const errors: Record<string, string> = {};
+    let mainMsg: string | null = null;
+
+    if (step === 1) {
+      if (!wizardForm.full_name.trim()) {
+        errors.full_name = 'Vui lòng nhập Họ và tên xã viên';
+      }
+      if (!wizardForm.dob) {
+        errors.dob = 'Vui lòng chọn Ngày sinh';
+      }
+      if (!wizardForm.cccd.trim()) {
+        errors.cccd = 'Vui lòng nhập Số CCCD/CMND';
+      } else if (!/^[0-9]{9,12}$/.test(wizardForm.cccd.trim())) {
+        errors.cccd = 'Số CCCD/CMND phải đúng định dạng số (12 chữ số cho CCCD hoặc 9-12 chữ số)';
+      }
+      if (!wizardForm.cccd_issue_date) {
+        errors.cccd_issue_date = 'Vui lòng chọn Ngày cấp';
+      }
+      if (!wizardForm.cccd_issue_place.trim()) {
+        errors.cccd_issue_place = 'Vui lòng nhập Nơi cấp CCCD/CMND';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        if (errors.cccd_issue_place && Object.keys(errors).length === 1) {
+          mainMsg = 'Vui lòng nhập Nơi cấp CCCD/CMND trước khi chuyển sang bước tiếp theo!';
+        } else if (errors.cccd) {
+          mainMsg = errors.cccd;
+        } else if (errors.full_name) {
+          mainMsg = 'Vui lòng nhập Họ và tên xã viên!';
+        } else {
+          mainMsg = 'Vui lòng điền đầy đủ các thông tin cá nhân bắt buộc (có dấu *)!';
+        }
+      }
+    } else if (step === 2) {
+      if (!wizardForm.detail_address.trim()) {
+        errors.detail_address = 'Vui lòng nhập Địa chỉ chi tiết (số nhà, thôn/xóm)';
+      }
+      if (!wizardForm.phone.trim()) {
+        errors.phone = 'Vui lòng nhập Số điện thoại liên hệ';
+      } else if (!/^0[0-9]{9}$/.test(wizardForm.phone.trim()) && !/^[0-9]{10}$/.test(wizardForm.phone.trim())) {
+        errors.phone = 'Số điện thoại phải bao gồm đúng 10 chữ số (Ví dụ: 0987654321)';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        if (errors.phone) {
+          mainMsg = errors.phone;
+        } else {
+          mainMsg = 'Vui lòng điền đầy đủ thông tin địa chỉ chi tiết và Số điện thoại 10 chữ số!';
+        }
+      }
+    } else if (step === 3) {
+      if (!wizardForm.initial_capital || wizardForm.initial_capital <= 0) {
+        errors.initial_capital = 'Số vốn góp phải lớn hơn 0 VNĐ';
+      }
+      if (!wizardForm.contribution_date) {
+        errors.contribution_date = 'Vui lòng chọn Ngày góp vốn';
+      }
+      if (Object.keys(errors).length > 0) {
+        mainMsg = errors.initial_capital || 'Vui lòng điền đầy đủ thông tin vốn góp!';
+      }
+    } else if (step === 4) {
+      if (wizardForm.profit_share_rate === undefined || wizardForm.profit_share_rate < 0) {
+        errors.profit_share_rate = 'Tỷ lệ phân chia phải lớn hơn hoặc bằng 0%';
+      }
+      if (Object.keys(errors).length > 0) {
+        mainMsg = 'Vui lòng nhập tỷ lệ phân chia lợi nhuận hợp lệ!';
+      }
+    }
+
+    setFieldErrors(errors);
+    setWizardStepError(mainMsg);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleNextStep = () => {
+    if (validateWizardStep(wizardStep)) {
+      setWizardStepError(null);
+      setFieldErrors({});
+      setWizardStep((wizardStep + 1) as any);
+    }
+  };
+
+  const handleStepHeaderClick = (targetStep: number) => {
+    if (targetStep <= wizardStep) {
+      setWizardStepError(null);
+      setFieldErrors({});
+      setWizardStep(targetStep as any);
+    } else {
+      if (validateWizardStep(wizardStep)) {
+        setWizardStepError(null);
+        setFieldErrors({});
+        setWizardStep(targetStep as any);
+      }
+    }
+  };
+
   // Handlers
   const handleWizardSubmit = () => {
+    if (!validateWizardStep(1) || !validateWizardStep(2) || !validateWizardStep(3) || !validateWizardStep(4)) {
+      triggerToast('Vui lòng hoàn tất các bước thông tin bị thiếu trước khi lưu!');
+      return;
+    }
     const nextNum = members.length + 1;
     const newCode = `TV00${nextNum}`;
     const sharesCount = Math.floor(wizardForm.initial_capital / 100000);
@@ -506,7 +645,7 @@ export const MembersPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowWizardModal(true)}
+            onClick={openAddMemberModal}
             className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[12.8px] rounded-lg shadow-sm inline-flex items-center gap-1.5 transition-all"
           >
             <Plus className="w-4 h-4" /> Thêm xã viên mới
@@ -2126,19 +2265,22 @@ export const MembersPage: React.FC = () => {
               <div className="flex items-center justify-between text-center relative">
                 {[1, 2, 3, 4, 5].map((s) => (
                   <React.Fragment key={s}>
-                    <div className="flex flex-col items-center gap-1 z-10">
+                    <div 
+                      onClick={() => handleStepHeaderClick(s)} 
+                      className="flex flex-col items-center gap-1 z-10 cursor-pointer group"
+                    >
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                           wizardStep === s
                             ? 'bg-emerald-600 text-white ring-4 ring-emerald-100'
                             : wizardStep > s
                             ? 'bg-emerald-600 text-white'
-                            : 'bg-slate-200 text-slate-500'
+                            : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'
                         }`}
                       >
                         {wizardStep > s ? <CheckCircle2 className="w-5 h-5" /> : s}
                       </div>
-                      <span className="text-[11px] font-bold text-slate-700 max-w-[70px] leading-tight">
+                      <span className="text-[11px] font-bold text-slate-700 max-w-[70px] leading-tight group-hover:text-emerald-700">
                         {s === 1 && 'Thông tin cá nhân'}
                         {s === 2 && 'Thông tin liên hệ'}
                         {s === 3 && 'Thông tin vốn góp'}
@@ -2156,6 +2298,13 @@ export const MembersPage: React.FC = () => {
 
             {/* Step Body */}
             <div className="p-6 space-y-4 text-[12.8px]">
+              {/* WARNING ALERT BANNER FOR STEP ERRORS */}
+              {wizardStepError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-[12.5px] font-bold flex items-center gap-2.5 shadow-xs animate-fade-in">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                  <span>{wizardStepError}</span>
+                </div>
+              )}
               {/* BƯỚC 1: THÔNG TIN CÁ NHÂN (MATCHING SCREENSHOT 1) */}
               {wizardStep === 1 && (
                 <div className="space-y-3 animate-fade-in">
@@ -2176,9 +2325,15 @@ export const MembersPage: React.FC = () => {
                         required
                         placeholder="Nhập họ và tên"
                         value={wizardForm.full_name}
-                        onChange={(e) => setWizardForm({ ...wizardForm, full_name: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                        onChange={(e) => {
+                          setWizardForm({ ...wizardForm, full_name: e.target.value });
+                          if (fieldErrors.full_name) setFieldErrors({ ...fieldErrors, full_name: '' });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg text-slate-800 focus:ring-1 focus:outline-none ${
+                          fieldErrors.full_name ? 'border-red-500 bg-red-50/20 focus:ring-red-500' : 'border-slate-200 focus:ring-emerald-500'
+                        }`}
                       />
+                      {fieldErrors.full_name && <span className="text-red-500 text-[11px] font-bold mt-1 block">{fieldErrors.full_name}</span>}
                     </div>
                   </div>
 
@@ -2207,20 +2362,32 @@ export const MembersPage: React.FC = () => {
                         type="date"
                         required
                         value={wizardForm.dob}
-                        onChange={(e) => setWizardForm({ ...wizardForm, dob: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                        onChange={(e) => {
+                          setWizardForm({ ...wizardForm, dob: e.target.value });
+                          if (fieldErrors.dob) setFieldErrors({ ...fieldErrors, dob: '' });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg text-slate-700 ${
+                          fieldErrors.dob ? 'border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
                       />
+                      {fieldErrors.dob && <span className="text-red-500 text-[11px] font-bold mt-1 block">{fieldErrors.dob}</span>}
                     </div>
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Số CCCD/CMND *</label>
                       <input
                         type="text"
                         required
-                        placeholder="Nhập số CCCD/CMND"
+                        placeholder="12 chữ số cho CCCD"
                         value={wizardForm.cccd}
-                        onChange={(e) => setWizardForm({ ...wizardForm, cccd: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 font-mono font-bold"
+                        onChange={(e) => {
+                          setWizardForm({ ...wizardForm, cccd: e.target.value });
+                          if (fieldErrors.cccd) setFieldErrors({ ...fieldErrors, cccd: '' });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg font-mono font-bold ${
+                          fieldErrors.cccd ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-slate-200 text-slate-800'
+                        }`}
                       />
+                      {fieldErrors.cccd && <span className="text-red-500 text-[11px] font-bold mt-1 block">{fieldErrors.cccd}</span>}
                     </div>
                   </div>
 
@@ -2231,20 +2398,32 @@ export const MembersPage: React.FC = () => {
                         type="date"
                         required
                         value={wizardForm.cccd_issue_date}
-                        onChange={(e) => setWizardForm({ ...wizardForm, cccd_issue_date: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                        onChange={(e) => {
+                          setWizardForm({ ...wizardForm, cccd_issue_date: e.target.value });
+                          if (fieldErrors.cccd_issue_date) setFieldErrors({ ...fieldErrors, cccd_issue_date: '' });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg text-slate-700 ${
+                          fieldErrors.cccd_issue_date ? 'border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
                       />
+                      {fieldErrors.cccd_issue_date && <span className="text-red-500 text-[11px] font-bold mt-1 block">{fieldErrors.cccd_issue_date}</span>}
                     </div>
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Nơi cấp *</label>
                       <input
                         type="text"
                         required
-                        placeholder="Nhập nơi cấp"
+                        placeholder="Nhập nơi cấp (Ví dụ: Cục Cảnh sát QLHC)"
                         value={wizardForm.cccd_issue_place}
-                        onChange={(e) => setWizardForm({ ...wizardForm, cccd_issue_place: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        onChange={(e) => {
+                          setWizardForm({ ...wizardForm, cccd_issue_place: e.target.value });
+                          if (fieldErrors.cccd_issue_place) setFieldErrors({ ...fieldErrors, cccd_issue_place: '' });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg ${
+                          fieldErrors.cccd_issue_place ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-slate-200'
+                        }`}
                       />
+                      {fieldErrors.cccd_issue_place && <span className="text-red-500 text-[11px] font-bold mt-1 block">{fieldErrors.cccd_issue_place}</span>}
                     </div>
                   </div>
 
@@ -2336,9 +2515,15 @@ export const MembersPage: React.FC = () => {
                           required
                           placeholder="Số nhà, thôn/xóm"
                           value={wizardForm.detail_address}
-                          onChange={(e) => setWizardForm({ ...wizardForm, detail_address: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                          onChange={(e) => {
+                            setWizardForm({ ...wizardForm, detail_address: e.target.value });
+                            if (fieldErrors.detail_address) setFieldErrors({ ...fieldErrors, detail_address: '' });
+                          }}
+                          className={`w-full px-3 py-2 border rounded-lg ${
+                            fieldErrors.detail_address ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-slate-200'
+                          }`}
                         />
+                        {fieldErrors.detail_address && <span className="text-red-500 text-[11px] font-bold mt-1 block">{fieldErrors.detail_address}</span>}
                       </div>
                     </div>
                   </div>
@@ -2349,15 +2534,21 @@ export const MembersPage: React.FC = () => {
                     </h4>
                     <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
-                        <label className="block font-bold text-slate-700 mb-1">Số điện thoại *</label>
+                        <label className="block font-bold text-slate-700 mb-1">Số điện thoại * (10 chữ số)</label>
                         <input
                           type="text"
                           required
-                          placeholder="Nhập số điện thoại"
+                          placeholder="Ví dụ: 0987654321"
                           value={wizardForm.phone}
-                          onChange={(e) => setWizardForm({ ...wizardForm, phone: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-slate-900"
+                          onChange={(e) => {
+                            setWizardForm({ ...wizardForm, phone: e.target.value });
+                            if (fieldErrors.phone) setFieldErrors({ ...fieldErrors, phone: '' });
+                          }}
+                          className={`w-full px-3 py-2 border rounded-lg font-bold ${
+                            fieldErrors.phone ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-slate-200 text-slate-900'
+                          }`}
                         />
+                        {fieldErrors.phone && <span className="text-red-500 text-[11px] font-bold mt-1 block">{fieldErrors.phone}</span>}
                       </div>
 
                       <div>
@@ -2658,7 +2849,7 @@ export const MembersPage: React.FC = () => {
               {wizardStep < 5 ? (
                 <button
                   type="button"
-                  onClick={() => setWizardStep((wizardStep + 1) as any)}
+                  onClick={handleNextStep}
                   className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[12.8px] shadow-sm transition-all"
                 >
                   Tiếp tục
