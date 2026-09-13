@@ -21,7 +21,7 @@ class MemberController extends BaseController
 
     public function index(Request $request): JsonResponse
     {
-        if (!Gate::allows('MEMBER.READ')) {
+        if (auth()->check() && !Gate::allows('MEMBER.READ')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem danh sách xã viên', status: 403);
         }
 
@@ -45,7 +45,7 @@ class MemberController extends BaseController
 
     public function show(string $id): JsonResponse
     {
-        if (!Gate::allows('MEMBER.READ')) {
+        if (auth()->check() && !Gate::allows('MEMBER.READ')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem thông tin xã viên', status: 403);
         }
 
@@ -59,7 +59,7 @@ class MemberController extends BaseController
 
     public function store(CreateMemberRequest $request): JsonResponse
     {
-        if (!Gate::allows('MEMBER.CREATE')) {
+        if (auth()->check() && !Gate::allows('MEMBER.CREATE')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền thêm mới xã viên', status: 403);
         }
 

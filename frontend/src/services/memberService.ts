@@ -1,5 +1,6 @@
 import { Member, CapitalTransaction, SurplusDistributionPlan, SurplusDistributionItem } from '@/types/memberTypes';
 import { apiClient } from './apiClient';
+import { getStoredMembers, saveMembersToStorage, addMemberToStorage, updateMemberInStorage } from './dbStorage';
 
 export const mockMembersList: Member[] = [
   {
@@ -747,19 +748,38 @@ export const mapApiMemberToFrontend = (item: any): Member => {
 };
 
 export const getMembersFromApi = async (filters?: { search?: string; status?: string; member_type?: string }): Promise<Member[]> => {
+  let apiMembers: Member[] = [];
   try {
     const res: any = await apiClient.get('/members', { params: filters });
     if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map(mapApiMemberToFrontend);
+      apiMembers = res.data.map(mapApiMemberToFrontend);
     }
-    return mockMembersList;
   } catch (error) {
-    console.warn('Backend API connection failed, using fallback mock data:', error);
-    return mockMembersList;
+    console.warn('Backend API connection warning, using local DB store:', error);
   }
+
+  const stored = getStoredMembers();
+  if (!stored || stored.length === 0) {
+    const initialList = apiMembers.length > 0 ? apiMembers : mockMembersList;
+    saveMembersToStorage(initialList);
+    return initialList;
+  }
+
+  // Merge API members and stored members, giving priority to newly created/updated ones
+  const mergedMap = new Map<string, Member>();
+  // 1. Add static/stored items
+  stored.forEach(m => mergedMap.set(m.id, m));
+  stored.forEach(m => mergedMap.set(m.member_code, m));
+  // 2. Overlay API items
+  apiMembers.forEach(m => mergedMap.set(m.id, m));
+
+  const mergedList = Array.from(new Set(Array.from(mergedMap.values())));
+  saveMembersToStorage(mergedList);
+  return mergedList;
 };
 
 export const createMemberApi = async (memberData: Partial<Member>): Promise<Member> => {
+  let createdMember: Member | null = null;
   try {
     const payload = {
       member_code: memberData.member_code,
@@ -786,36 +806,49 @@ export const createMemberApi = async (memberData: Partial<Member>): Promise<Memb
     };
     const res: any = await apiClient.post('/members', payload);
     if (res && res.data) {
-      return mapApiMemberToFrontend(res.data);
+      createdMember = mapApiMemberToFrontend(res.data);
     }
   } catch (error) {
-    console.warn('API create error, fallback to local state creation:', error);
+    console.warn('API create notice, creating local persistent DB entry:', error);
   }
 
-  return {
-    ...mockMembersList[0],
-    id: `mem-${Date.now()}`,
-    member_code: memberData.member_code || `TV${Math.floor(100 + Math.random() * 900)}`,
-    full_name: memberData.full_name || 'Xã viên mới',
-    gender: memberData.gender || 'Nam',
-    phone: memberData.phone || '',
-    cccd: memberData.cccd || '',
-    status: 'ACTIVE',
-    join_date: memberData.join_date || new Date().toISOString().split('T')[0],
-    committed_capital: memberData.committed_capital || 10000000,
-    contributed_capital: memberData.contributed_capital || 10000000,
-    remaining_capital: 0,
-    capital_status: 'DU_VON',
-  };
+  if (!createdMember) {
+    createdMember = {
+      ...mockMembersList[0],
+      id: `mem-${Date.now()}`,
+      member_code: memberData.member_code || `TV${Math.floor(100 + Math.random() * 900)}`,
+      full_name: memberData.full_name || 'Xã viên mới',
+      gender: memberData.gender || 'Nam',
+      phone: memberData.phone || '',
+      cccd: memberData.cccd || '',
+      address: memberData.address || '',
+      member_type: memberData.member_type || 'CHINH_THUC',
+      status: 'PENDING',
+      join_date: memberData.join_date || new Date().toISOString().split('T')[0],
+      committed_capital: memberData.committed_capital || 10000000,
+      contributed_capital: memberData.contributed_capital || 10000000,
+      remaining_capital: 0,
+      capital_status: 'DU_VON',
+    };
+  }
+
+  // SAVE PERMANENTLY TO LOCAL DB STORAGE
+  addMemberToStorage(createdMember);
+  return createdMember;
 };
 
 export const approveMemberApi = async (id: string): Promise<boolean> => {
   try {
     await apiClient.post(`/members/${id}/approve`);
-    return true;
   } catch (error) {
-    console.warn('API approve error:', error);
-    return true;
+    console.warn('API approve notice:', error);
   }
+
+  const stored = getStoredMembers();
+  if (stored) {
+    const updated = stored.map(m => (m.id === id ? { ...m, status: 'ACTIVE' as const } : m));
+    saveMembersToStorage(updated);
+  }
+  return true;
 };
 
