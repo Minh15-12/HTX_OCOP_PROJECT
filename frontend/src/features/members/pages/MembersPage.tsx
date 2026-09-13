@@ -578,6 +578,222 @@ export const MembersPage: React.FC = () => {
     setApprovingMember(null);
   };
 
+  const handlePrintMemberProfile = (m: Member) => {
+    const printWindow = window.open('', '_blank', 'width=900,height=1000');
+    if (!printWindow) {
+      triggerToast('Vui lòng cho phép mở cửa sổ pop-up trên trình duyệt để in hồ sơ!', 'danger');
+      return;
+    }
+
+    const today = new Date();
+    const dateStr = `Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
+    const memberTypeLabel = MEMBER_TYPE_LABELS[m.member_type] || m.member_type;
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Hồ sơ xã viên - ${m.full_name} (${m.member_code})</title>
+  <style>
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 12.5pt;
+      line-height: 1.45;
+      color: #000;
+      background: #fff;
+      padding: 15px;
+      margin: 0 auto;
+      max-width: 800px;
+    }
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .header-table td { vertical-align: top; text-align: center; }
+    .org-name { font-size: 11pt; font-weight: bold; text-transform: uppercase; }
+    .national-motto { font-size: 11pt; font-weight: bold; }
+    .national-sub { font-size: 11pt; border-bottom: 1px solid #000; display: inline-block; padding-bottom: 2px; margin-bottom: 8px; }
+    .doc-title { text-align: center; margin: 15px 0 10px 0; }
+    .doc-title h2 { font-size: 15pt; font-weight: bold; text-transform: uppercase; margin: 0; }
+    .doc-title p { font-style: italic; font-size: 10.5pt; margin: 3px 0 0 0; }
+    .section-title { font-weight: bold; font-size: 12.5pt; text-transform: uppercase; margin-top: 14px; margin-bottom: 6px; border-bottom: 1.5px solid #000; padding-bottom: 2px; }
+    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    .info-table td, .info-table th { border: 1px solid #333; padding: 5px 8px; font-size: 11pt; text-align: left; }
+    .info-table th { background-color: #f2f2f2; font-weight: bold; }
+    .field-label { font-weight: bold; width: 33%; color: #111; }
+    .field-value { width: 67%; }
+    .sig-table { width: 100%; margin-top: 25px; border-collapse: collapse; page-break-inside: avoid; }
+    .sig-table td { text-align: center; vertical-align: top; width: 33.33%; font-size: 10.5pt; }
+    .sig-title { font-weight: bold; text-transform: uppercase; }
+    .sig-space { height: 70px; }
+  </style>
+</head>
+<body>
+  <table class="header-table">
+    <tr>
+      <td style="width: 45%;">
+        <div class="org-name">HỢP TÁC XÃ NÔNG NGHIỆP DỊCH VỤ OCOP</div>
+        <div style="font-size: 9.5pt;">Mã số HTX: 0317892312</div>
+        <div style="font-size: 9.5pt; font-style: italic;">Lâm Đồng, Việt Nam</div>
+      </td>
+      <td style="width: 55%;">
+        <div class="national-motto">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+        <div class="national-sub">Độc lập - Tự do - Hạnh phúc</div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="doc-title">
+    <h2>SỔ TỜ KHAI HỒ SƠ XÃ VIÊN</h2>
+    <p>Mã số xã viên: <strong>${m.member_code}</strong> &bull; Trạng thái: <strong>${m.status === 'ACTIVE' ? 'Đang hoạt động' : m.status === 'PENDING' ? 'Chờ duyệt' : 'Đã ngưng hoạt động'}</strong></p>
+  </div>
+
+  <div class="section-title">I. THÔNG TIN CÁ NHÂN XÃ VIÊN</div>
+  <table class="info-table">
+    <tr>
+      <td class="field-label">Họ và tên xã viên:</td>
+      <td class="field-value"><strong style="font-size: 12pt; text-transform: uppercase;">${m.full_name}</strong></td>
+    </tr>
+    <tr>
+      <td class="field-label">Giới tính / Ngày sinh:</td>
+      <td class="field-value">${m.gender || '—'} &nbsp;|&nbsp; Ngày sinh: ${m.dob || '—'}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Số CCCD (12 chữ số):</td>
+      <td class="field-value"><strong>${m.cccd}</strong> &nbsp;|&nbsp; Ngày cấp: ${m.cccd_issue_date || '—'}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Nơi cấp CCCD:</td>
+      <td class="field-value">${m.cccd_issue_place || '—'}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Địa chỉ đăng ký:</td>
+      <td class="field-value">${m.address || m.detail_address || '—'}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Số điện thoại / Email:</td>
+      <td class="field-value">${m.phone} &nbsp;|&nbsp; ${m.email || '—'}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Trình độ / Nghề nghiệp:</td>
+      <td class="field-value">${m.education_level || '—'} &nbsp;|&nbsp; ${m.occupation || '—'}</td>
+    </tr>
+  </table>
+
+  <div class="section-title">II. TÌNH HÌNH VỐN GÓP VÀ QUYỀN LỢI SỞ HỮU</div>
+  <table class="info-table">
+    <tr>
+      <th style="width: 50%;">Chỉ tiêu Quản lý Vốn</th>
+      <th style="width: 50%;">Giá trị ghi nhận</th>
+    </tr>
+    <tr>
+      <td>Phân loại xã viên:</td>
+      <td><strong>${memberTypeLabel}</strong></td>
+    </tr>
+    <tr>
+      <td>Số vốn cam kết góp:</td>
+      <td><strong>${(m.committed_capital || 0).toLocaleString('vi-VN')} ₫</strong></td>
+    </tr>
+    <tr>
+      <td>Số vốn thực đã góp:</td>
+      <td><strong style="color: #047857;">${(m.total_capital_contributed || 0).toLocaleString('vi-VN')} ₫</strong></td>
+    </tr>
+    <tr>
+      <td>Vốn còn phải góp:</td>
+      <td>${(m.remaining_capital || 0).toLocaleString('vi-VN')} ₫</td>
+    </tr>
+    <tr>
+      <td>Số tiền bằng chữ:</td>
+      <td><em>${m.capital_in_words || '—'}</em></td>
+    </tr>
+    <tr>
+      <td>Số cổ phần / Tỷ lệ sở hữu:</td>
+      <td><strong>${m.total_shares_held || 0} cổ phần</strong> (${m.ownership_percentage || 0}%)</td>
+    </tr>
+    <tr>
+      <td>Trạng thái vốn góp:</td>
+      <td>${m.capital_status === 'DU_VON' ? 'Đã góp đủ vốn' : 'Chưa góp đủ vốn'}</td>
+    </tr>
+  </table>
+
+  <div class="section-title">III. THÔNG TIN TÀI KHOẢN THỤ HƯỞNG CỔ TỨC</div>
+  <table class="info-table">
+    <tr>
+      <td class="field-label">Ngân hàng thụ hưởng:</td>
+      <td class="field-value">${m.bank_name || '—'}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Số tài khoản:</td>
+      <td class="field-value"><strong>${m.bank_account || '—'}</strong></td>
+    </tr>
+    <tr>
+      <td class="field-label">Tên chủ tài khoản:</td>
+      <td class="field-value">${m.account_holder || m.full_name}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Hình thức chi trả:</td>
+      <td class="field-value">${m.payout_method === 'BANK_TRANSFER' ? 'Chuyển khoản ngân hàng' : 'Nhận tiền mặt'}</td>
+    </tr>
+  </table>
+
+  <div class="section-title">IV. SẢN LƯỢNG NÔNG SẢN & NGHĨA VỤ CÔNG NỢ</div>
+  <table class="info-table">
+    <tr>
+      <td class="field-label">Sản lượng cung ứng / năm:</td>
+      <td class="field-value"><strong>${(m.annual_product_output_kg || 0).toLocaleString('vi-VN')} kg/năm</strong></td>
+    </tr>
+    <tr>
+      <td class="field-label">Dư nợ công nợ hiện tại:</td>
+      <td class="field-value">${(m.current_debt || 0) > 0 ? `${m.current_debt.toLocaleString('vi-VN')} ₫ (Có nợ)` : 'Không có dư nợ'}</td>
+    </tr>
+    <tr>
+      <td class="field-label">Ngày chính thức gia nhập:</td>
+      <td class="field-value">${m.join_date || '—'}</td>
+    </tr>
+  </table>
+
+  <div style="text-align: right; font-style: italic; margin-top: 20px; font-size: 10.5pt;">
+    ${dateStr}
+  </div>
+
+  <table class="sig-table">
+    <tr>
+      <td>
+        <div class="sig-title">XÃ VIÊN KHÊU KHAI</div>
+        <div style="font-style: italic; font-size: 9.5pt;">(Ký và ghi rõ họ tên)</div>
+        <div class="sig-space"></div>
+        <strong>${m.full_name}</strong>
+      </td>
+      <td>
+        <div class="sig-title">KẾ TOÁN TRƯỞNG</div>
+        <div style="font-style: italic; font-size: 9.5pt;">(Ký và ghi rõ họ tên)</div>
+        <div class="sig-space"></div>
+      </td>
+      <td>
+        <div class="sig-title">CHỦ TỊCH HĐQT</div>
+        <div style="font-style: italic; font-size: 9.5pt;">(Ký tên và đóng dấu)</div>
+        <div class="sig-space"></div>
+      </td>
+    </tr>
+  </table>
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 500);
+    };
+  </script>
+</body>
+</html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   const handleApproveCapitalTx = (txId: string) => {
     const tx = transactions.find((t) => t.id === txId);
     if (!tx) return;
@@ -1002,9 +1218,9 @@ export const MembersPage: React.FC = () => {
 
           {/* Drawer Details Member - COMPREHENSIVE VIEW MATCHING ALL WIZARD FIELDS */}
           {selectedMember && (
-            <div className="bg-white border border-[#e7e9ec] rounded-b-xl shadow-subtle p-4 space-y-4 animate-fade-in max-h-[calc(100vh-180px)] overflow-y-auto">
-              {/* Header */}
-              <div className="flex items-start justify-between border-b border-[#e7e9ec] pb-3 sticky top-0 bg-white z-10 pt-1">
+            <div className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle animate-fade-in max-h-[calc(100vh-180px)] flex flex-col overflow-hidden">
+              {/* Fixed Header */}
+              <div className="p-4 border-b border-[#e7e9ec] bg-white z-10 flex items-start justify-between shrink-0 shadow-2xs">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white font-extrabold flex items-center justify-center text-base shadow-sm shrink-0">
                     {selectedMember.full_name.substring(0, 2).toUpperCase()}
@@ -1029,6 +1245,13 @@ export const MembersPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <button
+                    onClick={() => handlePrintMemberProfile(selectedMember)}
+                    className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="In hồ sơ xã viên"
+                  >
+                    <Printer className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => handleOpenEdit(selectedMember)}
                     className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     title="Chỉnh sửa thông tin"
@@ -1045,228 +1268,231 @@ export const MembersPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Approval Notice Banner */}
-              {selectedMember.status === 'PENDING' && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[12px] flex items-center justify-between gap-2 shadow-2xs">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                    <div>
-                      <strong className="text-amber-900 font-extrabold block">Hồ sơ chưa được phê duyệt</strong>
-                      <span className="text-amber-700 text-[11px]">Cần Chủ tịch/HĐQT phê duyệt để kích hoạt thành viên.</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleOpenApprove(selectedMember)}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11.5px] rounded-lg shadow-xs shrink-0 flex items-center gap-1.5 transition-all"
-                  >
-                    <UserCheck className="w-4 h-4" /> Duyệt hồ sơ ngay
-                  </button>
-                </div>
-              )}
-
-              {/* Badges Summary Bar */}
-              <div className="grid grid-cols-2 gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11.5px]">
-                <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Loại xã viên:</span>
-                  <strong className="text-emerald-800">{MEMBER_TYPE_LABELS[selectedMember.member_type]}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Tỷ lệ sở hữu:</span>
-                  <strong className="text-slate-900">{selectedMember.ownership_percentage}% vốn HTX</strong>
-                </div>
-              </div>
-
-              {/* 1. THÔNG TIN CÁ NHÂN */}
-              <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
-                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
-                  <Users className="w-3.5 h-3.5 text-emerald-600" /> 1. Thông tin cá nhân
-                </div>
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Họ và tên:</span>
-                    <strong className="text-slate-900">{selectedMember.full_name}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Giới tính:</span>
-                    <span className="font-medium text-slate-800">{selectedMember.gender}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Ngày sinh:</span>
-                    <span className="font-medium text-slate-800">{selectedMember.dob || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Số CCCD:</span>
-                    <span className="font-mono font-bold text-slate-900">{selectedMember.cccd || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Ngày cấp:</span>
-                    <span className="text-slate-700">{selectedMember.cccd_issue_date || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Nơi cấp:</span>
-                    <span className="text-slate-700 truncate block" title={selectedMember.cccd_issue_place}>{selectedMember.cccd_issue_place || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Trình độ học vấn:</span>
-                    <span className="font-medium text-slate-800">{selectedMember.education_level || 'Chưa xác định'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Nghề nghiệp:</span>
-                    <span className="font-medium text-slate-800">{selectedMember.occupation || 'Nông dân'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 2. THÔNG TIN LIÊN HỆ & ĐỊA CHỈ */}
-              <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
-                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600" /> 2. Thông tin liên hệ &amp; Địa chỉ
-                </div>
-                <div className="space-y-1.5">
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Địa chỉ thường trú:</span>
-                    <span className="font-medium text-slate-800 leading-snug">{selectedMember.address}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 pt-1">
-                    <div>
-                      <span className="text-slate-400 block text-[10.5px]">Số điện thoại:</span>
-                      <strong className="font-mono text-emerald-800">{selectedMember.phone}</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10.5px]">Email:</span>
-                      <span className="text-slate-700 truncate block" title={selectedMember.email}>{selectedMember.email || '—'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10.5px]">Zalo:</span>
-                      <span className="text-slate-700">{selectedMember.zalo || '—'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10.5px]">Facebook:</span>
-                      <span className="text-slate-700 truncate block" title={selectedMember.facebook}>{selectedMember.facebook || '—'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3. THÔNG TIN VỐN GÓP */}
-              <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
-                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center justify-between border-b border-slate-100 pb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <Wallet className="w-3.5 h-3.5 text-emerald-600" /> 3. Thông tin vốn góp
-                  </span>
-                  {selectedMember.capital_status === 'DU_VON' ? (
-                    <span className="pill-badge pill-green text-[9.5px]">Đủ vốn</span>
-                  ) : (
-                    <span className="pill-badge pill-amber text-[9.5px]">Chưa đủ</span>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Hình thức góp:</span>
-                    <span className="font-medium text-slate-800">{selectedMember.capital_form === 'TIEN_MAT' ? 'Tiền mặt' : 'Hiện vật'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Phương thức góp:</span>
-                    <span className="font-medium text-slate-800">{selectedMember.contribution_method || 'Góp một lần'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Vốn cam kết:</span>
-                    <strong className="text-slate-900">{(selectedMember.committed_capital || selectedMember.total_capital_contributed)?.toLocaleString('vi-VN')} ₫</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Đã thực góp:</span>
-                    <strong className="text-emerald-700">{(selectedMember.contributed_capital || selectedMember.total_capital_contributed)?.toLocaleString('vi-VN')} ₫</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Ngày góp vốn:</span>
-                    <span className="text-slate-700">{selectedMember.contribution_date || selectedMember.join_date}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Số cổ phần:</span>
-                    <strong className="text-slate-900">{selectedMember.total_shares_held} cổ phần</strong>
-                  </div>
-                  {selectedMember.capital_in_words && (
-                    <div className="col-span-2">
-                      <span className="text-slate-400 block text-[10.5px]">Bằng chữ:</span>
-                      <span className="italic text-slate-600 text-[11.5px]">"{selectedMember.capital_in_words}"</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 4. PHÂN CHIA LỢI NHUẬN & NGÂN HÀNG */}
-              <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
-                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
-                  <Calculator className="w-3.5 h-3.5 text-emerald-600" /> 4. Phân chia lợi nhuận &amp; Ngân hàng
-                </div>
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Tỷ lệ chia lợi nhuận:</span>
-                    <strong className="text-emerald-800 text-[13px]">{selectedMember.profit_share_rate}%</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Hình thức nhận:</span>
-                    <span className="font-medium text-slate-800">{selectedMember.payout_method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}</span>
-                  </div>
-                  {selectedMember.bank_account && (
-                    <div className="col-span-2 space-y-1 pt-1 border-t border-slate-100">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400 text-[10.5px]">Ngân hàng:</span>
-                        <span className="font-semibold text-slate-800 text-right">{selectedMember.bank_name}</span>
+              {/* Scrollable Body Content */}
+              <div className="p-4 overflow-y-auto space-y-4 flex-1">
+                {/* Approval Notice Banner */}
+                {selectedMember.status === 'PENDING' && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[12px] flex items-center justify-between gap-2 shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <div>
+                        <strong className="text-amber-900 font-extrabold block">Hồ sơ chưa được phê duyệt</strong>
+                        <span className="text-amber-700 text-[11px]">Cần Chủ tịch/HĐQT phê duyệt để kích hoạt thành viên.</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400 text-[10.5px]">Số tài khoản:</span>
-                        <span className="font-mono font-bold text-slate-900">{selectedMember.bank_account}</span>
+                    </div>
+                    <button
+                      onClick={() => handleOpenApprove(selectedMember)}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11.5px] rounded-lg shadow-xs shrink-0 flex items-center gap-1.5 transition-all"
+                    >
+                      <UserCheck className="w-4 h-4" /> Duyệt hồ sơ ngay
+                    </button>
+                  </div>
+                )}
+
+                {/* Badges Summary Bar */}
+                <div className="grid grid-cols-2 gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11.5px]">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold">Loại xã viên:</span>
+                    <strong className="text-emerald-800">{MEMBER_TYPE_LABELS[selectedMember.member_type]}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold">Tỷ lệ sở hữu:</span>
+                    <strong className="text-slate-900">{selectedMember.ownership_percentage}% vốn HTX</strong>
+                  </div>
+                </div>
+
+                {/* 1. THÔNG TIN CÁ NHÂN */}
+                <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                    <Users className="w-3.5 h-3.5 text-emerald-600" /> 1. Thông tin cá nhân
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Họ và tên:</span>
+                      <strong className="text-slate-900">{selectedMember.full_name}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Giới tính:</span>
+                      <span className="font-medium text-slate-800">{selectedMember.gender}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Ngày sinh:</span>
+                      <span className="font-medium text-slate-800">{selectedMember.dob || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Số CCCD:</span>
+                      <span className="font-mono font-bold text-slate-900">{selectedMember.cccd || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Ngày cấp:</span>
+                      <span className="text-slate-700">{selectedMember.cccd_issue_date || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Nơi cấp:</span>
+                      <span className="text-slate-700 truncate block" title={selectedMember.cccd_issue_place}>{selectedMember.cccd_issue_place || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Trình độ học vấn:</span>
+                      <span className="font-medium text-slate-800">{selectedMember.education_level || 'Chưa xác định'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Nghề nghiệp:</span>
+                      <span className="font-medium text-slate-800">{selectedMember.occupation || 'Nông dân'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. THÔNG TIN LIÊN HỆ & ĐỊA CHỈ */}
+                <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" /> 2. Thông tin liên hệ &amp; Địa chỉ
+                  </div>
+                  <div className="space-y-1.5">
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Địa chỉ thường trú:</span>
+                      <span className="font-medium text-slate-800 leading-snug">{selectedMember.address}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 pt-1">
+                      <div>
+                        <span className="text-slate-400 block text-[10.5px]">Số điện thoại:</span>
+                        <strong className="font-mono text-emerald-800">{selectedMember.phone}</strong>
                       </div>
-                      {selectedMember.account_holder && (
+                      <div>
+                        <span className="text-slate-400 block text-[10.5px]">Email:</span>
+                        <span className="text-slate-700 truncate block" title={selectedMember.email}>{selectedMember.email || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10.5px]">Zalo:</span>
+                        <span className="text-slate-700">{selectedMember.zalo || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10.5px]">Facebook:</span>
+                        <span className="text-slate-700 truncate block" title={selectedMember.facebook}>{selectedMember.facebook || '—'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. THÔNG TIN VỐN GÓP */}
+                <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span className="flex items-center gap-1.5">
+                      <Wallet className="w-3.5 h-3.5 text-emerald-600" /> 3. Thông tin vốn góp
+                    </span>
+                    {selectedMember.capital_status === 'DU_VON' ? (
+                      <span className="pill-badge pill-green text-[9.5px]">Đủ vốn</span>
+                    ) : (
+                      <span className="pill-badge pill-amber text-[9.5px]">Chưa đủ</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Hình thức góp:</span>
+                      <span className="font-medium text-slate-800">{selectedMember.capital_form === 'TIEN_MAT' ? 'Tiền mặt' : 'Hiện vật'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Phương thức góp:</span>
+                      <span className="font-medium text-slate-800">{selectedMember.contribution_method || 'Góp một lần'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Vốn cam kết:</span>
+                      <strong className="text-slate-900">{(selectedMember.committed_capital || selectedMember.total_capital_contributed)?.toLocaleString('vi-VN')} ₫</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Đã thực góp:</span>
+                      <strong className="text-emerald-700">{(selectedMember.contributed_capital || selectedMember.total_capital_contributed)?.toLocaleString('vi-VN')} ₫</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Ngày góp vốn:</span>
+                      <span className="text-slate-700">{selectedMember.contribution_date || selectedMember.join_date}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Số cổ phần:</span>
+                      <strong className="text-slate-900">{selectedMember.total_shares_held} cổ phần</strong>
+                    </div>
+                    {selectedMember.capital_in_words && (
+                      <div className="col-span-2">
+                        <span className="text-slate-400 block text-[10.5px]">Bằng chữ:</span>
+                        <span className="italic text-slate-600 text-[11.5px]">"{selectedMember.capital_in_words}"</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. PHÂN CHIA LỢI NHUẬN & NGÂN HÀNG */}
+                <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12.2px]">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                    <Calculator className="w-3.5 h-3.5 text-emerald-600" /> 4. Phân chia lợi nhuận &amp; Ngân hàng
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Tỷ lệ chia lợi nhuận:</span>
+                      <strong className="text-emerald-800 text-[13px]">{selectedMember.profit_share_rate}%</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Hình thức nhận:</span>
+                      <span className="font-medium text-slate-800">{selectedMember.payout_method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}</span>
+                    </div>
+                    {selectedMember.bank_account && (
+                      <div className="col-span-2 space-y-1 pt-1 border-t border-slate-100">
                         <div className="flex justify-between">
-                          <span className="text-slate-400 text-[10.5px]">Chủ tài khoản:</span>
-                          <span className="font-bold text-slate-800">{selectedMember.account_holder}</span>
+                          <span className="text-slate-400 text-[10.5px]">Ngân hàng:</span>
+                          <span className="font-semibold text-slate-800 text-right">{selectedMember.bank_name}</span>
                         </div>
-                      )}
+                        <div className="flex justify-between">
+                          <span className="text-slate-400 text-[10.5px]">Số tài khoản:</span>
+                          <span className="font-mono font-bold text-slate-900">{selectedMember.bank_account}</span>
+                        </div>
+                        {selectedMember.account_holder && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400 text-[10.5px]">Chủ tài khoản:</span>
+                            <span className="font-bold text-slate-800">{selectedMember.account_holder}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {selectedMember.notes && (
+                      <div className="col-span-2 pt-1 border-t border-slate-100">
+                        <span className="text-slate-400 block text-[10.5px]">Ghi chú:</span>
+                        <p className="text-slate-600 text-[11.5px] italic leading-relaxed">{selectedMember.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 5. THỐNG KÊ HOẠT ĐỘNG */}
+                <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl space-y-2 text-[12px]">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-600" /> 5. Hoạt động &amp; Sản lượng
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Sản lượng cung ứng:</span>
+                      <strong className="text-slate-900">{(selectedMember.annual_product_output_kg || 0).toLocaleString('vi-VN')} kg/năm</strong>
                     </div>
-                  )}
-                  {selectedMember.notes && (
-                    <div className="col-span-2 pt-1 border-t border-slate-100">
-                      <span className="text-slate-400 block text-[10.5px]">Ghi chú:</span>
-                      <p className="text-slate-600 text-[11.5px] italic leading-relaxed">{selectedMember.notes}</p>
+                    <div>
+                      <span className="text-slate-400 block text-[10.5px]">Công nợ hiện tại:</span>
+                      <strong className={selectedMember.current_debt > 0 ? 'text-rose-600' : 'text-emerald-700'}>
+                        {selectedMember.current_debt ? `${selectedMember.current_debt.toLocaleString('vi-VN')} ₫` : 'Không có nợ'}
+                      </strong>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
-              {/* 5. THỐNG KÊ HOẠT ĐỘNG */}
-              <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl space-y-2 text-[12px]">
-                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-blue-600" /> 5. Hoạt động &amp; Sản lượng
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Sản lượng cung ứng:</span>
-                    <strong className="text-slate-900">{(selectedMember.annual_product_output_kg || 0).toLocaleString('vi-VN')} kg/năm</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10.5px]">Công nợ hiện tại:</span>
-                    <strong className={selectedMember.current_debt > 0 ? 'text-rose-600' : 'text-emerald-700'}>
-                      {selectedMember.current_debt ? `${selectedMember.current_debt.toLocaleString('vi-VN')} ₫` : 'Không có nợ'}
-                    </strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer Quick Actions */}
-              <div className="pt-2 flex justify-between gap-2 border-t border-slate-200 sticky bottom-0 bg-white z-10 pb-1">
+              {/* Fixed Footer Quick Actions */}
+              <div className="p-3 border-t border-slate-200 bg-white z-10 flex justify-between gap-2 shrink-0 shadow-2xs">
                 <button
-                  onClick={() => triggerToast(`Đã xuất file Hồ sơ xã viên ${selectedMember.member_code} PDF thành công!`)}
-                  className="flex-1 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-[12px] rounded-lg inline-flex items-center justify-center gap-1.5"
+                  onClick={() => handlePrintMemberProfile(selectedMember)}
+                  className="flex-1 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-[12.5px] rounded-lg inline-flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <Printer className="w-3.5 h-3.5 text-emerald-600" /> In hồ sơ
+                  <Printer className="w-4 h-4 text-emerald-600" /> In hồ sơ
                 </button>
                 <button
                   onClick={() => handleOpenEdit(selectedMember)}
-                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[12px] rounded-lg inline-flex items-center justify-center gap-1.5 shadow-xs"
+                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[12.5px] rounded-lg inline-flex items-center justify-center gap-1.5 shadow-xs transition-colors"
                 >
-                  <Pencil className="w-3.5 h-3.5" /> Chỉnh sửa
+                  <Pencil className="w-4 h-4" /> Chỉnh sửa
                 </button>
               </div>
             </div>
