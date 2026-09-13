@@ -105,6 +105,7 @@ export interface Member {
   join_date: string;
   current_debt: number; // Công nợ tồn đọng (vật tư, thủy nông)
   annual_product_output_kg: number;
+  notary_document_url?: string;
 }
 
 export interface CapitalTransaction {
