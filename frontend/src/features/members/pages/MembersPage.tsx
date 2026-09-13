@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Users,
   Search,
@@ -48,6 +48,7 @@ import {
   createMemberApi,
   approveMemberApi,
 } from '@/services/memberService';
+import { updateMemberInStorage } from '@/services/dbStorage';
 import {
   Member,
   CapitalTransaction,
@@ -209,6 +210,78 @@ export const MembersPage: React.FC = () => {
   const paidMemberCount = surplusItems.filter((i) => i.payout_status === 'DA_NHAN').length;
   const unpaidMemberCount = surplusItems.filter((i) => i.payout_status === 'CHUA_NHAN').length;
 
+  // File Upload State for Wizard Step 3
+  const wizardFileInputRef = useRef<HTMLInputElement>(null);
+  const [wizardUploadedFile, setWizardUploadedFile] = useState<File | null>(null);
+
+  const handleWizardFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setWizardUploadedFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleWizardFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setWizardUploadedFile(e.target.files[0]);
+    }
+  };
+
+  // Edit Member Validation State
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editFieldErrors, setEditFieldErrors] = useState<Record<string, string>>({});
+
+  const validateEditMember = (m: Member): boolean => {
+    const errors: Record<string, string> = {};
+    let mainMsg: string | null = null;
+
+    if (!m.full_name.trim()) {
+      errors.full_name = 'Vui lòng nhập Họ và tên xã viên';
+    }
+    if (!m.dob) {
+      errors.dob = 'Vui lòng chọn Ngày sinh';
+    }
+    if (!m.cccd.trim()) {
+      errors.cccd = 'Vui lòng nhập Số CCCD/CMND';
+    } else if (!/^[0-9]{9,12}$/.test(m.cccd.trim())) {
+      errors.cccd = 'Số CCCD/CMND phải bao gồm đúng 12 chữ số (hoặc 9-12 số hợp lệ)';
+    }
+    if (!m.cccd_issue_date) {
+      errors.cccd_issue_date = 'Vui lòng chọn Ngày cấp';
+    }
+    if (!m.cccd_issue_place.trim()) {
+      errors.cccd_issue_place = 'Vui lòng nhập Nơi cấp CCCD/CMND';
+    }
+    if (!m.detail_address.trim()) {
+      errors.detail_address = 'Vui lòng nhập Địa chỉ chi tiết (số nhà, thôn/xóm)';
+    }
+    if (!m.phone.trim()) {
+      errors.phone = 'Vui lòng nhập Số điện thoại liên hệ';
+    } else if (!/^0[0-9]{9}$/.test(m.phone.trim()) && !/^[0-9]{10}$/.test(m.phone.trim())) {
+      errors.phone = 'Số điện thoại phải bao gồm đúng 10 chữ số (Ví dụ: 0987654321)';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      if (errors.phone) {
+        mainMsg = errors.phone;
+      } else if (errors.cccd) {
+        mainMsg = errors.cccd;
+      } else if (errors.full_name) {
+        mainMsg = 'Vui lòng nhập Họ và tên xã viên!';
+      } else if (errors.cccd_issue_place) {
+        mainMsg = 'Vui lòng nhập Nơi cấp CCCD/CMND!';
+      } else if (errors.detail_address) {
+        mainMsg = 'Vui lòng nhập Địa chỉ chi tiết!';
+      } else {
+        mainMsg = 'Vui lòng kiểm tra và sửa lại các thông tin bắt buộc bị sai phạm trước khi lưu!';
+      }
+    }
+
+    setEditFieldErrors(errors);
+    setEditError(mainMsg);
+    return Object.keys(errors).length === 0;
+  };
+
   // Wizard Validation State
   const [wizardStepError, setWizardStepError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -217,6 +290,7 @@ export const MembersPage: React.FC = () => {
     setWizardStep(1);
     setWizardStepError(null);
     setFieldErrors({});
+    setWizardUploadedFile(null);
     setWizardForm({
       full_name: '',
       gender: 'Nam',
@@ -417,6 +491,8 @@ export const MembersPage: React.FC = () => {
 
   const handleOpenEdit = (m: Member) => {
     setEditingMember({ ...m });
+    setEditError(null);
+    setEditFieldErrors({});
     setEditTab('personal');
     setShowEditModal(true);
   };
@@ -424,6 +500,14 @@ export const MembersPage: React.FC = () => {
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMember) return;
+
+    if (!validateEditMember(editingMember)) {
+      triggerToast('Vui lòng sửa các thông tin bị sai phạm trước khi lưu!', 'danger');
+      return;
+    }
+
+    setEditError(null);
+    setEditFieldErrors({});
 
     const fullAddr = `${editingMember.detail_address ? editingMember.detail_address + ', ' : ''}${editingMember.ward}, ${editingMember.district}, ${editingMember.province}`;
     const updated: Member = {
@@ -434,6 +518,7 @@ export const MembersPage: React.FC = () => {
     };
 
     setMembers(members.map((m) => (m.id === updated.id ? updated : m)));
+    updateMemberInStorage(updated);
     if (selectedMember?.id === updated.id) setSelectedMember(updated);
     if (selectedCapitalMember?.id === updated.id) setSelectedCapitalMember(updated);
     setShowEditModal(false);
@@ -2688,13 +2773,49 @@ export const MembersPage: React.FC = () => {
 
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Giấy biên nhận / Chứng từ (nếu có)</label>
-                    <div className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-5 text-center bg-slate-50/50 cursor-pointer transition-colors">
-                      <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1.5" />
-                      <div className="text-slate-600 font-medium text-[12px]">
-                        Kéo thả file vào đây hoặc <span className="text-emerald-700 font-bold underline">Chọn file</span>
+
+                    <input
+                      type="file"
+                      ref={wizardFileInputRef}
+                      onChange={handleWizardFileSelect}
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      className="hidden"
+                    />
+
+                    {wizardUploadedFile ? (
+                      <div className="border border-emerald-300 bg-emerald-50/70 rounded-xl p-3.5 flex items-center justify-between animate-fade-in shadow-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-800 text-[12.5px]">{wizardUploadedFile.name}</div>
+                            <div className="text-[11px] text-slate-500">{(wizardUploadedFile.size / 1024).toFixed(1)} KB — Đã sẵn sàng đính kèm</div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setWizardUploadedFile(null)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-colors"
+                          title="Xóa file"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                      <div className="text-slate-400 text-[10.5px] mt-0.5">Định dạng: PDF, JPG, PNG (Tối đa 10MB)</div>
-                    </div>
+                    ) : (
+                      <div
+                        onClick={() => wizardFileInputRef.current?.click()}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={handleWizardFileDrop}
+                        className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-5 text-center bg-slate-50/50 hover:bg-emerald-50/30 cursor-pointer transition-all group"
+                      >
+                        <Upload className="w-6 h-6 text-slate-400 group-hover:text-emerald-600 mx-auto mb-1.5 transition-colors" />
+                        <div className="text-slate-600 font-medium text-[12px]">
+                          Kéo thả file vào đây hoặc <span className="text-emerald-700 font-bold underline">Chọn file</span>
+                        </div>
+                        <div className="text-slate-400 text-[10.5px] mt-0.5">Định dạng: PDF, JPG, PNG (Tối đa 10MB)</div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -2943,6 +3064,14 @@ export const MembersPage: React.FC = () => {
 
             {/* Form Body */}
             <form onSubmit={handleSaveEdit} className="p-6 space-y-4 text-[12.8px]">
+              {/* WARNING ALERT BANNER FOR EDIT ERRORS */}
+              {editError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-[12.5px] font-bold flex items-center gap-2.5 shadow-xs animate-fade-in">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                  <span>{editError}</span>
+                </div>
+              )}
+
               {/* TAB 1: CÁ NHÂN */}
               {editTab === 'personal' && (
                 <div className="space-y-4 animate-fade-in">
@@ -2962,9 +3091,15 @@ export const MembersPage: React.FC = () => {
                         type="text"
                         required
                         value={editingMember.full_name}
-                        onChange={(e) => setEditingMember({ ...editingMember, full_name: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-slate-900 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                        onChange={(e) => {
+                          setEditingMember({ ...editingMember, full_name: e.target.value });
+                          if (editFieldErrors.full_name) setEditFieldErrors({ ...editFieldErrors, full_name: '' });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg font-bold focus:ring-1 focus:outline-none ${
+                          editFieldErrors.full_name ? 'border-red-500 bg-red-50/20 text-red-900 focus:ring-red-500' : 'border-slate-200 text-slate-900 focus:ring-blue-500'
+                        }`}
                       />
+                      {editFieldErrors.full_name && <span className="text-red-500 text-[11px] font-bold mt-1 block">{editFieldErrors.full_name}</span>}
                     </div>
                   </div>
 
@@ -2993,19 +3128,31 @@ export const MembersPage: React.FC = () => {
                         type="date"
                         required
                         value={editingMember.dob}
-                        onChange={(e) => setEditingMember({ ...editingMember, dob: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                        onChange={(e) => {
+                          setEditingMember({ ...editingMember, dob: e.target.value });
+                          if (editFieldErrors.dob) setEditFieldErrors({ ...editFieldErrors, dob: '' });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg text-slate-700 ${
+                          editFieldErrors.dob ? 'border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
                       />
+                      {editFieldErrors.dob && <span className="text-red-500 text-[11px] font-bold mt-1 block">{editFieldErrors.dob}</span>}
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Số CCCD/CMND *</label>
+                      <label className="block font-bold text-slate-700 mb-1">Số CCCD/CMND * (12 chữ số)</label>
                       <input
                         type="text"
                         required
                         value={editingMember.cccd}
-                        onChange={(e) => setEditingMember({ ...editingMember, cccd: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-900 font-mono font-bold"
+                        onChange={(e) => {
+                          setEditingMember({ ...editingMember, cccd: e.target.value });
+                          if (editFieldErrors.cccd) setEditFieldErrors({ ...editFieldErrors, cccd: '' });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg font-mono font-bold ${
+                          editFieldErrors.cccd ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-slate-200 text-slate-900'
+                        }`}
                       />
+                      {editFieldErrors.cccd && <span className="text-red-500 text-[11px] font-bold mt-1 block">{editFieldErrors.cccd}</span>}
                     </div>
                   </div>
 
@@ -3016,9 +3163,15 @@ export const MembersPage: React.FC = () => {
                         type="date"
                         required
                         value={editingMember.cccd_issue_date}
-                        onChange={(e) => setEditingMember({ ...editingMember, cccd_issue_date: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-700"
+                        onChange={(e) => {
+                          setEditingMember({ ...editingMember, cccd_issue_date: e.target.value });
+                          if (editFieldErrors.cccd_issue_date) setEditFieldErrors({ ...editFieldErrors, cccd_issue_date: '' });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg text-slate-700 ${
+                          editFieldErrors.cccd_issue_date ? 'border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
                       />
+                      {editFieldErrors.cccd_issue_date && <span className="text-red-500 text-[11px] font-bold mt-1 block">{editFieldErrors.cccd_issue_date}</span>}
                     </div>
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Nơi cấp *</label>
@@ -3026,9 +3179,15 @@ export const MembersPage: React.FC = () => {
                         type="text"
                         required
                         value={editingMember.cccd_issue_place}
-                        onChange={(e) => setEditingMember({ ...editingMember, cccd_issue_place: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        onChange={(e) => {
+                          setEditingMember({ ...editingMember, cccd_issue_place: e.target.value });
+                          if (editFieldErrors.cccd_issue_place) setEditFieldErrors({ ...editFieldErrors, cccd_issue_place: '' });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg ${
+                          editFieldErrors.cccd_issue_place ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-slate-200'
+                        }`}
                       />
+                      {editFieldErrors.cccd_issue_place && <span className="text-red-500 text-[11px] font-bold mt-1 block">{editFieldErrors.cccd_issue_place}</span>}
                     </div>
                   </div>
 
@@ -3119,9 +3278,15 @@ export const MembersPage: React.FC = () => {
                           required
                           placeholder="Số nhà, thôn/xóm"
                           value={editingMember.detail_address}
-                          onChange={(e) => setEditingMember({ ...editingMember, detail_address: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                          onChange={(e) => {
+                            setEditingMember({ ...editingMember, detail_address: e.target.value });
+                            if (editFieldErrors.detail_address) setEditFieldErrors({ ...editFieldErrors, detail_address: '' });
+                          }}
+                          className={`w-full px-3 py-2 border rounded-lg ${
+                            editFieldErrors.detail_address ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-slate-200'
+                          }`}
                         />
+                        {editFieldErrors.detail_address && <span className="text-red-500 text-[11px] font-bold mt-1 block">{editFieldErrors.detail_address}</span>}
                       </div>
                     </div>
                   </div>
@@ -3132,14 +3297,21 @@ export const MembersPage: React.FC = () => {
                     </h4>
                     <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
-                        <label className="block font-bold text-slate-700 mb-1">Số điện thoại *</label>
+                        <label className="block font-bold text-slate-700 mb-1">Số điện thoại * (10 chữ số)</label>
                         <input
                           type="text"
                           required
+                          placeholder="Ví dụ: 0987654321"
                           value={editingMember.phone}
-                          onChange={(e) => setEditingMember({ ...editingMember, phone: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-slate-900"
+                          onChange={(e) => {
+                            setEditingMember({ ...editingMember, phone: e.target.value });
+                            if (editFieldErrors.phone) setEditFieldErrors({ ...editFieldErrors, phone: '' });
+                          }}
+                          className={`w-full px-3 py-2 border rounded-lg font-bold ${
+                            editFieldErrors.phone ? 'border-red-500 bg-red-50/20 text-red-900' : 'border-slate-200 text-slate-900'
+                          }`}
                         />
+                        {editFieldErrors.phone && <span className="text-red-500 text-[11px] font-bold mt-1 block">{editFieldErrors.phone}</span>}
                       </div>
 
                       <div>
