@@ -25,6 +25,8 @@ import {
   Calendar,
   UserCheck,
   AlertTriangle,
+  UserX,
+  RefreshCw,
   Save,
   Download,
   Printer,
@@ -102,9 +104,9 @@ export const MembersPage: React.FC = () => {
   const [selectedSurplusItem, setSelectedSurplusItem] = useState<SurplusDistributionItem | null>(null);
 
   // Toast State
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' | 'warning' | 'info' } | null>(null);
 
-  const triggerToast = (message: string, type: 'success' | 'danger' = 'success') => {
+  const triggerToast = (message: string, type: 'success' | 'danger' | 'warning' | 'info' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   };
@@ -242,15 +244,15 @@ export const MembersPage: React.FC = () => {
       errors.dob = 'Vui lòng chọn Ngày sinh';
     }
     if (!m.cccd.trim()) {
-      errors.cccd = 'Vui lòng nhập Số CCCD/CMND';
-    } else if (!/^[0-9]{9,12}$/.test(m.cccd.trim())) {
-      errors.cccd = 'Số CCCD/CMND phải bao gồm đúng 12 chữ số (hoặc 9-12 số hợp lệ)';
+      errors.cccd = 'Vui lòng nhập Số CCCD (12 chữ số)';
+    } else if (!/^[0-9]{12}$/.test(m.cccd.trim())) {
+      errors.cccd = 'Số CCCD phải bao gồm đúng 12 chữ số (Ví dụ: 049085001234)';
     }
     if (!m.cccd_issue_date) {
       errors.cccd_issue_date = 'Vui lòng chọn Ngày cấp';
     }
     if (!m.cccd_issue_place.trim()) {
-      errors.cccd_issue_place = 'Vui lòng nhập Nơi cấp CCCD/CMND';
+      errors.cccd_issue_place = 'Vui lòng nhập Nơi cấp CCCD';
     }
     if (!m.detail_address.trim()) {
       errors.detail_address = 'Vui lòng nhập Địa chỉ chi tiết (số nhà, thôn/xóm)';
@@ -269,7 +271,7 @@ export const MembersPage: React.FC = () => {
       } else if (errors.full_name) {
         mainMsg = 'Vui lòng nhập Họ và tên xã viên!';
       } else if (errors.cccd_issue_place) {
-        mainMsg = 'Vui lòng nhập Nơi cấp CCCD/CMND!';
+        mainMsg = 'Vui lòng nhập Nơi cấp CCCD!';
       } else if (errors.detail_address) {
         mainMsg = 'Vui lòng nhập Địa chỉ chi tiết!';
       } else {
@@ -333,20 +335,20 @@ export const MembersPage: React.FC = () => {
         errors.dob = 'Vui lòng chọn Ngày sinh';
       }
       if (!wizardForm.cccd.trim()) {
-        errors.cccd = 'Vui lòng nhập Số CCCD/CMND';
-      } else if (!/^[0-9]{9,12}$/.test(wizardForm.cccd.trim())) {
-        errors.cccd = 'Số CCCD/CMND phải đúng định dạng số (12 chữ số cho CCCD hoặc 9-12 chữ số)';
+        errors.cccd = 'Vui lòng nhập Số CCCD (12 chữ số)';
+      } else if (!/^[0-9]{12}$/.test(wizardForm.cccd.trim())) {
+        errors.cccd = 'Số CCCD phải bao gồm đúng 12 chữ số (Ví dụ: 049085001234)';
       }
       if (!wizardForm.cccd_issue_date) {
         errors.cccd_issue_date = 'Vui lòng chọn Ngày cấp';
       }
       if (!wizardForm.cccd_issue_place.trim()) {
-        errors.cccd_issue_place = 'Vui lòng nhập Nơi cấp CCCD/CMND';
+        errors.cccd_issue_place = 'Vui lòng nhập Nơi cấp CCCD';
       }
 
       if (Object.keys(errors).length > 0) {
         if (errors.cccd_issue_place && Object.keys(errors).length === 1) {
-          mainMsg = 'Vui lòng nhập Nơi cấp CCCD/CMND trước khi chuyển sang bước tiếp theo!';
+          mainMsg = 'Vui lòng nhập Nơi cấp CCCD trước khi chuyển sang bước tiếp theo!';
         } else if (errors.cccd) {
           mainMsg = errors.cccd;
         } else if (errors.full_name) {
@@ -532,11 +534,26 @@ export const MembersPage: React.FC = () => {
 
   const handleConfirmDelete = () => {
     if (!deletingMember) return;
-    setMembers(members.filter((m) => m.id !== deletingMember.id));
-    if (selectedMember?.id === deletingMember.id) setSelectedMember(null);
-    if (selectedCapitalMember?.id === deletingMember.id) setSelectedCapitalMember(null);
+    if ((deletingMember.current_debt || 0) > 0) {
+      triggerToast(`Không thể ngưng hoạt động xã viên ${deletingMember.full_name} vì còn dư nợ ${(deletingMember.current_debt || 0).toLocaleString('vi-VN')} ₫. Vui lòng cấn trừ/thu hồi công nợ trước!`, 'warning');
+      return;
+    }
+    const updatedMember: Member = { ...deletingMember, status: 'INACTIVE' };
+    setMembers((prev) => prev.map((m) => (m.id === deletingMember.id ? updatedMember : m)));
+    updateMemberInStorage(updatedMember);
+    if (selectedMember?.id === deletingMember.id) setSelectedMember(updatedMember);
+    if (selectedCapitalMember?.id === deletingMember.id) setSelectedCapitalMember(updatedMember);
     setShowDeleteModal(false);
-    triggerToast(`Đã xóa thành công xã viên ${deletingMember.full_name} khỏi hệ thống.`, 'danger');
+    triggerToast(`Đã chuyển xã viên ${deletingMember.full_name} sang trạng thái "Đã ngưng hoạt động / Đã rút khỏi HTX".`, 'info');
+  };
+
+  const handleReactivateMember = (m: Member) => {
+    const updated: Member = { ...m, status: 'ACTIVE' };
+    setMembers((prev) => prev.map((item) => (item.id === m.id ? updated : item)));
+    updateMemberInStorage(updated);
+    if (selectedMember?.id === m.id) setSelectedMember(updated);
+    if (selectedCapitalMember?.id === m.id) setSelectedCapitalMember(updated);
+    triggerToast(`Đã kích hoạt lại xã viên ${m.full_name} (${m.member_code}) sang trạng thái Đang hoạt động.`, 'success');
   };
 
   const handleOpenApprove = (m: Member) => {
@@ -711,7 +728,9 @@ export const MembersPage: React.FC = () => {
       {toast && (
         <div
           className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-modal text-white text-xs font-extrabold flex items-center gap-2 animate-bounce ${
-            toast.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'
+            toast.type === 'success' ? 'bg-emerald-600' :
+            toast.type === 'warning' ? 'bg-amber-600' :
+            toast.type === 'info' ? 'bg-blue-600' : 'bg-rose-600'
           }`}
         >
           {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -855,6 +874,7 @@ export const MembersPage: React.FC = () => {
                   <option value="ALL">Trạng thái: Tất cả</option>
                   <option value="ACTIVE">Đang hoạt động</option>
                   <option value="PENDING">Chờ duyệt</option>
+                  <option value="INACTIVE">Đã ngưng hoạt động / Đã rút khỏi HTX</option>
                 </select>
 
                 <select
@@ -911,6 +931,7 @@ export const MembersPage: React.FC = () => {
                       <td className="py-3 px-3">
                         {m.status === 'ACTIVE' && <span className="pill-badge pill-green">Đang hoạt động</span>}
                         {m.status === 'PENDING' && <span className="pill-badge pill-amber">Chờ duyệt</span>}
+                        {m.status === 'INACTIVE' && <span className="pill-badge pill-slate bg-slate-100 text-slate-600 border border-slate-200">Đã ngưng hoạt động</span>}
                       </td>
                       <td className="py-3 px-3 text-center">
                         <div className="inline-flex items-center justify-center gap-1.5">
@@ -924,6 +945,18 @@ export const MembersPage: React.FC = () => {
                               title="Phê duyệt xã viên này"
                             >
                               <UserCheck className="w-3.5 h-3.5" /> Duyệt
+                            </button>
+                          )}
+                          {m.status === 'INACTIVE' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReactivateMember(m);
+                              }}
+                              className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold rounded-md text-[11px] inline-flex items-center gap-1 transition-colors border border-blue-200 shadow-2xs"
+                              title="Kích hoạt lại xã viên"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" /> Kích hoạt lại
                             </button>
                           )}
                           <button
@@ -946,16 +979,18 @@ export const MembersPage: React.FC = () => {
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenDelete(m);
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                            title="Xóa xã viên"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {m.status !== 'INACTIVE' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDelete(m);
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                              title="Ngưng hoạt động / Cho rút khỏi HTX"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -977,10 +1012,14 @@ export const MembersPage: React.FC = () => {
                   <div>
                     <h3 className="font-extrabold text-[15px] text-slate-900 flex items-center gap-2">
                       {selectedMember.full_name}
-                      {selectedMember.status === 'ACTIVE' ? (
+                      {selectedMember.status === 'ACTIVE' && (
                         <span className="pill-badge pill-green text-[10px]">Đang hoạt động</span>
-                      ) : (
+                      )}
+                      {selectedMember.status === 'PENDING' && (
                         <span className="pill-badge pill-amber text-[10px]">Chờ duyệt</span>
+                      )}
+                      {selectedMember.status === 'INACTIVE' && (
+                        <span className="pill-badge pill-slate bg-slate-100 text-slate-600 border border-slate-200 text-[10px]">Đã ngưng hoạt động</span>
                       )}
                     </h3>
                     <p className="text-[11.8px] text-slate-500 font-mono">
@@ -1056,7 +1095,7 @@ export const MembersPage: React.FC = () => {
                     <span className="font-medium text-slate-800">{selectedMember.dob || '—'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[10.5px]">Số CCCD/CMND:</span>
+                    <span className="text-slate-400 block text-[10.5px]">Số CCCD:</span>
                     <span className="font-mono font-bold text-slate-900">{selectedMember.cccd || '—'}</span>
                   </div>
                   <div>
@@ -2458,11 +2497,11 @@ export const MembersPage: React.FC = () => {
                       {fieldErrors.dob && <span className="text-red-500 text-[11px] font-bold mt-1 block">{fieldErrors.dob}</span>}
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Số CCCD/CMND *</label>
+                      <label className="block font-bold text-slate-700 mb-1">Số CCCD (12 chữ số) *</label>
                       <input
                         type="text"
                         required
-                        placeholder="12 chữ số cho CCCD"
+                        placeholder="Nhập đúng 12 chữ số CCCD (Ví dụ: 049085001234)"
                         value={wizardForm.cccd}
                         onChange={(e) => {
                           setWizardForm({ ...wizardForm, cccd: e.target.value });
@@ -2494,11 +2533,11 @@ export const MembersPage: React.FC = () => {
                       {fieldErrors.cccd_issue_date && <span className="text-red-500 text-[11px] font-bold mt-1 block">{fieldErrors.cccd_issue_date}</span>}
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Nơi cấp *</label>
+                      <label className="block font-bold text-slate-700 mb-1">Nơi cấp CCCD *</label>
                       <input
                         type="text"
                         required
-                        placeholder="Nhập nơi cấp (Ví dụ: Cục Cảnh sát QLHC)"
+                        placeholder="Nhập nơi cấp CCCD (Ví dụ: Cục Cảnh sát QLHC về trật tự xã hội)"
                         value={wizardForm.cccd_issue_place}
                         onChange={(e) => {
                           setWizardForm({ ...wizardForm, cccd_issue_place: e.target.value });
@@ -2894,7 +2933,7 @@ export const MembersPage: React.FC = () => {
                           <div className="flex justify-between"><span className="text-slate-500">Họ và tên:</span> <strong className="text-slate-900">{wizardForm.full_name || 'Nguyễn Thành Minh'}</strong></div>
                           <div className="flex justify-between"><span className="text-slate-500">Giới tính:</span> <span>{wizardForm.gender}</span></div>
                           <div className="flex justify-between"><span className="text-slate-500">Ngày sinh:</span> <span className="text-slate-400">{wizardForm.dob || '—'}</span></div>
-                          <div className="flex justify-between"><span className="text-slate-500">CCCD/CMND:</span> <span className="text-slate-400 font-mono">{wizardForm.cccd || '—'}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Số CCCD:</span> <span className="text-slate-400 font-mono">{wizardForm.cccd || '—'}</span></div>
                           <div className="flex justify-between"><span className="text-slate-500">Ngày cấp:</span> <span className="text-slate-400">{wizardForm.cccd_issue_date || '—'}</span></div>
                           <div className="flex justify-between"><span className="text-slate-500">Nơi cấp:</span> <span className="text-slate-400">{wizardForm.cccd_issue_place || '—'}</span></div>
                           <div className="flex justify-between"><span className="text-slate-500">Trình độ học vấn:</span> <span>{wizardForm.education_level}</span></div>
@@ -3139,10 +3178,11 @@ export const MembersPage: React.FC = () => {
                       {editFieldErrors.dob && <span className="text-red-500 text-[11px] font-bold mt-1 block">{editFieldErrors.dob}</span>}
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Số CCCD/CMND * (12 chữ số)</label>
+                      <label className="block font-bold text-slate-700 mb-1">Số CCCD (12 chữ số) *</label>
                       <input
                         type="text"
                         required
+                        placeholder="Nhập đúng 12 chữ số CCCD (Ví dụ: 049085001234)"
                         value={editingMember.cccd}
                         onChange={(e) => {
                           setEditingMember({ ...editingMember, cccd: e.target.value });
@@ -3174,7 +3214,7 @@ export const MembersPage: React.FC = () => {
                       {editFieldErrors.cccd_issue_date && <span className="text-red-500 text-[11px] font-bold mt-1 block">{editFieldErrors.cccd_issue_date}</span>}
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Nơi cấp *</label>
+                      <label className="block font-bold text-slate-700 mb-1">Nơi cấp CCCD *</label>
                       <input
                         type="text"
                         required
@@ -3579,26 +3619,53 @@ export const MembersPage: React.FC = () => {
         </div>
       )}
 
-      {/* DELETE CONFIRMATION MODAL */}
+      {/* DELETE / DEACTIVATE CONFIRMATION MODAL */}
       {showDeleteModal && deletingMember && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-2xl max-w-md w-full shadow-modal overflow-hidden p-6 space-y-4 text-center">
             <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
-              <AlertTriangle className="w-7 h-7" />
+              <UserX className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-slate-900">Xác nhận xóa xã viên?</h3>
+              <h3 className="text-lg font-extrabold text-slate-900">Xác nhận ngưng hoạt động xã viên?</h3>
               <p className="text-[13px] text-slate-600 mt-1">
-                Bạn có chắc chắn muốn xóa xã viên <strong className="text-slate-900">{deletingMember.full_name}</strong> (<span className="font-mono">{deletingMember.member_code}</span>)?
+                Chuyển trạng thái cho xã viên <strong className="text-slate-900">{deletingMember.full_name}</strong> (<span className="font-mono">{deletingMember.member_code}</span>) sang <strong>"Đã ngưng hoạt động / Đã rút khỏi HTX"</strong>.
               </p>
             </div>
+
+            {(deletingMember.current_debt || 0) > 0 ? (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-left text-[12px] space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-red-800">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" /> KHÔNG THỂ NGƯNG HOẠT ĐỘNG (DƯ NỢ CÔNG NỢ)
+                </div>
+                <p className="text-slate-700">
+                  Xã viên <strong>{deletingMember.full_name}</strong> hiện còn dư nợ <strong className="text-red-700 font-extrabold">{(deletingMember.current_debt || 0).toLocaleString('vi-VN')} ₫</strong> tại HTX.
+                </p>
+                <p className="text-[11px] text-red-700 font-medium italic pt-1 border-t border-red-200/60 mt-1">
+                  💡 Theo Luật Hợp tác xã 2023, xã viên phải hoàn tất nghĩa vụ tài chính/thu hồi công nợ trước khi chấm dứt tư cách thành viên.
+                </p>
+              </div>
+            ) : (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-left text-[12px] text-slate-600 space-y-1">
+                <p className="font-bold text-slate-800">ℹ️ Lưu trữ dữ liệu an toàn (Soft Delete):</p>
+                <p>Hệ thống không xóa vĩnh viễn dữ liệu để đảm bảo toàn vẹn chứng từ kế toán & lịch sử vốn góp.</p>
+                <p>Bạn có thể tra cứu danh sách xã viên đã ngưng hoạt động bất cứ lúc nào trong bộ lọc <strong>"Trạng thái: Đã ngưng hoạt động"</strong>.</p>
+              </div>
+            )}
+
             <div className="pt-2 flex justify-center gap-3">
               <button onClick={() => setShowDeleteModal(false)} className="px-5 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-50 text-[12.8px]">
                 Hủy bỏ
               </button>
-              <button onClick={handleConfirmDelete} className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[12.8px] shadow-sm inline-flex items-center gap-1.5">
-                <Trash2 className="w-4 h-4" /> Đồng ý xóa
-              </button>
+              {(deletingMember.current_debt || 0) > 0 ? (
+                <button disabled className="px-5 py-2 bg-slate-200 text-slate-400 font-bold rounded-lg text-[12.8px] cursor-not-allowed inline-flex items-center gap-1.5">
+                  <UserX className="w-4 h-4" /> Không thể ngưng (Còn dư nợ)
+                </button>
+              ) : (
+                <button onClick={handleConfirmDelete} className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[12.8px] shadow-sm inline-flex items-center gap-1.5">
+                  <UserX className="w-4 h-4" /> Xác nhận ngưng hoạt động
+                </button>
+              )}
             </div>
           </div>
         </div>
