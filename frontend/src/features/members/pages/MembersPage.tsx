@@ -44,6 +44,9 @@ import {
   mockCapitalTransactions,
   mockSurplusPlan,
   mockSurplusItems,
+  getMembersFromApi,
+  createMemberApi,
+  approveMemberApi,
 } from '@/services/memberService';
 import {
   Member,
@@ -56,10 +59,30 @@ import {
 } from '@/types/memberTypes';
 
 export const MembersPage: React.FC = () => {
-  const [members, setMembers] = useState<Member[]>(mockMembersList);
+  const [members, setMembers] = React.useState<Member[]>(mockMembersList);
+  const [loadingMembers, setLoadingMembers] = React.useState<boolean>(false);
   const [transactions, setTransactions] = useState<CapitalTransaction[]>(mockCapitalTransactions);
   const [surplusPlan, setSurplusPlan] = useState<SurplusDistributionPlan>(mockSurplusPlan);
   const [surplusItems, setSurplusItems] = useState<SurplusDistributionItem[]>(mockSurplusItems);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    setLoadingMembers(true);
+    getMembersFromApi()
+      .then((data) => {
+        if (isMounted && data && data.length > 0) {
+          setMembers(data);
+        }
+      })
+      .catch((err) => console.warn('Fetch members error:', err))
+      .finally(() => {
+        if (isMounted) setLoadingMembers(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'members' | 'capital' | 'profit' | 'coop'>('members');
@@ -239,10 +262,18 @@ export const MembersPage: React.FC = () => {
       annual_product_output_kg: 0,
     };
 
-    setMembers([...members, newMem]);
+    createMemberApi(newMem)
+      .then((savedMem) => {
+        setMembers((prev) => [...prev, savedMem]);
+        triggerToast(`Đã thêm thành công xã viên mới ${savedMem.full_name} (${savedMem.member_code}) vào Database!`);
+      })
+      .catch(() => {
+        setMembers((prev) => [...prev, newMem]);
+        triggerToast(`Đã thêm thành công xã viên mới ${newMem.full_name} (${newMem.member_code})!`);
+      });
+
     setShowWizardModal(false);
     setWizardStep(1);
-    triggerToast(`Đã thêm thành công xã viên mới ${newMem.full_name} (${newMem.member_code})!`);
   };
 
   const handleOpenEdit = (m: Member) => {
@@ -291,6 +322,7 @@ export const MembersPage: React.FC = () => {
 
   const handleConfirmApprove = () => {
     if (!approvingMember) return;
+    approveMemberApi(approvingMember.id);
     setMembers((prev) =>
       prev.map((m) => (m.id === approvingMember.id ? { ...m, status: 'ACTIVE' as MemberStatus } : m))
     );

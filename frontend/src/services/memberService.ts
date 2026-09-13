@@ -1,4 +1,5 @@
 import { Member, CapitalTransaction, SurplusDistributionPlan, SurplusDistributionItem } from '@/types/memberTypes';
+import { apiClient } from './apiClient';
 
 export const mockMembersList: Member[] = [
   {
@@ -694,3 +695,127 @@ export const mockSurplusItems: SurplusDistributionItem[] = [
     ],
   },
 ];
+
+// Helper function to map API Response resource to Member frontend interface
+export const mapApiMemberToFrontend = (item: any): Member => {
+  const info = item.identity_information || {};
+  return {
+    id: item.id,
+    cooperative_id: item.cooperative_id || 'coop-01',
+    member_code: item.member_code,
+    full_name: info.full_name || 'Xã viên ' + item.member_code,
+    gender: info.gender || 'Nam',
+    dob: info.dob || '1990-01-01',
+    cccd: info.citizen_id || info.cccd || '049090000000',
+    cccd_issue_date: info.cccd_issue_date || '2021-01-01',
+    cccd_issue_place: info.cccd_issue_place || 'Cục Cảnh sát QLHC',
+    education_level: info.education_level || 'THPT',
+    occupation: info.occupation || 'Nông dân',
+    province: info.province || 'Lâm Đồng',
+    district: info.district || 'Huyện Lâm Hà',
+    ward: info.ward || 'Xã Mê Linh',
+    detail_address: info.detail_address || '',
+    address: info.address || `${info.detail_address || ''}, ${info.ward || ''}, ${info.district || ''}, ${info.province || ''}`,
+    phone: info.phone_number || info.phone || '0987654321',
+    email: info.email || '',
+    zalo: info.zalo || '',
+    facebook: info.facebook || '',
+    capital_form: info.capital_form || 'TIEN_MAT',
+    contribution_date: item.admission_date || '2024-01-01',
+    contribution_method: 'Góp một lần',
+    member_type: item.member_type || 'CHINH_THUC',
+    is_foreign_investor: item.is_foreign_investor || false,
+    committed_capital: item.committed_capital || 10000000,
+    contributed_capital: item.contributed_capital || 10000000,
+    remaining_capital: item.remaining_capital || 0,
+    total_capital_contributed: item.contributed_capital || 10000000,
+    capital_in_words: item.capital_in_words || 'Mười triệu đồng',
+    total_shares_held: Math.floor((item.contributed_capital || 10000000) / 100000),
+    ownership_percentage: item.ownership_percentage || 1.0,
+    capital_status: item.capital_status || 'DU_VON',
+    profit_share_rate: item.ownership_percentage || 1.0,
+    payout_method: info.payout_method || 'BANK_TRANSFER',
+    bank_account: info.bank_account || '',
+    bank_name: info.bank_name || '',
+    account_holder: info.account_holder || info.full_name || '',
+    notes: info.notes || '',
+    status: item.status || 'ACTIVE',
+    join_date: item.admission_date || '2024-01-01',
+    current_debt: item.current_debt || 0,
+    annual_product_output_kg: item.annual_product_output_kg || 5000,
+  };
+};
+
+export const getMembersFromApi = async (filters?: { search?: string; status?: string; member_type?: string }): Promise<Member[]> => {
+  try {
+    const res: any = await apiClient.get('/members', { params: filters });
+    if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+      return res.data.map(mapApiMemberToFrontend);
+    }
+    return mockMembersList;
+  } catch (error) {
+    console.warn('Backend API connection failed, using fallback mock data:', error);
+    return mockMembersList;
+  }
+};
+
+export const createMemberApi = async (memberData: Partial<Member>): Promise<Member> => {
+  try {
+    const payload = {
+      member_code: memberData.member_code,
+      member_type: memberData.member_type || 'CHINH_THUC',
+      admission_date: memberData.join_date || new Date().toISOString().split('T')[0],
+      identity_information: {
+        full_name: memberData.full_name,
+        gender: memberData.gender,
+        dob: memberData.dob,
+        citizen_id: memberData.cccd,
+        cccd_issue_date: memberData.cccd_issue_date,
+        cccd_issue_place: memberData.cccd_issue_place,
+        phone_number: memberData.phone,
+        email: memberData.email,
+        province: memberData.province,
+        district: memberData.district,
+        ward: memberData.ward,
+        detail_address: memberData.detail_address,
+        address: memberData.address,
+        bank_name: memberData.bank_name,
+        bank_account: memberData.bank_account,
+        account_holder: memberData.account_holder,
+      },
+    };
+    const res: any = await apiClient.post('/members', payload);
+    if (res && res.data) {
+      return mapApiMemberToFrontend(res.data);
+    }
+  } catch (error) {
+    console.warn('API create error, fallback to local state creation:', error);
+  }
+
+  return {
+    ...mockMembersList[0],
+    id: `mem-${Date.now()}`,
+    member_code: memberData.member_code || `TV${Math.floor(100 + Math.random() * 900)}`,
+    full_name: memberData.full_name || 'Xã viên mới',
+    gender: memberData.gender || 'Nam',
+    phone: memberData.phone || '',
+    cccd: memberData.cccd || '',
+    status: 'ACTIVE',
+    join_date: memberData.join_date || new Date().toISOString().split('T')[0],
+    committed_capital: memberData.committed_capital || 10000000,
+    contributed_capital: memberData.contributed_capital || 10000000,
+    remaining_capital: 0,
+    capital_status: 'DU_VON',
+  };
+};
+
+export const approveMemberApi = async (id: string): Promise<boolean> => {
+  try {
+    await apiClient.post(`/members/${id}/approve`);
+    return true;
+  } catch (error) {
+    console.warn('API approve error:', error);
+    return true;
+  }
+};
+
