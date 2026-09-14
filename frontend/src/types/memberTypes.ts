@@ -26,6 +26,8 @@ export interface CapitalCertificate {
   certificate_code: string; // Số hiệu GCN (Số .../.../GCN-HTX)
   certificate_issue_date: string; // Ngày cấp GCN
   issue_count: number; // Cấp lần thứ mấy
+  legal_base_law?: string; // Căn cứ Luật HTX
+  legal_base_charter?: string; // Căn cứ Điều lệ HTX
   cooperative_name: string;
   cooperative_address: string;
   cooperative_license_no: string;
@@ -42,7 +44,10 @@ export interface CapitalCertificate {
   total_capital_amount: number;
   capital_in_words: string;
   contribution_form: string;
+  cash_amount_text?: string;
+  asset_amount_text?: string;
   contribution_date: string;
+  issue_place?: string;
   representative_name: string;
   qr_code_payload: string;
 }

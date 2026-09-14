@@ -24,11 +24,50 @@ import {
   Download,
 } from 'lucide-react';
 import { mockMembersList, mockCapitalTransactions } from '@/services/memberService';
+import {
+  getStoredMembers,
+  saveMembersToStorage,
+  getStoredCapitalTransactions,
+  saveCapitalTransactionsToStorage,
+} from '@/services/dbStorage';
 import { Member, CapitalTransaction, LandContribution, CapitalCertificate } from '@/types/memberTypes';
 
+const nfc = (str?: string | number | null): string => {
+  if (str === undefined || str === null) return '';
+  let text = String(str).normalize('NFC');
+  return text
+    .replace(/\s+([\u0300-\u036f])/g, '$1')
+    .replace(/bằ\s+ng/gi, 'bằng')
+    .replace(/cấ\s+p/gi, 'cấp')
+    .replace(/Giấ\s+y/gi, 'Giấy')
+    .replace(/LÂM\s+ĐỒ\s+NG/gi, 'LÂM ĐỒNG')
+    .replace(/Đô\s+ng/gi, 'Đồng')
+    .replace(/Số\s+́/gi, 'Số')
+    .replace(/Số́/g, 'Số')
+    .replace(/cấ\s*p/gi, 'cấp')
+    .replace(/Giấ\s*y/gi, 'Giấy')
+    .replace(/Thị\s+trấ\s*n/gi, 'Thị trấn')
+    .replace(/trấ\s*n/gi, 'trấn')
+    .replace(/ĐINH\s+VĂN/gi, 'Đinh Văn')
+    .replace(/LÂM\s+HÀ/gi, 'Lâm Hà')
+    .replace(/LÂM\s+ĐỒ̀\s*NG/gi, 'LÂM ĐỒNG')
+    .normalize('NFC');
+};
+
 export const CapitalPage: React.FC = () => {
-  const [members, setMembers] = useState<Member[]>(mockMembersList);
-  const [transactions, setTransactions] = useState<CapitalTransaction[]>(mockCapitalTransactions);
+  const [members, setMembers] = useState<Member[]>(() => {
+    const stored = getStoredMembers();
+    if (stored && stored.length > 0) return stored;
+    saveMembersToStorage(mockMembersList);
+    return mockMembersList;
+  });
+
+  const [transactions, setTransactions] = useState<CapitalTransaction[]>(() => {
+    const stored = getStoredCapitalTransactions();
+    if (stored && stored.length > 0) return stored;
+    saveCapitalTransactionsToStorage(mockCapitalTransactions);
+    return mockCapitalTransactions;
+  });
 
   const [search, setSearch] = useState('');
   const [capitalStatusFilter, setCapitalStatusFilter] = useState<string>('ALL');
@@ -43,6 +82,31 @@ export const CapitalPage: React.FC = () => {
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
 
+  // File Upload State & Drag-and-Drop Handlers
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadedFile, setUploadedFile] = useState<{ name: string; size: string; url?: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+      setUploadedFile({ name: file.name, size: `${sizeMb} MB`, url: URL.createObjectURL(file) });
+      triggerToast(`Đã nhận file chứng từ: ${file.name}`);
+    }
+  };
+
+  const handleDropFile = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+      setUploadedFile({ name: file.name, size: `${sizeMb} MB`, url: URL.createObjectURL(file) });
+      triggerToast(`Đã kéo thả thành công file: ${file.name}`);
+    }
+  };
+
   const triggerToast = (message: string, type: 'success' | 'danger' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
@@ -56,6 +120,7 @@ export const CapitalPage: React.FC = () => {
     contribution_date: new Date().toISOString().split('T')[0],
     receipt_number: `PT${Math.floor(100000 + Math.random() * 900000)}`,
     content: 'Góp vốn đợt bổ sung theo Điều lệ',
+    approval_mode: 'DIRECT_APPROVE' as 'DIRECT_APPROVE' | 'SUBMIT_PENDING',
     notes: '',
     // Land Specific Fields
     land_certificate_no: '',
@@ -83,36 +148,36 @@ export const CapitalPage: React.FC = () => {
     const tx = transactions.find((t) => t.id === txId);
     if (!tx) return;
 
-    setTransactions((prev) =>
-      prev.map((t) =>
-        t.id === txId
-          ? {
-              ...t,
-              status: 'APPROVED' as const,
-              recorded_by: 'Kế toán trưởng',
-              recorded_date: new Date().toLocaleDateString('vi-VN'),
-            }
-          : t
-      )
+    const updatedTxs = transactions.map((t) =>
+      t.id === txId
+        ? {
+            ...t,
+            status: 'APPROVED' as const,
+            recorded_by: 'Kế toán trưởng',
+            recorded_date: new Date().toLocaleDateString('vi-VN'),
+          }
+        : t
     );
+    setTransactions(updatedTxs);
+    saveCapitalTransactionsToStorage(updatedTxs);
 
-    setMembers((prev) =>
-      prev.map((m) => {
-        if (m.id === tx.member_id || m.member_code === tx.member_code) {
-          const newContributed = (m.contributed_capital || m.total_capital_contributed || 0) + tx.amount;
-          const newCommitted = m.committed_capital || newContributed;
-          const newRemaining = Math.max(0, newCommitted - newContributed);
-          return {
-            ...m,
-            contributed_capital: newContributed,
-            total_capital_contributed: newContributed,
-            remaining_capital: newRemaining,
-            capital_status: newContributed >= newCommitted && newCommitted > 0 ? ('DU_VON' as const) : ('CHUA_DU' as const),
-          };
-        }
-        return m;
-      })
-    );
+    const updatedMembers = members.map((m) => {
+      if (m.id === tx.member_id || m.member_code === tx.member_code) {
+        const newContributed = (m.contributed_capital || m.total_capital_contributed || 0) + tx.amount;
+        const newCommitted = m.committed_capital || newContributed;
+        const newRemaining = Math.max(0, newCommitted - newContributed);
+        return {
+          ...m,
+          contributed_capital: newContributed,
+          total_capital_contributed: newContributed,
+          remaining_capital: newRemaining,
+          capital_status: newContributed >= newCommitted && newCommitted > 0 ? ('DU_VON' as const) : ('CHUA_DU' as const),
+        };
+      }
+      return m;
+    });
+    setMembers(updatedMembers);
+    saveMembersToStorage(updatedMembers);
 
     triggerToast(`Đã phê duyệt thành công giao dịch ${tx.transaction_code} (${tx.amount.toLocaleString('vi-VN')} ₫) cho ${tx.member_name}!`, 'success');
   };
@@ -120,7 +185,9 @@ export const CapitalPage: React.FC = () => {
   const handleRejectCapitalTx = (txId: string) => {
     const tx = transactions.find((t) => t.id === txId);
     if (!tx) return;
-    setTransactions((prev) => prev.filter((t) => t.id !== txId));
+    const updatedTxs = transactions.filter((t) => t.id !== txId);
+    setTransactions(updatedTxs);
+    saveCapitalTransactionsToStorage(updatedTxs);
     triggerToast(`Đã từ chối giao dịch ${tx.transaction_code} của ${tx.member_name}.`, 'danger');
   };
 
@@ -156,6 +223,9 @@ export const CapitalPage: React.FC = () => {
       };
     }
 
+    const isPending = capitalForm.approval_mode === 'SUBMIT_PENDING';
+    const txStatus = isPending ? 'PENDING' : 'APPROVED';
+
     const newTx: CapitalTransaction = {
       id: `CC-00${transactions.length + 1}`,
       member_id: mem.id,
@@ -169,17 +239,19 @@ export const CapitalPage: React.FC = () => {
       receipt_number: capitalForm.receipt_number,
       content: capitalForm.content,
       notes: capitalForm.notes,
-      status: 'APPROVED',
-      recorded_by: 'Kế toán trưởng',
+      status: txStatus,
+      recorded_by: isPending ? mem.full_name : 'Kế toán trưởng',
       recorded_date: new Date().toLocaleDateString('vi-VN'),
       land_details: landDetails,
       certificate_code: certCode,
     };
 
-    setTransactions([newTx, ...transactions]);
+    const updatedTxs = [newTx, ...transactions];
+    setTransactions(updatedTxs);
+    saveCapitalTransactionsToStorage(updatedTxs);
 
-    setMembers(
-      members.map((m) => {
+    if (!isPending) {
+      const updatedMembers = members.map((m) => {
         if (m.id === mem.id) {
           const addedAmount = newTx.amount;
           const newContributed = (m.contributed_capital || 0) + addedAmount;
@@ -190,26 +262,61 @@ export const CapitalPage: React.FC = () => {
             contributed_capital: newContributed,
             remaining_capital: newRemaining,
             total_capital_contributed: newContributed,
-            capital_status: newRemaining === 0 ? 'DU_VON' : 'CHUA_DU',
+            capital_status: newRemaining === 0 ? ('DU_VON' as const) : ('CHUA_DU' as const),
             ownership_percentage: Number(((newContributed / newCoopTotal) * 100).toFixed(2)),
             land_contributions: newLandList,
           };
         }
         return m;
-      })
-    );
+      });
+      setMembers(updatedMembers);
+      saveMembersToStorage(updatedMembers);
+      triggerToast(`Đã ghi nhận & phê duyệt góp vốn thành công cho xã viên ${mem.full_name}!`);
+    } else {
+      triggerToast(`Đã tạo giao dịch ở trạng thái CHỜ DUYỆT cho ${mem.full_name}! Kế toán có thể phê duyệt trong danh sách Chờ duyệt.`, 'success');
+    }
 
     setShowRecordModal(false);
     setRecordStep(1);
-    triggerToast(`Đã ghi nhận góp vốn thành công cho xã viên ${mem.full_name}!`);
   };
 
-  const openCertificatePreview = (member: Member) => {
-    const certCode = member.certificate?.certificate_code || `GCN-2025-${member.member_code}`;
+  const openCertificatePreview = (member: Member, targetIssueCount?: number) => {
+    // Get member's approved transaction history sorted chronologically
+    const memberTxs = transactions
+      .filter((tx) => (tx.member_id === member.id || tx.member_code === member.member_code) && tx.status === 'APPROVED')
+      .sort((a, b) => {
+        const dateA = a.contribution_date.includes('/') ? a.contribution_date.split('/').reverse().join('-') : a.contribution_date;
+        const dateB = b.contribution_date.includes('/') ? b.contribution_date.split('/').reverse().join('-') : b.contribution_date;
+        return new Date(dateA).getTime() - new Date(dateB).getTime();
+      });
+
+    const issueCount = targetIssueCount && targetIssueCount > 0 ? targetIssueCount : Math.max(1, memberTxs.length);
+
+    // Calculate cumulative capital up to this issue batch
+    const cumulativeTxs = memberTxs.slice(0, issueCount);
+    const cumulativeCapital = cumulativeTxs.length > 0
+      ? cumulativeTxs.reduce((sum, tx) => sum + tx.amount, 0)
+      : (member.contributed_capital || member.committed_capital || 10000000);
+
+    // Breakdown cash vs assets
+    const cashAmount = cumulativeTxs
+      .filter((tx) => tx.payment_method === 'CASH' || tx.payment_method === 'BANK_TRANSFER')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const assetAmount = cumulativeTxs
+      .filter((tx) => tx.payment_method === 'LAND' || tx.payment_method === 'ASSET')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    const latestTx = cumulativeTxs[cumulativeTxs.length - 1];
+    const contributionDate = latestTx ? latestTx.contribution_date : (member.contribution_date || member.join_date);
+
+    const certCode = `${String(issueCount).padStart(2, '0')}/2025/GCN-HTX`;
+
     const cert: CapitalCertificate = {
       certificate_code: certCode,
-      certificate_issue_date: member.contribution_date || '10/01/2024',
-      issue_count: 1,
+      certificate_issue_date: contributionDate,
+      issue_count: issueCount,
+      legal_base_law: 'Căn cứ Luật Hợp tác xã số 23/2012/QH13 (và Luật HTX số 17/2023/QH15) được Quốc hội thông qua và các văn bản hướng dẫn thi hành;',
+      legal_base_charter: 'Căn cứ Điều lệ Hợp tác xã được Đại hội thành viên thông qua ngày 15/12/2023;',
       cooperative_name: 'HỢP TÁC XÃ NÔNG NGHIỆP THƯƠNG MẠI DỊCH VỤ OCOP LÂM ĐỒNG',
       cooperative_address: 'Số 123, Đường Hùng Vương, Thị trấn Đinh Văn, Huyện Lâm Hà, Tỉnh Lâm Đồng',
       cooperative_license_no: '4201982345',
@@ -221,17 +328,173 @@ export const CapitalPage: React.FC = () => {
       member_nationality: 'Việt Nam',
       member_address: member.address,
       member_cccd: member.cccd,
-      member_cccd_date: member.cccd_issue_date,
-      member_cccd_place: member.cccd_issue_place,
-      total_capital_amount: member.contributed_capital,
-      capital_in_words: member.capital_in_words || `${(member.contributed_capital / 1000000).toFixed(0)} triệu đồng`,
-      contribution_form: member.capital_form === 'QUYEN_SU_DUNG_DAT' ? 'Quyền sử dụng đất & Tiền mặt' : 'Tiền mặt / Chuyển khoản',
-      contribution_date: member.join_date,
-      representative_name: 'Trần Văn Cường (Chủ tịch HĐQT)',
-      qr_code_payload: `HTX_OCOP_CERT:${certCode}|MEMBER:${member.member_code}|AMOUNT:${member.contributed_capital}`,
+      member_cccd_date: member.cccd_issue_date || '10/05/2021',
+      member_cccd_place: member.cccd_issue_place || 'Cục Cảnh sát QLHC về trật tự xã hội',
+      total_capital_amount: cumulativeCapital,
+      capital_in_words: member.capital_in_words || `${(cumulativeCapital / 1000000).toLocaleString('vi-VN')} triệu đồng`,
+      contribution_form: assetAmount > 0 ? 'Tiền mặt và Tài sản (Quyền sử dụng đất)' : 'Tiền mặt / Chuyển khoản',
+      cash_amount_text: cashAmount > 0 ? `${cashAmount.toLocaleString('vi-VN')} VNĐ` : '0 VNĐ',
+      asset_amount_text: assetAmount > 0 ? `${assetAmount.toLocaleString('vi-VN')} VNĐ (Gồm diện tích QSDĐ đăng ký HTX)` : 'Không',
+      contribution_date: contributionDate,
+      issue_place: 'Lâm Đồng',
+      representative_name: 'Trần Văn Cường (Chủ tịch HĐQT / Giám đốc)',
+      qr_code_payload: `HTX_OCOP_CERT:${certCode}|MEMBER:${member.member_code}|BATCH:${issueCount}|AMOUNT:${cumulativeCapital}`,
     };
     setActiveCertificate(cert);
     setShowCertificateModal(true);
+  };
+
+  const handlePrintStandalone = (cert: CapitalCertificate) => {
+    const printWin = window.open('', '_blank', 'width=850,height=1100');
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Giấy chứng nhận vốn góp - ${cert.certificate_code}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm 18mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      color: #000000;
+      background: #ffffff;
+      margin: 0;
+      padding: 15px 20px;
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-print-color-adjust: exact;
+    }
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    .header-table td { vertical-align: top; }
+    .title { text-align: center; margin: 18px 0 10px 0; }
+    .title h1 { font-size: 24px; margin: 0; text-transform: uppercase; font-weight: bold; }
+    .title div { font-size: 14px; font-style: italic; margin-top: 4px; font-weight: bold; }
+    .legal-bases { font-style: italic; font-size: 14.5px; margin-bottom: 12px; }
+    .legal-bases p { margin: 3px 0; }
+    .section-info { font-size: 15px; margin-bottom: 12px; }
+    .section-info div { margin: 4px 0; }
+    .cert-heading { text-align: center; font-weight: bold; text-transform: uppercase; font-size: 16px; letter-spacing: 2px; margin: 15px 0 10px 0; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; }
+    .signatures { margin-top: 25px; width: 100%; border-collapse: collapse; }
+    .signatures td { vertical-align: bottom; text-align: center; }
+    @media print {
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom: 15px; text-align: right; padding: 8px; background: #f1f5f9; border-radius: 8px;">
+    <button onclick="window.print()" style="padding: 8px 16px; background: #059669; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">
+      🖨 In / Tải PDF (A4)
+    </button>
+    <button onclick="window.close()" style="padding: 8px 16px; background: #475569; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; margin-left: 8px;">
+      ✕ Đóng
+    </button>
+  </div>
+
+  <table class="header-table">
+    <tr>
+      <td style="width: 52%; text-align: left;">
+        <div style="font-weight: bold; text-transform: uppercase; font-size: 14px;">${nfc(cert.cooperative_name)}</div>
+        <div style="font-size: 13.5px; margin-top: 2px;">Số: <strong>${nfc(cert.certificate_code)}</strong></div>
+      </td>
+      <td style="width: 48%; text-align: center;">
+        <div style="font-weight: bold; text-transform: uppercase; font-size: 14px;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+        <div style="font-weight: bold; font-style: italic; font-size: 13.5px; margin-top: 2px;">Độc lập – Tự do – Hạnh phúc</div>
+        <div style="width: 120px; border-bottom: 1px solid #000; margin: 4px auto 0 auto;"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="title">
+    <h1>GIẤY CHỨNG NHẬN VỐN GÓP</h1>
+    <div>(Cấp lần thứ ${cert.issue_count})</div>
+  </div>
+
+  <div class="legal-bases">
+    <p>Căn cứ Luật Hợp tác xã số 23/2012/QH13 (và Luật HTX số 17/2023/QH15) được Quốc hội nước CHXHCN Việt Nam thông qua và các văn bản hướng dẫn thi hành;</p>
+    <p>Căn cứ Điều lệ ${nfc(cert.cooperative_name)} được thông qua ngày ${nfc(cert.cooperative_license_date)};</p>
+    <p>Căn cứ mức vốn góp thực tế của các thành viên.</p>
+  </div>
+
+  <div class="section-info">
+    <div>Hợp tác xã (ghi bằng chữ in hoa): <strong style="text-transform: uppercase;">${nfc(cert.cooperative_name)}</strong></div>
+    <div>Địa chỉ trụ sở chính: <span>${nfc(cert.cooperative_address)}</span></div>
+    <div>Số và ngày cấp Giấy chứng nhận đăng ký HTX: <span>Số <strong>${nfc(cert.cooperative_license_no)}</strong>, ngày <strong>${nfc(cert.cooperative_license_date)}</strong></span></div>
+  </div>
+
+  <div class="cert-heading">CHỨNG NHẬN</div>
+
+  <div class="section-info">
+    <div>Họ và tên thành viên (là cá nhân hoặc đại diện hộ gia đình): <strong style="text-transform: uppercase; font-size: 16px;">${nfc(cert.member_full_name)}</strong></div>
+    <div class="grid-3">
+      <div>Giới tính: <strong>${nfc(cert.member_gender)}</strong></div>
+      <div>Sinh ngày: <strong>${nfc(cert.member_dob)}</strong></div>
+      <div>Dân tộc: <strong>${nfc(cert.member_ethnicity)}</strong> &nbsp;&nbsp; Quốc tịch: <strong>${nfc(cert.member_nationality)}</strong></div>
+    </div>
+    <div>Nơi đăng ký hộ khẩu thường trú: <strong>${nfc(cert.member_address)}</strong></div>
+    <div class="grid-2">
+      <div>Chứng minh nhân dân số (hoặc CCCD): <strong>${nfc(cert.member_cccd)}</strong></div>
+      <div>Ngày cấp: <strong>${nfc(cert.member_cccd_date)}</strong> &nbsp;&nbsp; Nơi cấp: <strong>${nfc(cert.member_cccd_place)}</strong></div>
+    </div>
+  </div>
+
+  <div class="section-info">
+    <div>Tổng số vốn góp: <strong style="font-size: 17px;">${cert.total_capital_amount.toLocaleString('vi-VN')} đồng</strong> (Bằng chữ: <strong style="font-style: italic;">${nfc(cert.capital_in_words)}</strong>)</div>
+    <div>Hình thức góp vốn:</div>
+    <div style="padding-left: 24px;">
+      <div>+ Tiền mặt / Chuyển khoản: <strong>${nfc(cert.cash_amount_text) || `${cert.total_capital_amount.toLocaleString('vi-VN')} đồng`}</strong></div>
+      <div>+ Tài sản (ghi rõ loại tài sản): <strong>${nfc(cert.asset_amount_text) || 'Không'}</strong></div>
+    </div>
+    <div style="margin-top: 4px;">Thời điểm góp vốn: <strong>${nfc(cert.contribution_date)}</strong></div>
+  </div>
+
+  <div style="font-style: italic; font-size: 14px; margin-top: 12px; text-align: justify;">
+    Trình tự, thủ tục cấp, cấp lại, thay đổi, thu hồi giấy chứng nhận vốn góp thực hiện theo quy định của Điều lệ HTX.
+  </div>
+
+  <table class="signatures">
+    <tr>
+      <td style="width: 40%;">
+        <img
+          src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+            `HTX OCOP LÂM ĐỒNG - GCN VỐN GÓP: Số ${cert.certificate_code} | Xã Viên: ${cert.member_full_name} (${cert.member_cccd}) | Tổng vốn thực góp: ${cert.total_capital_amount.toLocaleString('vi-VN')} VNĐ | Cấp lần thứ: ${cert.issue_count} | Ngày cấp: ${cert.certificate_issue_date}`
+          )}"
+          alt="QR Code"
+          style="width: 95px; height: 95px; border: 1px solid #ccc; padding: 2px;"
+        />
+        <div style="font-size: 11px; font-family: monospace; margin-top: 4px; font-weight: bold;">Mã QR Tra cứu GCN</div>
+      </td>
+      <td style="width: 60%;">
+        <div style="font-style: italic; font-size: 14px;">${nfc(cert.issue_place)}, Ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}</div>
+        <div style="font-weight: bold; text-transform: uppercase; font-size: 14px; margin-top: 4px;">ĐĐ. THEO PHÁP LUẬT CỦA HỢP TÁC XÃ</div>
+        <div style="font-size: 12px; font-style: italic;">(Ký tên, đóng dấu)</div>
+        <div style="height: 65px;"></div>
+        <div style="font-weight: bold; text-transform: uppercase; font-size: 15px;">${nfc(cert.representative_name)}</div>
+      </td>
+    </tr>
+  </table>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 400);
+    };
+  </script>
+</body>
+</html>
+    `;
+
+    printWin.document.write(htmlContent);
+    printWin.document.close();
   };
 
   const filteredMembers = members.filter((m) => {
@@ -622,17 +885,66 @@ export const CapitalPage: React.FC = () => {
 
             {capitalDrawerTab === 'certificate' && (
               <div className="space-y-3 text-[12px]">
-                <div className="p-3 border border-emerald-200 bg-emerald-50/40 rounded-xl text-center space-y-2">
-                  <QrCode className="w-12 h-12 text-emerald-700 mx-auto" />
-                  <div className="font-extrabold text-slate-900 text-sm">Giấy chứng nhận phần vốn góp điện tử</div>
-                  <div className="font-mono text-xs text-emerald-800 font-bold">Số: GCN-2025-{selectedCapitalMember.member_code}</div>
-                  <button
-                    onClick={() => openCertificatePreview(selectedCapitalMember)}
-                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg inline-flex items-center justify-center gap-1.5 shadow-xs"
-                  >
-                    <Eye className="w-4 h-4" /> Xem trước & In Giấy chứng nhận
-                  </button>
+                <div className="text-[11.5px] font-bold text-slate-500 flex justify-between items-center">
+                  <span>DANH SÁCH GIẤY CHỨNG NHẬN ĐÃ CẤP</span>
+                  <span className="pill-badge pill-green text-[10px]">Cập nhật theo Luật HTX</span>
                 </div>
+                {(() => {
+                  const memApprovedTxs = transactions
+                    .filter((tx) => (tx.member_id === selectedCapitalMember.id || tx.member_code === selectedCapitalMember.member_code) && tx.status === 'APPROVED')
+                    .sort((a, b) => {
+                      const dateA = a.contribution_date.includes('/') ? a.contribution_date.split('/').reverse().join('-') : a.contribution_date;
+                      const dateB = b.contribution_date.includes('/') ? b.contribution_date.split('/').reverse().join('-') : b.contribution_date;
+                      return new Date(dateA).getTime() - new Date(dateB).getTime();
+                    });
+
+                  if (memApprovedTxs.length === 0) {
+                    return (
+                      <div className="p-3 border border-emerald-200 bg-emerald-50/40 rounded-xl text-center space-y-2">
+                        <QrCode className="w-10 h-10 text-emerald-700 mx-auto" />
+                        <div className="font-extrabold text-slate-900 text-sm">Giấy chứng nhận phần vốn góp điện tử (Lần 1)</div>
+                        <div className="font-mono text-xs text-emerald-800 font-bold">Số: 01/2025/GCN-HTX</div>
+                        <button
+                          onClick={() => openCertificatePreview(selectedCapitalMember, 1)}
+                          className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg inline-flex items-center justify-center gap-1.5 shadow-xs"
+                        >
+                          <Eye className="w-4 h-4" /> Xem trước & In Giấy chứng nhận
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return memApprovedTxs.map((tx, idx) => {
+                    const issueNum = idx + 1;
+                    const isLatest = issueNum === memApprovedTxs.length;
+                    const cumulativeAmt = memApprovedTxs.slice(0, issueNum).reduce((sum, t) => sum + t.amount, 0);
+
+                    return (
+                      <div key={tx.id} className={`p-3 border rounded-xl space-y-2 transition-all ${isLatest ? 'border-emerald-500 bg-emerald-50/50 shadow-xs' : 'border-slate-200 bg-slate-50/50'}`}>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-slate-900 text-[13px]">Giấy chứng nhận Vốn (Lần {issueNum})</span>
+                              {isLatest && <span className="pill-badge pill-green text-[9.5px]">Mới nhất</span>}
+                            </div>
+                            <div className="font-mono text-[11px] text-emerald-800 font-bold">Số: {String(issueNum).padStart(2, '0')}/2025/GCN-HTX</div>
+                          </div>
+                          <span className="text-[11px] text-slate-500 font-semibold">{tx.contribution_date}</span>
+                        </div>
+                        <div className="text-[11.8px] space-y-0.5 text-slate-600 bg-white/70 p-2 rounded-lg border border-slate-100">
+                          <div>Đợt nộp tiền/tài sản: <strong className="text-emerald-700">+{tx.amount.toLocaleString('vi-VN')} ₫</strong> ({tx.payment_method === 'CASH' ? 'Tiền mặt' : tx.payment_method === 'LAND' ? 'Ruộng đất (QSDĐ)' : 'Chuyển khoản'})</div>
+                          <div>Tổng lũy kế vốn đã góp: <strong className="text-slate-900">{cumulativeAmt.toLocaleString('vi-VN')} ₫</strong></div>
+                        </div>
+                        <button
+                          onClick={() => openCertificatePreview(selectedCapitalMember, issueNum)}
+                          className={`w-full py-1.5 font-bold text-xs rounded-lg inline-flex items-center justify-center gap-1.5 ${isLatest ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Xem trước & In GCN Lần {issueNum}
+                        </button>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             )}
           </div>
@@ -715,6 +1027,112 @@ export const CapitalPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* PENDING TRANSACTIONS MODAL */}
+      {showPendingCapitalModal && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPendingCapitalModal(false);
+          }}
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl max-w-2xl w-full shadow-modal overflow-hidden my-6 border border-slate-200 flex flex-col max-h-[85vh]"
+          >
+            <div className="p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h3 className="font-extrabold text-sm text-white">Giao dịch Góp vốn Chờ Phê duyệt</h3>
+                  <p className="text-[11.5px] text-slate-300">
+                    Phê duyệt bút toán nộp tiền mặt, chuyển khoản & ruộng đất đóng góp của xã viên
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPendingCapitalModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3 overflow-y-auto flex-1 bg-slate-50/50">
+              {transactions.filter((t) => t.status === 'PENDING').length === 0 ? (
+                <div className="py-12 text-center space-y-2 bg-white rounded-xl border border-slate-200">
+                  <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
+                  <div className="font-extrabold text-slate-900 text-sm">Tất cả giao dịch đã được phê duyệt!</div>
+                  <p className="text-xs text-slate-500">Hiện không có bút toán nộp vốn nào cần duyệt thêm.</p>
+                </div>
+              ) : (
+                transactions
+                  .filter((t) => t.status === 'PENDING')
+                  .map((tx) => (
+                    <div
+                      key={tx.id}
+                      className="p-4 bg-white border border-slate-200 rounded-xl space-y-3 shadow-xs hover:border-emerald-300 transition-all"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-slate-900 text-sm">{tx.member_name}</span>
+                            <span className="font-mono text-xs text-slate-500 font-bold">({tx.member_code})</span>
+                            <span className="pill-badge pill-amber text-[10px]">Chờ duyệt</span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Mã chứng từ: <strong className="font-mono text-slate-800">{tx.transaction_code}</strong> &bull; Ngày nộp: {tx.contribution_date}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-base font-black text-emerald-700">+{tx.amount.toLocaleString('vi-VN')} ₫</div>
+                          <span className="text-[11px] text-slate-500 font-bold">
+                            {tx.payment_method === 'CASH' ? 'Tiền mặt' : tx.payment_method === 'LAND' ? 'Ruộng đất (QSDĐ)' : 'Chuyển khoản'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 bg-slate-50 rounded-lg text-xs space-y-1 text-slate-700 border border-slate-100">
+                        <div>Nội dung: <strong>{tx.content}</strong></div>
+                        {tx.notes && <div>Ghi chú: <span className="italic text-slate-600">{tx.notes}</span></div>}
+                      </div>
+
+                      <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                        <span className="text-[11px] text-slate-400">
+                          Người tạo: {tx.recorded_by || tx.member_name}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleRejectCapitalTx(tx.id)}
+                            className="px-3 py-1.5 border border-rose-200 text-rose-700 hover:bg-rose-50 font-bold rounded-lg text-xs transition-all"
+                          >
+                            Từ chối
+                          </button>
+                          <button
+                            onClick={() => handleApproveCapitalTx(tx.id)}
+                            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-xs inline-flex items-center gap-1 transition-all"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Phê duyệt & Cấp Vốn
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
+
+            <div className="p-3 bg-slate-100 border-t border-slate-200 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowPendingCapitalModal(false)}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-lg inline-flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4 text-slate-600" /> Đóng cửa sổ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MULTI-STEP RECORD CAPITAL MODAL */}
       {showRecordModal && (
@@ -901,10 +1319,65 @@ export const CapitalPage: React.FC = () => {
 
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">File Biên bản định giá / Chứng từ scan</label>
-                    <div className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-3 text-center bg-slate-50/50 cursor-pointer">
-                      <Upload className="w-5 h-5 text-slate-400 mx-auto mb-1" />
-                      <div className="text-slate-600 font-medium text-[11.5px]">Tải lên Biên bản họp Đại hội thành viên / Hợp đồng công chứng</div>
-                    </div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                      className="hidden"
+                    />
+                    {!uploadedFile ? (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDragging(true);
+                        }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={handleDropFile}
+                        className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
+                          isDragging
+                            ? 'border-emerald-500 bg-emerald-50 scale-102'
+                            : 'border-emerald-400/80 hover:border-emerald-600 bg-emerald-50/20 hover:bg-emerald-50/50'
+                        }`}
+                      >
+                        <Upload className="w-6 h-6 text-emerald-600 mx-auto mb-1.5 animate-bounce" />
+                        <div className="text-slate-800 font-bold text-[12px]">Bấm vào đây để chọn file hoặc Kéo thả file vào đây</div>
+                        <div className="text-slate-500 text-[11px] mt-0.5 font-medium">Tải lên Biên bản họp Đại hội thành viên / Hợp đồng công chứng / Sổ đỏ (PDF, DOCX, PNG, JPG)</div>
+                      </div>
+                    ) : (
+                      <div className="p-3 border border-emerald-300 bg-emerald-50/70 rounded-xl flex items-center justify-between shadow-xs">
+                        <div className="flex items-center gap-2.5">
+                          <FileText className="w-6 h-6 text-emerald-700 shrink-0" />
+                          <div className="text-left">
+                            <div className="font-extrabold text-slate-900 text-xs truncate max-w-[240px]">{uploadedFile.name}</div>
+                            <div className="text-[10.5px] text-emerald-800 font-bold">{uploadedFile.size} &bull; Đã sẵn sàng đính kèm</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {uploadedFile.url && (
+                            <a
+                              href={uploadedFile.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2.5 py-1 bg-white border border-slate-200 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-bold flex items-center gap-1"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> Xem
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUploadedFile(null);
+                            }}
+                            className="p-1.5 bg-white border border-slate-200 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold"
+                            title="Xóa file đã chọn"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-2 flex justify-between gap-2 border-t border-slate-200">
@@ -948,6 +1421,37 @@ export const CapitalPage: React.FC = () => {
                     </div>
                   </div>
 
+                  <div className="space-y-1.5">
+                    <label className="block font-bold text-slate-700 text-xs">Chế độ phê duyệt khi lưu *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label
+                        onClick={() => setCapitalForm({ ...capitalForm, approval_mode: 'DIRECT_APPROVE' })}
+                        className={`p-2.5 rounded-lg border cursor-pointer flex items-center gap-2 text-xs ${capitalForm.approval_mode === 'DIRECT_APPROVE' ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200 text-slate-600'}`}
+                      >
+                        <input
+                          type="radio"
+                          name="approval_mode"
+                          checked={capitalForm.approval_mode === 'DIRECT_APPROVE'}
+                          onChange={() => {}}
+                        />
+                        <span>Phê duyệt & Cấp vốn ngay</span>
+                      </label>
+
+                      <label
+                        onClick={() => setCapitalForm({ ...capitalForm, approval_mode: 'SUBMIT_PENDING' })}
+                        className={`p-2.5 rounded-lg border cursor-pointer flex items-center gap-2 text-xs ${capitalForm.approval_mode === 'SUBMIT_PENDING' ? 'border-amber-500 bg-amber-50 text-amber-900 font-bold' : 'border-slate-200 text-slate-600'}`}
+                      >
+                        <input
+                          type="radio"
+                          name="approval_mode"
+                          checked={capitalForm.approval_mode === 'SUBMIT_PENDING'}
+                          onChange={() => {}}
+                        />
+                        <span>Tạo giao dịch Chờ duyệt</span>
+                      </label>
+                    </div>
+                  </div>
+
                   <div className="pt-2 flex justify-between gap-2 border-t border-slate-200">
                     <button
                       type="button"
@@ -970,86 +1474,205 @@ export const CapitalPage: React.FC = () => {
         </div>
       )}
 
-      {/* CERTIFICATE PREVIEW & PRINT MODAL */}
+      {/* CERTIFICATE PREVIEW & PRINT MODAL MATCHING giay-chung-nhan-gop-von-4.docx */}
       {showCertificateModal && activeCertificate && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-3xl w-full shadow-modal overflow-hidden my-6 border-4 border-emerald-700">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowCertificateModal(false);
+          }}
+          className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto print:p-0 print:bg-white print:static"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white max-w-4xl w-full shadow-2xl overflow-hidden my-6 relative flex flex-col max-h-[95vh] border border-slate-300 print:max-h-none print:shadow-none print:my-0 print:w-full print:border-none"
+          >
+            {/* Global CSS Print Injection to hide web app background on Ctrl+P or window.print */}
+            <style>{`
+              @media print {
+                @page {
+                  size: A4 portrait;
+                  margin: 10mm 15mm;
+                }
+                html, body {
+                  height: auto !important;
+                  overflow: visible !important;
+                  background: #ffffff !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                }
+                nav, sidebar, header, aside, [role="navigation"], .no-print {
+                  display: none !important;
+                }
+                body * {
+                  visibility: hidden !important;
+                }
+                #printable-certificate, #printable-certificate * {
+                  visibility: visible !important;
+                }
+                #printable-certificate {
+                  position: fixed !important;
+                  left: 0 !important;
+                  top: 0 !important;
+                  width: 100% !important;
+                  height: auto !important;
+                  margin: 0 !important;
+                  padding: 10mm 15mm !important;
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: #ffffff !important;
+                  z-index: 9999999 !important;
+                }
+              }
+            `}</style>
+
             {/* Certificate Header Action Bar */}
-            <div className="p-3 bg-slate-900 text-white flex justify-between items-center">
+            <div className="p-3 bg-slate-900 text-white flex justify-between items-center shrink-0 print:hidden">
               <span className="font-bold text-xs flex items-center gap-1.5">
-                <QrCode className="w-4 h-4 text-emerald-400" /> BẢN XEM TRƯỚC GIẤY CHỨNG NHẬN PHẦN VỐN GÓP ĐIỆN TỬ
+                <QrCode className="w-4 h-4 text-emerald-400" /> BẢN XEM TRƯỚC GIẤY CHỨNG NHẬN PHẦN VỐN GÓP (CẤP LẦN THỨ {activeCertificate.issue_count})
               </span>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => window.print()}
-                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold inline-flex items-center gap-1"
+                  type="button"
+                  onClick={() => handlePrintStandalone(activeCertificate)}
+                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                  title="Mở cửa sổ riêng để in hoặc xuất file PDF chuẩn A4"
                 >
-                  <Printer className="w-3.5 h-3.5" /> In Giấy chứng nhận
+                  <Printer className="w-3.5 h-3.5" /> In Giấy chứng nhận (A4)
                 </button>
-                <button onClick={() => setShowCertificateModal(false)} className="text-slate-400 hover:text-white p-1">
-                  <X className="w-5 h-5" />
+                <button
+                  type="button"
+                  onClick={() => setShowCertificateModal(false)}
+                  className="px-3.5 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Thoát / Đóng cửa sổ"
+                >
+                  <X className="w-4 h-4" /> Thoát / Đóng
                 </button>
               </div>
             </div>
 
-            {/* Standard Certificate Content Matching giay-chung-nhan-gop-von-4.docx */}
-            <div className="p-8 space-y-6 text-slate-900 font-serif bg-[#fffdf9] relative">
-              <div className="text-center space-y-1">
-                <div className="font-bold uppercase text-xs tracking-wider">{activeCertificate.cooperative_name}</div>
-                <div className="text-[11px] text-slate-600">Số: {activeCertificate.certificate_code}</div>
-                <div className="text-xs font-bold pt-2">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                <div className="text-xs font-bold italic border-b border-slate-300 pb-2 w-48 mx-auto">Độc lập – Tự do – Hạnh phúc</div>
+            {/* Scrollable Standard Certificate Content (Clean A4 Times New Roman Format) */}
+            <div
+              id="printable-certificate"
+              style={{
+                fontFamily: '"Times New Roman", Times, serif',
+                color: '#000000',
+                backgroundColor: '#ffffff',
+              }}
+              className="p-8 md:p-12 space-y-4 overflow-y-auto flex-1 text-[15px] leading-relaxed select-text print:p-0 print:overflow-visible"
+            >
+              {/* Header 2 Columns: HTX & Quốc Hiệu */}
+              <div className="flex justify-between items-start pt-1">
+                <div className="text-left space-y-0.5">
+                  <div className="font-bold uppercase text-[14px]">{nfc(activeCertificate.cooperative_name)}</div>
+                  <div className="text-[13.5px]">Số: <strong>{nfc(activeCertificate.certificate_code)}</strong></div>
+                </div>
+                <div className="text-center space-y-0.5">
+                  <div className="font-bold uppercase text-[14px]">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                  <div className="font-bold italic text-[13.5px]">Độc lập – Tự do – Hạnh phúc</div>
+                  <div className="w-32 border-b border-black mx-auto pt-0.5"></div>
+                </div>
               </div>
 
-              <div className="text-center pt-2 space-y-1">
-                <h2 className="text-xl font-black uppercase text-emerald-900 tracking-wide">GIẤY CHỨNG NHẬN VỐN GÓP</h2>
-                <div className="text-xs italic text-slate-600">(Cấp lần thứ {activeCertificate.issue_count})</div>
+              {/* Title Section */}
+              <div className="text-center pt-4 pb-1 space-y-1">
+                <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-wide">GIẤY CHỨNG NHẬN VỐN GÓP</h1>
+                <div className="text-[14px] italic font-bold">(Cấp lần thứ {activeCertificate.issue_count})</div>
               </div>
 
-              <div className="text-[12px] leading-relaxed space-y-2 text-justify">
-                <p>Căn cứ Luật Hợp tác xã số 17/2023/QH15 được Quốc hội nước CHXHCN Việt Nam thông qua;</p>
-                <p>Căn cứ Điều lệ {activeCertificate.cooperative_name};</p>
+              {/* Legal Bases */}
+              <div className="text-[14.5px] italic space-y-1 pl-1">
+                <p>Căn cứ Luật Hợp tác xã số 23/2012/QH13 (và Luật HTX số 17/2023/QH15) được Quốc hội nước CHXHCN Việt Nam thông qua và các văn bản hướng dẫn thi hành;</p>
+                <p>Căn cứ Điều lệ {nfc(activeCertificate.cooperative_name)} được thông qua ngày {nfc(activeCertificate.cooperative_license_date)};</p>
                 <p>Căn cứ mức vốn góp thực tế của các thành viên.</p>
               </div>
 
-              <div className="p-4 border border-slate-300 rounded-lg space-y-2 text-[12.5px] bg-white">
-                <div className="font-bold text-emerald-800 uppercase text-xs border-b pb-1">HỢP TÁC XÃ CHỨNG NHẬN:</div>
+              {/* Cooperative Info */}
+              <div className="space-y-1.5 text-[15px] pt-1">
+                <div>Hợp tác xã (ghi bằng chữ in hoa): <strong className="uppercase font-bold">{nfc(activeCertificate.cooperative_name)}</strong></div>
+                <div>Địa chỉ trụ sở chính: <span>{nfc(activeCertificate.cooperative_address)}</span></div>
+                <div>Số và ngày cấp Giấy chứng nhận đăng ký HTX: <span>Số <strong>{nfc(activeCertificate.cooperative_license_no)}</strong>, ngày <strong>{nfc(activeCertificate.cooperative_license_date)}</strong></span></div>
+              </div>
+
+              {/* CHỨNG NHẬN Header */}
+              <div className="text-center font-bold uppercase text-base tracking-widest pt-3 pb-1">
+                CHỨNG NHẬN
+              </div>
+
+              {/* Member Details */}
+              <div className="space-y-1.5 text-[15px]">
+                <div>Họ và tên thành viên (là cá nhân hoặc đại diện hộ gia đình): <strong className="uppercase font-bold text-[16px] pl-1">{nfc(activeCertificate.member_full_name)}</strong></div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>Giới tính: <strong>{nfc(activeCertificate.member_gender)}</strong></div>
+                  <div>Sinh ngày: <strong>{nfc(activeCertificate.member_dob)}</strong></div>
+                  <div>Dân tộc: <strong>{nfc(activeCertificate.member_ethnicity)}</strong> &nbsp;&nbsp; Quốc tịch: <strong>{nfc(activeCertificate.member_nationality)}</strong></div>
+                </div>
+                <div>Nơi đăng ký hộ khẩu thường trú: <strong>{nfc(activeCertificate.member_address)}</strong></div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div>Họ và tên thành viên: <strong>{activeCertificate.member_full_name}</strong></div>
-                  <div>Giới tính: <strong>{activeCertificate.member_gender}</strong></div>
-                  <div>Ngày sinh: <strong>{activeCertificate.member_dob}</strong></div>
-                  <div>Dân tộc: <strong>{activeCertificate.member_ethnicity}</strong> &bull; Quốc tịch: <strong>{activeCertificate.member_nationality}</strong></div>
-                  <div className="col-span-2">Nơi đăng ký HKTT: <strong>{activeCertificate.member_address}</strong></div>
-                  <div>Số CCCD/CMND: <strong className="font-mono">{activeCertificate.member_cccd}</strong></div>
-                  <div>Ngày cấp: <strong>{activeCertificate.member_cccd_date}</strong></div>
+                  <div>Chứng minh nhân dân số (hoặc CCCD): <strong>{nfc(activeCertificate.member_cccd)}</strong></div>
+                  <div>Ngày cấp: <strong>{nfc(activeCertificate.member_cccd_date)}</strong> &nbsp;&nbsp; Nơi cấp: <strong>{nfc(activeCertificate.member_cccd_place)}</strong></div>
                 </div>
               </div>
 
-              <div className="p-4 border-2 border-emerald-600 rounded-lg space-y-2 text-[13px] bg-emerald-50/30">
-                <div className="flex justify-between items-baseline">
-                  <span>TỔNG SỐ VỐN GÓP THỰC TẾ:</span>
-                  <strong className="text-lg text-emerald-900 font-extrabold">{activeCertificate.total_capital_amount.toLocaleString('vi-VN')} VNĐ</strong>
+              {/* Capital Amount Breakdown */}
+              <div className="space-y-1.5 text-[15px] pt-2">
+                <div>Tổng số vốn góp: <strong className="text-[17px] font-bold">{activeCertificate.total_capital_amount.toLocaleString('vi-VN')} đồng</strong> (Bằng chữ: <strong className="italic font-bold">{nfc(activeCertificate.capital_in_words)}</strong>)</div>
+                <div>Hình thức góp vốn:</div>
+                <div className="pl-6 space-y-1">
+                  <div>+ Tiền mặt / Chuyển khoản: <strong>{nfc(activeCertificate.cash_amount_text) || `${activeCertificate.total_capital_amount.toLocaleString('vi-VN')} đồng`}</strong></div>
+                  <div>+ Tài sản (ghi rõ loại tài sản): <strong>{nfc(activeCertificate.asset_amount_text) || 'Không'}</strong></div>
                 </div>
-                <div>Bằng chữ: <strong className="italic">{activeCertificate.capital_in_words}</strong></div>
-                <div>Hình thức góp vốn: <strong>{activeCertificate.contribution_form}</strong></div>
-                <div>Thời điểm hoàn thành góp vốn: <strong>{activeCertificate.contribution_date}</strong></div>
+                <div>Thời điểm góp vốn: <strong>{nfc(activeCertificate.contribution_date)}</strong></div>
               </div>
 
+              {/* Legal Notice */}
+              <div className="text-[14px] italic pt-3 text-justify">
+                Trình tự, thủ tục cấp, cấp lại, thay đổi, thu hồi giấy chứng nhận vốn góp thực hiện theo quy định của Điều lệ HTX.
+              </div>
+
+              {/* Signatures & QR Code */}
               <div className="pt-6 flex justify-between items-end">
-                <div className="text-center space-y-2">
-                  <div className="p-2 border border-slate-200 rounded-lg bg-white inline-block">
-                    <QrCode className="w-16 h-16 text-slate-800 mx-auto" />
-                    <span className="text-[9px] font-mono text-slate-500 block mt-1">Mã QR Tra cứu GCN</span>
-                  </div>
+                <div className="text-center space-y-1">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                      `HTX OCOP LÂM ĐỒNG - GCN VỐN GÓP: Số ${activeCertificate.certificate_code} | Xã Viên: ${activeCertificate.member_full_name} (${activeCertificate.member_cccd}) | Tổng vốn thực góp: ${activeCertificate.total_capital_amount.toLocaleString('vi-VN')} VNĐ | Cấp lần thứ: ${activeCertificate.issue_count} | Ngày cấp: ${activeCertificate.certificate_issue_date}`
+                    )}`}
+                    alt="Mã QR Tra cứu GCN"
+                    className="w-24 h-24 mx-auto border border-slate-200 p-1 bg-white"
+                  />
+                  <span className="text-[11px] font-mono text-slate-700 font-bold block mt-1">Mã QR Tra cứu GCN</span>
                 </div>
 
-                <div className="text-center text-[12px] space-y-1">
-                  <div className="italic text-slate-600">Lâm Đồng, Ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}</div>
-                  <div className="font-bold uppercase text-xs pt-1">ĐẠI DIỆN THEO PHÁP LUẬT CỦA HTX</div>
-                  <div className="text-[10px] text-slate-400 italic">(Ký tên, đóng dấu)</div>
-                  <div className="h-12"></div>
-                  <div className="font-bold text-emerald-900">{activeCertificate.representative_name}</div>
+                <div className="text-center text-[14px] space-y-1 pr-2">
+                  <div className="italic">{nfc(activeCertificate.issue_place)}, Ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}</div>
+                  <div className="font-bold uppercase text-[14px]">ĐĐ. THEO PHÁP LUẬT CỦA HỢP TÁC XÃ</div>
+                  <div className="text-[12px] italic">(Ký tên, đóng dấu)</div>
+                  <div className="h-20"></div>
+                  <div className="font-bold uppercase text-[15px]">{nfc(activeCertificate.representative_name)}</div>
                 </div>
+              </div>
+            </div>
+
+            {/* Bottom Fixed Action Bar */}
+            <div className="p-3 bg-slate-100 border-t border-slate-300 flex justify-between items-center shrink-0 print:hidden">
+              <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+                Nhấn "Thoát / Đóng" hoặc click phông nền mờ để quay lại
+              </span>
+              <div className="flex items-center gap-2.5 ml-auto">
+                <button
+                  type="button"
+                  onClick={() => setShowCertificateModal(false)}
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-lg inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4 text-slate-600" /> Thoát / Đóng
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePrintStandalone(activeCertificate)}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Mở cửa sổ riêng để in hoặc xuất file PDF chuẩn A4"
+                >
+                  <Printer className="w-4 h-4" /> In Giấy chứng nhận (A4)
+                </button>
               </div>
             </div>
           </div>
