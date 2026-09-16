@@ -175,9 +175,11 @@ export const MembersPage: React.FC = () => {
     zalo: '',
     facebook: '',
     capital_form: 'TIEN_MAT' as 'TIEN_MAT' | 'HIEN_VAT',
-    initial_capital: 10000000,
-    capital_in_words: 'Mười triệu đồng',
+    committed_capital: 50000000,
+    initial_contributed_capital: 10000000,
+    capital_in_words: 'Năm mươi triệu đồng',
     contribution_date: new Date().toISOString().split('T')[0],
+    commitment_deadline: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     contribution_method: 'Góp một lần',
     member_type: 'CHINH_THUC' as MemberType,
     profit_share_rate: 2.85,
@@ -338,9 +340,11 @@ export const MembersPage: React.FC = () => {
       zalo: '',
       facebook: '',
       capital_form: 'TIEN_MAT',
-      initial_capital: 10000000,
-      capital_in_words: 'Mười triệu đồng',
+      committed_capital: 50000000,
+      initial_contributed_capital: 10000000,
+      capital_in_words: 'Năm mươi triệu đồng',
       contribution_date: new Date().toISOString().split('T')[0],
+      commitment_deadline: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       contribution_method: 'Góp một lần',
       member_type: 'CHINH_THUC',
       profit_share_rate: 2.85,
@@ -402,14 +406,18 @@ export const MembersPage: React.FC = () => {
         }
       }
     } else if (step === 3) {
-      if (!wizardForm.initial_capital || wizardForm.initial_capital <= 0) {
-        errors.initial_capital = 'Số vốn góp phải lớn hơn 0 VNĐ';
+      const actualContributed = wizardForm.contribution_method === 'Góp một lần' ? wizardForm.committed_capital : wizardForm.initial_contributed_capital;
+      if (!wizardForm.committed_capital || wizardForm.committed_capital <= 0) {
+        errors.committed_capital = 'Vốn cam kết phải lớn hơn 0 VNĐ';
+      }
+      if (!actualContributed || actualContributed < 0) {
+        errors.initial_contributed_capital = 'Số tiền thực góp đợt 1 không hợp lệ';
       }
       if (!wizardForm.contribution_date) {
         errors.contribution_date = 'Vui lòng chọn Ngày góp vốn';
       }
       if (Object.keys(errors).length > 0) {
-        mainMsg = errors.initial_capital || 'Vui lòng điền đầy đủ thông tin vốn góp!';
+        mainMsg = errors.committed_capital || errors.initial_contributed_capital || 'Vui lòng điền đầy đủ thông tin vốn góp!';
       }
     } else if (step === 4) {
       if (wizardForm.profit_share_rate === undefined || wizardForm.profit_share_rate < 0) {
@@ -455,9 +463,16 @@ export const MembersPage: React.FC = () => {
     }
     const nextNum = members.length + 1;
     const newCode = `TV00${nextNum}`;
-    const sharesCount = Math.floor(wizardForm.initial_capital / 100000);
-    const newCapitalTotal = totalContributedCapital + wizardForm.initial_capital;
-    const ownPct = Number(((wizardForm.initial_capital / newCapitalTotal) * 100).toFixed(2));
+    const committedCap = wizardForm.committed_capital || 50000000;
+    const contributedCap = wizardForm.contribution_method === 'Góp một lần'
+      ? committedCap
+      : (wizardForm.initial_contributed_capital || 10000000);
+    const remainingCap = Math.max(0, committedCap - contributedCap);
+    const capitalStat = remainingCap === 0 ? ('DU_VON' as const) : ('CHUA_DU' as const);
+
+    const sharesCount = Math.floor(contributedCap / 100000);
+    const newCapitalTotal = totalContributedCapital + contributedCap;
+    const ownPct = Number(((contributedCap / (newCapitalTotal || 1)) * 100).toFixed(2));
     const fullAddr = `${wizardForm.detail_address ? wizardForm.detail_address + ', ' : ''}${wizardForm.ward}, ${wizardForm.district}, ${wizardForm.province}`;
 
     const newMem: Member = {
@@ -485,14 +500,15 @@ export const MembersPage: React.FC = () => {
       contribution_date: wizardForm.contribution_date,
       contribution_method: wizardForm.contribution_method,
       member_type: wizardForm.member_type,
-      committed_capital: wizardForm.initial_capital,
-      contributed_capital: wizardForm.initial_capital,
-      remaining_capital: 0,
-      total_capital_contributed: wizardForm.initial_capital,
+      committed_capital: committedCap,
+      contributed_capital: contributedCap,
+      remaining_capital: remainingCap,
+      commitment_deadline: wizardForm.commitment_deadline,
+      total_capital_contributed: contributedCap,
       capital_in_words: wizardForm.capital_in_words,
       total_shares_held: sharesCount,
       ownership_percentage: ownPct,
-      capital_status: 'DU_VON',
+      capital_status: capitalStat,
       profit_share_rate: wizardForm.profit_share_rate,
       payout_method: wizardForm.payout_method,
       bank_account: '',
@@ -504,6 +520,29 @@ export const MembersPage: React.FC = () => {
       annual_product_output_kg: 0,
       notary_document_url: wizardUploadedFile ? URL.createObjectURL(wizardUploadedFile) : undefined,
     };
+
+    // Create initial CapitalTransaction record for 1st payment
+    if (contributedCap > 0) {
+      const firstTx: CapitalTransaction = {
+        id: `CC-${Math.floor(100000 + Math.random() * 900000)}`,
+        member_id: newMem.id,
+        member_code: newMem.member_code,
+        member_name: newMem.full_name,
+        transaction_code: `PT-${Math.floor(100000 + Math.random() * 900000)}`,
+        amount: contributedCap,
+        share_quantity: Math.floor(contributedCap / 100000),
+        contribution_date: wizardForm.contribution_date,
+        payment_method: wizardForm.capital_form === 'HIEN_VAT' ? 'ASSET' : 'CASH',
+        receipt_number: `PT-${Math.floor(100000 + Math.random() * 900000)}`,
+        content: `Góp vốn đợt 1 (Lần đầu kết nạp xã viên ${newMem.full_name})`,
+        notes: wizardForm.notes || 'Góp vốn đợt 1 khi gia nhập HTX',
+        status: 'APPROVED',
+        recorded_by: 'Kế toán trưởng',
+        recorded_date: new Date().toLocaleDateString('vi-VN'),
+        receipt_file_name: wizardUploadedFile ? wizardUploadedFile.name : undefined,
+      };
+      setTransactions((prev) => [firstTx, ...prev]);
+    }
 
     createMemberApi(newMem)
       .then((savedMem) => {
@@ -2968,7 +3007,7 @@ export const MembersPage: React.FC = () => {
                 </div>
               )}
 
-              {/* BƯỚC 3: THÔNG TIN VỐN GÓP (MATCHING SCREENSHOT 3) */}
+              {/* BƯỚC 3: THÔNG TIN VỐN GÓP & CAM KẾT (UPGRADED BR-COOP-006) */}
               {wizardStep === 3 && (
                 <div className="space-y-4 animate-fade-in">
                   <div>
@@ -2999,19 +3038,46 @@ export const MembersPage: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Số vốn góp (VND) *</label>
+                      <label className="block font-bold text-slate-700 mb-1">Vốn cam kết góp theo Điều lệ (VND) *</label>
                       <input
                         type="number"
                         step={1000000}
                         required
-                        value={wizardForm.initial_capital}
-                        onChange={(e) => setWizardForm({ ...wizardForm, initial_capital: Number(e.target.value) })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-emerald-800 text-base"
+                        placeholder="Nhập tổng vốn đăng ký góp"
+                        value={wizardForm.committed_capital}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          const isOneTime = wizardForm.contribution_method === 'Góp một lần';
+                          setWizardForm({
+                            ...wizardForm,
+                            committed_capital: val,
+                            initial_contributed_capital: isOneTime ? val : Math.min(val, wizardForm.initial_contributed_capital),
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-slate-900 text-base"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Bằng chữ</label>
+                      <label className="block font-bold text-slate-700 mb-1">Số tiền thực góp Đợt 1 (VND) *</label>
+                      <input
+                        type="number"
+                        step={1000000}
+                        required
+                        placeholder="Số tiền thực nộp đợt 1"
+                        disabled={wizardForm.contribution_method === 'Góp một lần'}
+                        value={wizardForm.contribution_method === 'Góp một lần' ? wizardForm.committed_capital : wizardForm.initial_contributed_capital}
+                        onChange={(e) => setWizardForm({ ...wizardForm, initial_contributed_capital: Number(e.target.value) })}
+                        className={`w-full px-3 py-2 border rounded-lg font-bold text-emerald-800 text-base ${
+                          wizardForm.contribution_method === 'Góp một lần' ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Bằng chữ (Vốn cam kết)</label>
                       <input
                         type="text"
                         placeholder="Nhập bằng chữ"
@@ -3020,30 +3086,53 @@ export const MembersPage: React.FC = () => {
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-600"
                       />
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Ngày góp vốn *</label>
+                      <label className="block font-bold text-slate-700 mb-1">Ngày góp vốn (Đợt 1) *</label>
                       <input
                         type="date"
                         required
                         value={wizardForm.contribution_date}
-                        onChange={(e) => setWizardForm({ ...wizardForm, contribution_date: e.target.value })}
+                        onChange={(e) => {
+                          const dateVal = e.target.value;
+                          const d = new Date(dateVal || Date.now());
+                          d.setMonth(d.getMonth() + 6);
+                          const deadline = d.toISOString().split('T')[0];
+                          setWizardForm({ ...wizardForm, contribution_date: dateVal, commitment_deadline: deadline });
+                        }}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg"
                       />
                     </div>
+                  </div>
 
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Phương thức góp vốn</label>
                       <select
                         value={wizardForm.contribution_method}
-                        onChange={(e) => setWizardForm({ ...wizardForm, contribution_method: e.target.value })}
+                        onChange={(e) => {
+                          const method = e.target.value;
+                          setWizardForm({
+                            ...wizardForm,
+                            contribution_method: method,
+                            initial_contributed_capital: method === 'Góp một lần' ? wizardForm.committed_capital : wizardForm.initial_contributed_capital,
+                          });
+                        }}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
                       >
-                        <option value="Góp một lần">Góp một lần</option>
+                        <option value="Góp một lần">Góp một lần (Nộp 100% ngay)</option>
                         <option value="Theo đợt">Theo đợt (Cam kết góp tiếp)</option>
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Thời hạn góp đủ (Hạn 6 tháng BR-COOP-006)</label>
+                      <input
+                        type="date"
+                        value={wizardForm.commitment_deadline}
+                        onChange={(e) => setWizardForm({ ...wizardForm, commitment_deadline: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg font-medium text-slate-700"
+                      />
                     </div>
                   </div>
 
@@ -3054,15 +3143,41 @@ export const MembersPage: React.FC = () => {
                       onChange={(e) => setWizardForm({ ...wizardForm, member_type: e.target.value as any })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-bold text-slate-900"
                     >
-                      <option value="CHINH_THUC">Chính thức</option>
-                      <option value="LIEN_KET_GOP_VON">Liên kết góp vốn</option>
-                      <option value="LIEN_KET_KHONG_GOP_VON">Liên kết không góp vốn</option>
+                      <option value="CHINH_THUC">Chính thức (Có quyền biểu quyết & Hưởng lợi nhuận)</option>
+                      <option value="LIEN_KET_GOP_VON">Liên kết góp vốn (Không biểu quyết, Hưởng lợi nhuận)</option>
+                      <option value="LIEN_KET_KHONG_GOP_VON">Liên kết không góp vốn (Tiêu thụ sản phẩm)</option>
                     </select>
-
-                    <p className="text-[11.5px] text-slate-500 mt-1.5 leading-relaxed">
-                      <em>Chính thức: Có quyền biểu quyết và hưởng lợi nhuận. Liên kết: Hợp tác sản xuất, không có quyền biểu quyết.</em>
-                    </p>
                   </div>
+
+                  {/* Card Tính toán Vốn tự động Realtime */}
+                  {(() => {
+                    const actualContributed = wizardForm.contribution_method === 'Góp một lần'
+                      ? wizardForm.committed_capital
+                      : wizardForm.initial_contributed_capital;
+                    const remaining = Math.max(0, wizardForm.committed_capital - actualContributed);
+                    const isFullyPaid = remaining === 0;
+
+                    return (
+                      <div className={`p-3.5 rounded-xl border space-y-1.5 text-xs ${isFullyPaid ? 'bg-emerald-50/80 border-emerald-200' : 'bg-amber-50/80 border-amber-200'}`}>
+                        <div className="flex items-center justify-between font-extrabold">
+                          <span className="text-slate-800">TỔNG HỢP NGHĨA VỤ VỐN GÓP:</span>
+                          <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${isFullyPaid ? 'bg-emerald-600 text-white' : 'bg-amber-600 text-white'}`}>
+                            {isFullyPaid ? 'ĐÃ ĐỦ VỐN (CẤP GCN NGAY)' : 'CHƯA ĐỦ VỐN (THEO DÕI GÓP TIẾP)'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-200/60 font-medium text-slate-700">
+                          <div>Cam kết: <strong className="text-slate-900 font-bold">{wizardForm.committed_capital.toLocaleString('vi-VN')} ₫</strong></div>
+                          <div>Thực góp đợt 1: <strong className="text-emerald-700 font-bold">{actualContributed.toLocaleString('vi-VN')} ₫</strong></div>
+                          <div>Còn nợ: <strong className={isFullyPaid ? 'text-emerald-700 font-bold' : 'text-rose-700 font-extrabold'}>{remaining.toLocaleString('vi-VN')} ₫</strong></div>
+                        </div>
+                        {!isFullyPaid && (
+                          <div className="text-[11px] text-amber-800 font-medium italic pt-0.5">
+                            * Số tiền còn nợ <strong>{remaining.toLocaleString('vi-VN')} ₫</strong> sẽ tự động chuyển sang trang <strong>Quản lý vốn góp</strong> để kế toán theo dõi thu bổ sung đợt 2, đợt 3 trước hạn <strong>{wizardForm.commitment_deadline}</strong>.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Giấy biên nhận / Chứng từ (nếu có)</label>
@@ -3237,9 +3352,10 @@ export const MembersPage: React.FC = () => {
                         <div className="space-y-1 pl-1">
                           <div className="flex justify-between"><span className="text-slate-500">Loại xã viên:</span> <strong className="text-emerald-800">{MEMBER_TYPE_LABELS[wizardForm.member_type]}</strong></div>
                           <div className="flex justify-between"><span className="text-slate-500">Hình thức:</span> <span>{wizardForm.capital_form === 'TIEN_MAT' ? 'Tiền mặt' : 'Hiện vật'}</span></div>
-                          <div className="flex justify-between"><span className="text-slate-500">Số vốn góp:</span> <strong className="text-emerald-700">{wizardForm.initial_capital.toLocaleString('vi-VN')} ₫</strong></div>
-                          <div className="flex justify-between"><span className="text-slate-500">Ngày góp vốn:</span> <span>{wizardForm.contribution_date}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Vốn cam kết:</span> <strong className="text-slate-900">{wizardForm.committed_capital.toLocaleString('vi-VN')} ₫</strong></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Thực góp Đợt 1:</span> <strong className="text-emerald-700">{(wizardForm.contribution_method === 'Góp một lần' ? wizardForm.committed_capital : wizardForm.initial_contributed_capital).toLocaleString('vi-VN')} ₫</strong></div>
                           <div className="flex justify-between"><span className="text-slate-500">Phương thức:</span> <span>{wizardForm.contribution_method}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Hạn nộp đủ vốn:</span> <span className="font-mono">{wizardForm.commitment_deadline}</span></div>
                         </div>
                       </div>
 
