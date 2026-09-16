@@ -2669,9 +2669,9 @@ export const MembersPage: React.FC = () => {
       {/* 5-STEP WIZARD MODAL: THÊM XÃ VIÊN MỚI */}
       {/* ========================================================================= */}
       {showWizardModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-modal overflow-hidden my-6">
-            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-white">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-modal overflow-hidden flex flex-col max-h-[88vh] my-auto">
+            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
               <h3 className="font-extrabold text-slate-900 text-lg">Thêm xã viên mới</h3>
               <button onClick={() => setShowWizardModal(false)} className="text-slate-400 hover:text-slate-600 p-1">
                 <X className="w-5 h-5" />
@@ -2679,7 +2679,7 @@ export const MembersPage: React.FC = () => {
             </div>
 
             {/* Stepper Header */}
-            <div className="px-6 py-4 bg-slate-50/70 border-b border-slate-200/80">
+            <div className="px-6 py-4 bg-slate-50/70 border-b border-slate-200/80 shrink-0">
               <div className="flex items-center justify-between text-center relative">
                 {[1, 2, 3, 4, 5].map((s) => (
                   <React.Fragment key={s}>
@@ -2715,7 +2715,7 @@ export const MembersPage: React.FC = () => {
             </div>
 
             {/* Step Body */}
-            <div className="p-6 space-y-4 text-[12.8px]">
+            <div className="p-6 space-y-4 text-[12.8px] flex-1 overflow-y-auto custom-form-scrollbar">
               {/* WARNING ALERT BANNER FOR STEP ERRORS */}
               {wizardStepError && (
                 <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-[12.5px] font-bold flex items-center gap-2.5 shadow-xs animate-fade-in">
@@ -3397,7 +3397,7 @@ export const MembersPage: React.FC = () => {
             </div>
 
             {/* Stepper Footer Buttons */}
-            <div className="p-4 border-t border-slate-200 flex justify-between items-center bg-slate-50">
+            <div className="p-4 border-t border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
               {wizardStep > 1 ? (
                 <button
                   type="button"
@@ -3434,10 +3434,10 @@ export const MembersPage: React.FC = () => {
 
       {/* REDESIGNED EDIT MEMBER MODAL */}
       {showEditModal && editingMember && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-modal overflow-hidden my-6">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-modal overflow-hidden flex flex-col max-h-[88vh] my-auto">
             {/* Header */}
-            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/80">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/80 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-200">
                   <Pencil className="w-5 h-5 text-blue-600" />
@@ -3458,7 +3458,7 @@ export const MembersPage: React.FC = () => {
             </div>
 
             {/* Sub-Tabs Bar Inside Edit Modal */}
-            <div className="bg-slate-100/60 border-b border-slate-200 px-4 pt-2 flex gap-2 text-[12.5px] font-bold overflow-x-auto">
+            <div className="bg-slate-100/60 border-b border-slate-200 px-4 pt-2 flex gap-2 text-[12.5px] font-bold overflow-x-auto shrink-0">
               <button
                 type="button"
                 onClick={() => setEditTab('personal')}
@@ -3506,7 +3506,8 @@ export const MembersPage: React.FC = () => {
             </div>
 
             {/* Form Body */}
-            <form onSubmit={handleSaveEdit} className="p-6 space-y-4 text-[12.8px]">
+            <form onSubmit={handleSaveEdit} className="flex flex-col flex-1 overflow-hidden min-h-0">
+              <div className="p-6 space-y-4 text-[12.8px] flex-1 overflow-y-auto custom-form-scrollbar">
               {/* WARNING ALERT BANNER FOR EDIT ERRORS */}
               {editError && (
                 <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-[12.5px] font-bold flex items-center gap-2.5 shadow-xs animate-fade-in">
@@ -4001,13 +4002,14 @@ export const MembersPage: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
 
               {/* Modal Footer */}
-              <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
+              <div className="p-4 border-t border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-5 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-50 text-[12.8px]"
+                  className="px-5 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-white text-[12.8px]"
                 >
                   Hủy bỏ
                 </button>
@@ -4119,9 +4121,9 @@ export const MembersPage: React.FC = () => {
 
       {/* PENDING CAPITAL TRANSACTIONS APPROVAL MODAL */}
       {showPendingCapitalModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-3xl w-full shadow-modal overflow-hidden my-6">
-            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-3xl w-full shadow-modal overflow-hidden flex flex-col max-h-[88vh] my-auto">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold border border-amber-200">
                   <ClockIcon className="w-5 h-5" />
@@ -4143,7 +4145,7 @@ export const MembersPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-5 space-y-4 max-h-[calc(100vh-220px)] overflow-y-auto">
+            <div className="p-5 space-y-4 flex-1 overflow-y-auto custom-form-scrollbar">
               {transactions.filter((t) => t.status === 'PENDING').length === 0 ? (
                 <div className="text-center py-10 space-y-2">
                   <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
@@ -4220,7 +4222,7 @@ export const MembersPage: React.FC = () => {
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end shrink-0">
               <button
                 onClick={() => setShowPendingCapitalModal(false)}
                 className="px-5 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-white text-[12.8px]"
