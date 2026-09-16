@@ -130,6 +130,7 @@ export interface CapitalTransaction {
   recorded_by?: string;
   recorded_date?: string;
   receipt_file_name?: string;
+  receipt_file_url?: string;
   land_details?: LandContribution;
   certificate_code?: string;
 }

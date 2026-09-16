@@ -540,6 +540,7 @@ export const MembersPage: React.FC = () => {
         recorded_by: 'Kế toán trưởng',
         recorded_date: new Date().toLocaleDateString('vi-VN'),
         receipt_file_name: wizardUploadedFile ? wizardUploadedFile.name : undefined,
+        receipt_file_url: wizardUploadedFile ? URL.createObjectURL(wizardUploadedFile) : undefined,
       };
       setTransactions((prev) => [firstTx, ...prev]);
     }
@@ -3034,6 +3035,18 @@ export const MembersPage: React.FC = () => {
                         Hiện vật
                       </label>
                     </div>
+                    {wizardForm.capital_form === 'HIEN_VAT' && (
+                      <div className="mt-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-start gap-2">
+                        <i className="ri-information-line text-amber-600 text-sm mt-0.5"></i>
+                        <div>
+                          <p className="font-semibold mb-0.5">Lưu ý khi Góp vốn bằng Hiện vật (Theo Luật HTX 2023):</p>
+                          <p className="leading-relaxed">
+                            • Giá trị ghi nhận bên dưới là <strong>giá trị tài sản được quy đổi ra VNĐ</strong> dựa trên <strong>Biên bản định giá</strong> của Hội đồng định giá HTX hoặc Tổ chức thẩm định độc lập.<br/>
+                            • Vui lòng tải lên <strong>Biên bản định giá / Biên bản bàn giao tài sản / Giấy tờ tài sản</strong> ở ô chứng từ bên dưới.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
