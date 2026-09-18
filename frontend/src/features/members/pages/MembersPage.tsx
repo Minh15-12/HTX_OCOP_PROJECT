@@ -26,6 +26,7 @@ import {
   UserCheck,
   AlertTriangle,
   UserX,
+  XCircle,
   RefreshCw,
   ExternalLink,
   Save,
@@ -126,9 +127,12 @@ export const MembersPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
 
-  // Approve Member Modal state
+  // Approve & Reject Member Modal state
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [approvingMember, setApprovingMember] = useState<Member | null>(null);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRefundNoticeModal, setShowRefundNoticeModal] = useState<Member | null>(null);
 
   // Pending Capital Transactions Modal State
   const [showPendingCapitalModal, setShowPendingCapitalModal] = useState(false);
@@ -648,24 +652,73 @@ export const MembersPage: React.FC = () => {
 
   const handleOpenApprove = (m: Member) => {
     setApprovingMember(m);
+    setShowRejectForm(false);
+    setRejectReason('');
     setShowApproveModal(true);
   };
 
   const handleConfirmApprove = () => {
     if (!approvingMember) return;
-    approveMemberApi(approvingMember.id);
+    const targetId = approvingMember.id;
+    approveMemberApi(targetId);
     setMembers((prev) =>
-      prev.map((m) => (m.id === approvingMember.id ? { ...m, status: 'ACTIVE' as MemberStatus } : m))
+      prev.map((m) => (m.id === targetId ? { ...m, status: 'ACTIVE' as MemberStatus } : m))
     );
-    if (selectedMember?.id === approvingMember.id) {
+    setTransactions((prev) =>
+      prev.map((t) => (t.member_id === targetId ? { ...t, status: 'APPROVED' as const } : t))
+    );
+    if (selectedMember?.id === targetId) {
       setSelectedMember({ ...selectedMember, status: 'ACTIVE' });
     }
-    if (selectedCapitalMember?.id === approvingMember.id) {
+    if (selectedCapitalMember?.id === targetId) {
       setSelectedCapitalMember({ ...selectedCapitalMember, status: 'ACTIVE' });
     }
     triggerToast(`Đã phê duyệt thành công xã viên ${approvingMember.full_name} (${approvingMember.member_code})! Trạng thái chuyển sang Đang hoạt động.`, 'success');
     setShowApproveModal(false);
     setApprovingMember(null);
+  };
+
+  const handleConfirmReject = () => {
+    if (!approvingMember) return;
+    const rejectedMem = approvingMember;
+    const reasonText = rejectReason.trim() || 'Hồ sơ không đủ điều kiện kết nạp theo Quy chế HTX';
+    
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.id === rejectedMem.id
+          ? {
+              ...m,
+              status: 'REJECTED' as MemberStatus,
+              notes: `[Từ chối duyệt]: ${reasonText}. ${m.notes || ''}`,
+            }
+          : m
+      )
+    );
+
+    // Update associated capital transactions to REJECTED
+    setTransactions((prev) =>
+      prev.map((t) => (t.member_id === rejectedMem.id ? { ...t, status: 'REJECTED' as const } : t))
+    );
+
+    if (selectedMember?.id === rejectedMem.id) {
+      setSelectedMember({ ...selectedMember, status: 'REJECTED', notes: `[Từ chối duyệt]: ${reasonText}` });
+    }
+    if (selectedCapitalMember?.id === rejectedMem.id) {
+      setSelectedCapitalMember({ ...selectedCapitalMember, status: 'REJECTED' });
+    }
+
+    setShowApproveModal(false);
+    setApprovingMember(null);
+    setShowRejectForm(false);
+    setRejectReason('');
+
+    // Check if rejected member contributed capital đợt 1 to trigger refund notice
+    const contributedAmt = rejectedMem.contributed_capital || rejectedMem.total_capital_contributed || 0;
+    if (contributedAmt > 0) {
+      setShowRefundNoticeModal(rejectedMem);
+    } else {
+      triggerToast(`Đã từ chối kết nạp xã viên ${rejectedMem.full_name} (${rejectedMem.member_code}).`, 'warning');
+    }
   };
 
   const handlePrintMemberProfile = (m: Member) => {
@@ -4193,42 +4246,167 @@ export const MembersPage: React.FC = () => {
         </div>
       )}
 
-      {/* APPROVE MEMBER CONFIRMATION MODAL */}
+      {/* APPROVE / REJECT MEMBER MODAL WITH CAPITAL REFUND REMINDER */}
       {showApproveModal && approvingMember && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-modal overflow-hidden p-6 space-y-4 text-center">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200">
-              <UserCheck className="w-7 h-7" />
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-modal overflow-hidden p-6 space-y-4 text-center flex flex-col max-h-[90vh]">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto border shrink-0 ${showRejectForm ? 'bg-rose-100 text-rose-600 border-rose-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>
+              {showRejectForm ? <UserX className="w-7 h-7" /> : <UserCheck className="w-7 h-7" />}
             </div>
-            <div>
-              <h3 className="text-lg font-extrabold text-slate-900">Phê duyệt xã viên mới</h3>
+
+            <div className="shrink-0">
+              <h3 className="text-lg font-extrabold text-slate-900">
+                {showRejectForm ? 'Từ chối duyệt kết nạp xã viên' : 'Phê duyệt hồ sơ xã viên mới'}
+              </h3>
               <p className="text-[13px] text-slate-600 mt-1">
-                Xác nhận phê duyệt hồ sơ cho xã viên <strong className="text-slate-900">{approvingMember.full_name}</strong> (<span className="font-mono">{approvingMember.member_code}</span>)?
+                Xã viên: <strong className="text-slate-900">{approvingMember.full_name}</strong> (<span className="font-mono">{approvingMember.member_code}</span>)
               </p>
             </div>
 
-            <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-[12px] text-slate-700 text-left space-y-1">
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[12px] text-slate-700 text-left space-y-1.5 shrink-0">
               <div className="flex justify-between"><span className="text-slate-500">Loại xã viên:</span> <strong>{MEMBER_TYPE_LABELS[approvingMember.member_type]}</strong></div>
-              <div className="flex justify-between"><span className="text-slate-500">Vốn góp:</span> <strong className="text-emerald-800">{(approvingMember.committed_capital || approvingMember.total_capital_contributed)?.toLocaleString('vi-VN')} ₫</strong></div>
+              <div className="flex justify-between"><span className="text-slate-500">Vốn thực góp đợt 1:</span> <strong className="text-emerald-800">{(approvingMember.contributed_capital || approvingMember.total_capital_contributed || 0)?.toLocaleString('vi-VN')} ₫</strong> ({approvingMember.capital_form === 'HIEN_VAT' ? 'Hiện vật' : 'Tiền mặt'})</div>
+              <div className="flex justify-between"><span className="text-slate-500">Vốn cam kết:</span> <span className="font-mono text-slate-900">{approvingMember.committed_capital?.toLocaleString('vi-VN')} ₫</span></div>
               <div className="flex justify-between"><span className="text-slate-500">SĐT liên hệ:</span> <span className="font-mono">{approvingMember.phone}</span></div>
             </div>
 
-            <p className="text-[11.5px] text-slate-400 italic">
-              Sau khi phê duyệt, xã viên sẽ chính thức chuyển sang trạng thái <strong>Đang hoạt động</strong> và có quyền lợi trong HTX.
-            </p>
+            {/* CAPITAL REFUND WARNING NOTICE IF CAPITAL WAS CONTRIBUTED */}
+            {(approvingMember.contributed_capital || approvingMember.total_capital_contributed || 0) > 0 && (
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-[11.5px] text-left space-y-1 flex items-start gap-2.5">
+                <i className="ri-error-warning-line text-amber-600 text-base mt-0.5 shrink-0"></i>
+                <div>
+                  <p className="font-bold text-amber-800">Lưu ý nghiệp vụ Tài chính HTX:</p>
+                  <p className="leading-relaxed">
+                    Xã viên này đã tạm nộp <strong>{(approvingMember.contributed_capital || approvingMember.total_capital_contributed || 0).toLocaleString('vi-VN')} ₫</strong> vốn góp đợt 1.
+                    Nếu <strong>Từ chối duyệt</strong>, HTX có nghĩa vụ lập <strong>Phiếu chi hoàn trả khoản tiền/hiện vật tạm thu</strong> này cho người nộp.
+                  </p>
+                </div>
+              </div>
+            )}
 
-            <div className="pt-2 flex justify-center gap-3">
+            {!showRejectForm ? (
+              <>
+                <p className="text-[11.5px] text-slate-500 italic shrink-0">
+                  Vui lòng lựa chọn quyết định của Hội đồng Quản trị / Chủ tịch HTX:
+                </p>
+
+                <div className="pt-2 flex justify-between gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowRejectForm(true)}
+                    className="px-4 py-2 border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold rounded-lg text-[12.5px] inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <UserX className="w-4 h-4" /> Từ chối duyệt
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowApproveModal(false)}
+                      className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-50 text-[12.5px]"
+                    >
+                      Hủy bỏ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmApprove}
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[12.5px] shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <UserCheck className="w-4 h-4" /> Đồng ý phê duyệt
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3 text-left animate-fade-in shrink-0">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1 text-[12px]">Lý do từ chối kết nạp *</label>
+                  <textarea
+                    rows={2}
+                    required
+                    placeholder="Ví dụ: Hồ sơ chứng từ không đủ điều kiện, Không đạt yêu cầu Điều lệ HTX, Người nộp xin rút đơn..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 text-[12.5px]"
+                  ></textarea>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowRejectForm(false)}
+                    className="px-4 py-1.5 border border-slate-300 rounded-lg text-slate-700 font-bold text-[12px]"
+                  >
+                    Quay lại
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmReject}
+                    className="px-5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[12px] shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <XCircle className="w-4 h-4" /> Xác nhận từ chối kết nạp
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* CAPITAL REFUND NOTICE & PAYMENT VOUCHER MODAL */}
+      {showRefundNoticeModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[60] animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden p-6 space-y-4 text-center">
+            <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto border border-amber-300">
+              <i className="ri-hand-coin-line text-3xl"></i>
+            </div>
+
+            <div>
+              <span className="pill-badge pill-red text-[11px] mb-1">Đã Từ Chối Kết Nạp</span>
+              <h3 className="text-lg font-extrabold text-slate-900 mt-1">Yêu cầu Hoàn trả Vốn Tạm nộp</h3>
+              <p className="text-[12.5px] text-slate-600 mt-1">
+                Hồ sơ của <strong>{showRefundNoticeModal.full_name}</strong> (<span className="font-mono">{showRefundNoticeModal.member_code}</span>) đã bị từ chối.
+              </p>
+            </div>
+
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-[12.5px] text-left space-y-2">
+              <div className="flex justify-between items-center border-b border-amber-200/80 pb-2">
+                <span className="text-amber-900 font-medium">Số tiền vốn cần hoàn trả:</span>
+                <strong className="text-rose-700 text-base font-mono">
+                  {(showRefundNoticeModal.contributed_capital || showRefundNoticeModal.total_capital_contributed || 0).toLocaleString('vi-VN')} ₫
+                </strong>
+              </div>
+              <div className="flex justify-between text-xs text-amber-800">
+                <span>Hình thức đã nộp:</span>
+                <span className="font-bold">{showRefundNoticeModal.capital_form === 'HIEN_VAT' ? 'Hiện vật (Trả lại tài sản)' : 'Tiền mặt / Chuyển khoản'}</span>
+              </div>
+              <div className="flex justify-between text-xs text-amber-800">
+                <span>SĐT người nộp:</span>
+                <span className="font-mono font-bold">{showRefundNoticeModal.phone}</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-[11.5px] text-slate-600 text-left leading-relaxed">
+              📌 <strong>Chỉ dẫn kế toán:</strong> Vui lòng liên hệ người nộp để thực hiện lập <strong>Phiếu Chi hoàn trả tiền tạm thu</strong> hoặc lập <strong>Biên bản hoàn trả hiện vật</strong> có chữ ký xác nhận của hai bên.
+            </div>
+
+            <div className="pt-2 flex justify-center gap-2">
               <button
-                onClick={() => setShowApproveModal(false)}
-                className="px-5 py-2 border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-50 text-[12.8px]"
+                type="button"
+                onClick={() => {
+                  triggerToast(`Đã ghi nhận nhắc nhở hoàn vốn ${(showRefundNoticeModal.contributed_capital || 0).toLocaleString('vi-VN')} ₫ cho ${showRefundNoticeModal.full_name}.`, 'warning');
+                  setShowRefundNoticeModal(null);
+                }}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                Hủy bỏ
+                <i className="ri-check-line text-sm"></i> Đã hoàn trả / Chuyển Kế toán chi trả
               </button>
               <button
-                onClick={handleConfirmApprove}
-                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[12.8px] shadow-sm inline-flex items-center gap-1.5 transition-all"
+                type="button"
+                onClick={() => setShowRefundNoticeModal(null)}
+                className="px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs transition-all cursor-pointer"
               >
-                <UserCheck className="w-4 h-4" /> Đồng ý phê duyệt
+                Đóng thông báo
               </button>
             </div>
           </div>

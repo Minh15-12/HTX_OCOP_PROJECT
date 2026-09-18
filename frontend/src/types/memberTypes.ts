@@ -1,5 +1,5 @@
 export type MemberType = 'CHINH_THUC' | 'LIEN_KET_GOP_VON' | 'LIEN_KET_KHONG_GOP_VON';
-export type MemberStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE';
+export type MemberStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'REJECTED';
 export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'LAND' | 'ASSET';
 export type CapitalForm = 'TIEN_MAT' | 'HIEN_VAT' | 'QUYEN_SU_DUNG_DAT';
 
@@ -126,7 +126,7 @@ export interface CapitalTransaction {
   receipt_number: string;
   content: string;
   notes: string;
-  status: 'APPROVED' | 'PENDING';
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
   recorded_by?: string;
   recorded_date?: string;
   receipt_file_name?: string;
