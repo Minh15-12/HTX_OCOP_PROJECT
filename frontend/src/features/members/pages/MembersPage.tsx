@@ -132,6 +132,7 @@ export const MembersPage: React.FC = () => {
 
   // Pending Capital Transactions Modal State
   const [showPendingCapitalModal, setShowPendingCapitalModal] = useState(false);
+  const [showProfitFormulaModal, setShowProfitFormulaModal] = useState(false);
 
   // Capital Form State (Ghi nhận góp vốn)
   const [capitalForm, setCapitalForm] = useState({
@@ -200,6 +201,19 @@ export const MembersPage: React.FC = () => {
   const pendingMembersCount = members.filter((m) => m.status === 'PENDING').length;
   const activeMembersCount = members.filter((m) => m.status === 'ACTIVE').length;
   const totalMemberCapital = members.reduce((sum, m) => sum + (m.total_capital_contributed || m.contributed_capital || 0), 0);
+
+  // Realtime Profit Share Rate Calculation helper for Wizard
+  const currentWizardActualCapital = wizardForm.contribution_method === 'Góp một lần' ? wizardForm.committed_capital : wizardForm.initial_contributed_capital;
+  const estimatedNewCoopTotalCapital = totalMemberCapital + currentWizardActualCapital;
+  const wizardAutoCalculatedRate = estimatedNewCoopTotalCapital > 0
+    ? Number(((currentWizardActualCapital / estimatedNewCoopTotalCapital) * 100).toFixed(2))
+    : 0;
+
+  const calculateDynamicProfitRate = (committedCap: number, initialCap: number, method: string) => {
+    const actualCap = method === 'Góp một lần' ? committedCap : initialCap;
+    const newTotalCoopCap = totalMemberCapital + actualCap;
+    return newTotalCoopCap > 0 ? Number(((actualCap / newTotalCoopCap) * 100).toFixed(2)) : 0;
+  };
 
   // Calculations for Capital Tab KPIs
   const totalCommittedCapital = members.reduce((sum, m) => sum + (m.committed_capital || 0), 0);
@@ -325,6 +339,7 @@ export const MembersPage: React.FC = () => {
     setWizardStepError(null);
     setFieldErrors({});
     setWizardUploadedFile(null);
+    const initRate = calculateDynamicProfitRate(50000000, 10000000, 'Góp một lần');
     setWizardForm({
       full_name: '',
       gender: 'Nam',
@@ -350,7 +365,7 @@ export const MembersPage: React.FC = () => {
       commitment_deadline: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       contribution_method: 'Góp một lần',
       member_type: 'CHINH_THUC',
-      profit_share_rate: 2.85,
+      profit_share_rate: initRate,
       payout_method: 'CASH',
       bank_name: '',
       bank_account: '',
@@ -3068,10 +3083,13 @@ export const MembersPage: React.FC = () => {
                         onChange={(e) => {
                           const val = Number(e.target.value);
                           const isOneTime = wizardForm.contribution_method === 'Góp một lần';
+                          const actualVal = isOneTime ? val : Math.min(val, wizardForm.initial_contributed_capital);
+                          const autoRate = calculateDynamicProfitRate(val, actualVal, wizardForm.contribution_method);
                           setWizardForm({
                             ...wizardForm,
                             committed_capital: val,
-                            initial_contributed_capital: isOneTime ? val : Math.min(val, wizardForm.initial_contributed_capital),
+                            initial_contributed_capital: actualVal,
+                            profit_share_rate: autoRate,
                           });
                         }}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg font-bold text-slate-900 text-base"
@@ -3087,7 +3105,15 @@ export const MembersPage: React.FC = () => {
                         placeholder="Số tiền thực nộp đợt 1"
                         disabled={wizardForm.contribution_method === 'Góp một lần'}
                         value={wizardForm.contribution_method === 'Góp một lần' ? wizardForm.committed_capital : wizardForm.initial_contributed_capital}
-                        onChange={(e) => setWizardForm({ ...wizardForm, initial_contributed_capital: Number(e.target.value) })}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          const autoRate = calculateDynamicProfitRate(wizardForm.committed_capital, val, wizardForm.contribution_method);
+                          setWizardForm({
+                            ...wizardForm,
+                            initial_contributed_capital: val,
+                            profit_share_rate: autoRate,
+                          });
+                        }}
                         className={`w-full px-3 py-2 border rounded-lg font-bold text-emerald-800 text-base ${
                           wizardForm.contribution_method === 'Góp một lần' ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : 'bg-white border-slate-200'
                         }`}
@@ -3132,10 +3158,13 @@ export const MembersPage: React.FC = () => {
                         value={wizardForm.contribution_method}
                         onChange={(e) => {
                           const method = e.target.value;
+                          const actualVal = method === 'Góp một lần' ? wizardForm.committed_capital : wizardForm.initial_contributed_capital;
+                          const autoRate = calculateDynamicProfitRate(wizardForm.committed_capital, actualVal, method);
                           setWizardForm({
                             ...wizardForm,
                             contribution_method: method,
-                            initial_contributed_capital: method === 'Góp một lần' ? wizardForm.committed_capital : wizardForm.initial_contributed_capital,
+                            initial_contributed_capital: actualVal,
+                            profit_share_rate: autoRate,
                           });
                         }}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-slate-800"
@@ -3274,19 +3303,45 @@ export const MembersPage: React.FC = () => {
                 <div className="space-y-4 animate-fade-in">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Tỷ lệ phân chia lợi nhuận *</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <label className="font-bold text-slate-700">Tỷ lệ phân chia lợi nhuận *</label>
+                          <button
+                            type="button"
+                            onClick={() => setShowProfitFormulaModal(true)}
+                            className="w-5 h-5 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center font-bold text-xs transition-colors shadow-2xs"
+                            title="Click xem công thức tính toán và giải thích pháp lý (Luật HTX 2023)"
+                          >
+                            <i className="ri-information-line text-sm"></i>
+                          </button>
+                        </div>
+                        <span className="text-[10.5px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          Tự động tính từ Vốn thực nộp
+                        </span>
+                      </div>
                       <div className="relative">
                         <input
                           type="number"
-                          step={0.1}
+                          step={0.01}
                           required
                           value={wizardForm.profit_share_rate}
                           onChange={(e) => setWizardForm({ ...wizardForm, profit_share_rate: Number(e.target.value) })}
-                          className="w-full px-3 py-2 pr-8 border border-slate-200 rounded-lg font-bold text-slate-900"
+                          className="w-full px-3 py-2 pr-8 border border-slate-200 rounded-lg font-bold text-slate-900 text-base"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">Dựa trên tỷ lệ vốn góp và mức độ tham gia hoạt động của HTX</p>
+                      <div className="flex items-center justify-between text-[11px] mt-1.5 px-0.5">
+                        <span className="text-slate-500">
+                          Gợi ý: <strong className="text-emerald-700">{wizardAutoCalculatedRate}%</strong> ({currentWizardActualCapital.toLocaleString('vi-VN')} ₫ / {estimatedNewCoopTotalCapital.toLocaleString('vi-VN')} ₫ tổng vốn HTX)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setWizardForm({ ...wizardForm, profit_share_rate: wizardAutoCalculatedRate })}
+                          className="text-emerald-600 hover:text-emerald-800 font-bold underline transition-colors cursor-pointer"
+                        >
+                          Áp dụng
+                        </button>
+                      </div>
                     </div>
 
                     <div>
@@ -4373,6 +4428,100 @@ export const MembersPage: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PROFIT SHARE FORMULA EXPLANATION MODAL */}
+      {showProfitFormulaModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[60] animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] my-auto">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-emerald-700 text-white shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 text-white flex items-center justify-center font-bold">
+                  <i className="ri-calculator-line text-lg"></i>
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base">Công thức Tính Tỷ lệ Phân chia Lợi nhuận</h3>
+                  <p className="text-[11px] text-emerald-100">Căn cứ theo Điều 74 Luật Hợp tác xã 2023</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowProfitFormulaModal(false)}
+                className="text-white/80 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 text-[12.8px] text-slate-700 overflow-y-auto custom-form-scrollbar">
+              {/* Formula Box */}
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2 text-center">
+                <p className="font-extrabold text-slate-900 text-[13px]">CÔNG THỨC CHUẨN TÍNH TỶ LỆ HƯỞNG LỢI NHUẬN:</p>
+                <div className="p-3 bg-white rounded-lg border border-emerald-300 font-mono font-bold text-emerald-800 text-sm shadow-2xs">
+                  Tỷ lệ % = (Vốn thực nộp Đợt 1 / Tổng vốn thực góp toàn HTX) × 100%
+                </div>
+              </div>
+
+              {/* Realtime breakdown for current member */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                <h4 className="font-bold text-slate-900 text-[12.5px] uppercase tracking-wider flex items-center gap-1.5">
+                  <i className="ri-numbers-line text-emerald-600"></i> Bảng tính thực tế cho Xã viên này:
+                </h4>
+                <div className="space-y-2 pl-1 text-[12px]">
+                  <div className="flex justify-between py-1 border-b border-slate-200/60">
+                    <span className="text-slate-600">1. Vốn thực góp Đợt 1 (Xã viên mới):</span>
+                    <strong className="text-emerald-700 font-mono text-sm">{currentWizardActualCapital.toLocaleString('vi-VN')} ₫</strong>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-200/60">
+                    <span className="text-slate-600">2. Tổng vốn thực góp hiện có của các Xã viên cũ:</span>
+                    <span className="font-mono text-slate-800">{totalMemberCapital.toLocaleString('vi-VN')} ₫</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-200/60">
+                    <span className="text-slate-600">3. Tổng vốn thực nộp của HTX sau khi kết nạp:</span>
+                    <span className="font-mono text-slate-900 font-bold">{estimatedNewCoopTotalCapital.toLocaleString('vi-VN')} ₫</span>
+                  </div>
+                  <div className="flex justify-between py-2 bg-emerald-100/70 px-3 rounded-lg text-emerald-950 font-bold items-center">
+                    <span>➔ Tỷ lệ % lợi nhuận dự kiến:</span>
+                    <span className="text-base font-mono text-emerald-800">{wizardAutoCalculatedRate}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Legal explanation */}
+              <div className="space-y-1.5 text-[12px] leading-relaxed bg-amber-50/70 p-3.5 border border-amber-200 rounded-xl text-amber-900">
+                <p className="font-bold flex items-center gap-1.5 text-amber-800">
+                  <i className="ri-shield-check-line text-sm text-amber-600"></i> Căn cứ Pháp lý & Quản trị Kế toán:
+                </p>
+                <p>
+                  • <strong>Luật HTX 2023 (Điều 74)</strong>: Phân phối thặng dư của HTX dựa trên tỷ lệ vốn góp thực tế nộp vào quỹ và mức độ sử dụng dịch vụ.<br/>
+                  • <strong>Vì sao không dùng Vốn cam kết?</strong> Vốn cam kết chỉ là hạn mức đăng ký. Chỉ số tiền thực góp mới chính thức được ngân hàng/quỹ HTX ghi nhận để đầu tư sinh lời.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-3.5 border-t border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setWizardForm({ ...wizardForm, profit_share_rate: wizardAutoCalculatedRate });
+                  setShowProfitFormulaModal(false);
+                }}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-2xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <i className="ri-check-double-line text-sm"></i> Áp dụng tỷ lệ {wizardAutoCalculatedRate}% vào Form
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowProfitFormulaModal(false)}
+                className="px-4 py-2 border border-slate-300 hover:bg-white text-slate-700 font-bold rounded-lg text-xs transition-all cursor-pointer"
+              >
+                Đóng lại
+              </button>
             </div>
           </div>
         </div>
