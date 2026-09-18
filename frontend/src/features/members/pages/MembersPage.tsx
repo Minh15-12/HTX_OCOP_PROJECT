@@ -352,6 +352,9 @@ export const MembersPage: React.FC = () => {
       member_type: 'CHINH_THUC',
       profit_share_rate: 2.85,
       payout_method: 'CASH',
+      bank_name: '',
+      bank_account: '',
+      account_holder: '',
       notes: '',
     });
     setShowWizardModal(true);
