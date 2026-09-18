@@ -853,14 +853,14 @@ export const getMembersFromApi = async (filters?: { search?: string; status?: st
     return initialList;
   }
 
-  // Merge API members and stored members, giving priority to newly created/updated ones
+  // Merge API members and stored members, giving priority to user's updated local DB store
   const mergedMap = new Map<string, Member>();
   // 1. Add mock items first to ensure sample debt test data is present
   mockMembersList.forEach(m => mergedMap.set(m.id, m));
-  // 2. Add stored items
-  stored.forEach(m => mergedMap.set(m.id, m));
-  // 3. Overlay API items
+  // 2. Overlay API items
   apiMembers.forEach(m => mergedMap.set(m.id, m));
+  // 3. Add stored items last so user's updates (approvals, rejections, edits) in localStorage take highest priority
+  stored.forEach(m => mergedMap.set(m.id, m));
 
   const mergedList = Array.from(new Set(Array.from(mergedMap.values())));
   saveMembersToStorage(mergedList);

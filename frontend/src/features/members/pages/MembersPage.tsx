@@ -52,7 +52,13 @@ import {
   createMemberApi,
   approveMemberApi,
 } from '@/services/memberService';
-import { updateMemberInStorage } from '@/services/dbStorage';
+import {
+  getStoredMembers,
+  saveMembersToStorage,
+  getStoredCapitalTransactions,
+  saveCapitalTransactionsToStorage,
+  updateMemberInStorage,
+} from '@/services/dbStorage';
 import {
   Member,
   CapitalTransaction,
@@ -64,9 +70,9 @@ import {
 } from '@/types/memberTypes';
 
 export const MembersPage: React.FC = () => {
-  const [members, setMembers] = React.useState<Member[]>(mockMembersList);
+  const [members, setMembers] = React.useState<Member[]>(() => getStoredMembers() || mockMembersList);
   const [loadingMembers, setLoadingMembers] = React.useState<boolean>(false);
-  const [transactions, setTransactions] = useState<CapitalTransaction[]>(mockCapitalTransactions);
+  const [transactions, setTransactions] = useState<CapitalTransaction[]>(() => getStoredCapitalTransactions() || mockCapitalTransactions);
   const [surplusPlan, setSurplusPlan] = useState<SurplusDistributionPlan>(mockSurplusPlan);
   const [surplusItems, setSurplusItems] = useState<SurplusDistributionItem[]>(mockSurplusItems);
 
@@ -88,6 +94,19 @@ export const MembersPage: React.FC = () => {
       isMounted = false;
     };
   }, []);
+
+  // Auto-persist changes to local database store
+  React.useEffect(() => {
+    if (members && members.length > 0) {
+      saveMembersToStorage(members);
+    }
+  }, [members]);
+
+  React.useEffect(() => {
+    if (transactions && transactions.length > 0) {
+      saveCapitalTransactionsToStorage(transactions);
+    }
+  }, [transactions]);
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'members' | 'capital' | 'profit' | 'coop'>('members');
