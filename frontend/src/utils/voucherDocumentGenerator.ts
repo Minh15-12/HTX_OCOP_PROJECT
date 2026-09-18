@@ -313,6 +313,20 @@ export const generateAssetValuationHTML = (member: Partial<Member>, tx?: Partial
   `;
 };
 
+export const getVoucherDocumentBlobUrl = (member: Partial<Member>, tx?: Partial<CapitalTransaction>): string => {
+  let html = '';
+  if (member.capital_form === 'HIEN_VAT' || tx?.payment_method === 'ASSET') {
+    html = generateAssetValuationHTML(member, tx);
+  } else if (member.payout_method === 'BANK_TRANSFER' || tx?.payment_method === 'BANK_TRANSFER') {
+    html = generateBankTransferConfirmHTML(member, tx);
+  } else {
+    html = generateCashReceiptHTML(member, tx);
+  }
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  return URL.createObjectURL(blob);
+};
+
 export const openVoucherPrintWindow = (member: Partial<Member>, tx?: Partial<CapitalTransaction>) => {
   let html = '';
   if (member.capital_form === 'HIEN_VAT' || tx?.payment_method === 'ASSET') {

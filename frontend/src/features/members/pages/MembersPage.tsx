@@ -59,7 +59,7 @@ import {
   saveCapitalTransactionsToStorage,
   updateMemberInStorage,
 } from '@/services/dbStorage';
-import { openVoucherPrintWindow } from '@/utils/voucherDocumentGenerator';
+import { openVoucherPrintWindow, getVoucherDocumentBlobUrl } from '@/utils/voucherDocumentGenerator';
 import {
   Member,
   CapitalTransaction,
@@ -1703,7 +1703,7 @@ export const MembersPage: React.FC = () => {
                           onClick={() =>
                             handlePreviewWizardFile(
                               undefined,
-                              selectedMember.notary_document_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                              selectedMember.notary_document_url || getVoucherDocumentBlobUrl(selectedMember),
                               `Phiếu thu góp vốn ${selectedMember.member_code}.pdf`
                             )
                           }
@@ -1738,8 +1738,8 @@ export const MembersPage: React.FC = () => {
                               onClick={() =>
                                 handlePreviewWizardFile(
                                   undefined,
-                                  tx.receipt_file_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-                                  tx.receipt_file_name || `Chứng từ ${tx.receipt_number}.pdf`
+                                  tx.receipt_file_url || getVoucherDocumentBlobUrl(selectedMember, tx),
+                                  tx.receipt_file_name || `Chứng từ ${tx.receipt_number || tx.transaction_code}.pdf`
                                 )
                               }
                               className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold rounded text-[11px] transition-colors cursor-pointer"
