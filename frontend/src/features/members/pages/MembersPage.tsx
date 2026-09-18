@@ -657,6 +657,13 @@ export const MembersPage: React.FC = () => {
     setShowApproveModal(true);
   };
 
+  const handleOpenReject = (m: Member) => {
+    setApprovingMember(m);
+    setShowRejectForm(true);
+    setRejectReason('');
+    setShowApproveModal(true);
+  };
+
   const handleConfirmApprove = () => {
     if (!approvingMember) return;
     const targetId = approvingMember.id;
@@ -1291,20 +1298,33 @@ export const MembersPage: React.FC = () => {
                         {m.status === 'ACTIVE' && <span className="pill-badge pill-green">Đang hoạt động</span>}
                         {m.status === 'PENDING' && <span className="pill-badge pill-amber">Chờ duyệt</span>}
                         {m.status === 'INACTIVE' && <span className="pill-badge pill-slate bg-slate-100 text-slate-600 border border-slate-200">Đã ngưng hoạt động</span>}
+                        {m.status === 'REJECTED' && <span className="pill-badge pill-red">Từ chối duyệt</span>}
                       </td>
                       <td className="py-3 px-3 text-center">
                         <div className="inline-flex items-center justify-center gap-1.5">
                           {m.status === 'PENDING' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenApprove(m);
-                              }}
-                              className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-extrabold rounded-md text-[11px] inline-flex items-center gap-1 transition-colors shadow-2xs"
-                              title="Phê duyệt xã viên này"
-                            >
-                              <UserCheck className="w-3.5 h-3.5" /> Duyệt
-                            </button>
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenApprove(m);
+                                }}
+                                className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-extrabold rounded-md text-[11px] inline-flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+                                title="Phê duyệt hồ sơ xã viên này"
+                              >
+                                <UserCheck className="w-3.5 h-3.5" /> Duyệt
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenReject(m);
+                                }}
+                                className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold rounded-md text-[11px] inline-flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+                                title="Từ chối duyệt hồ sơ xã viên này"
+                              >
+                                <UserX className="w-3.5 h-3.5" /> Từ chối
+                              </button>
+                            </>
                           )}
                           {m.status === 'INACTIVE' && (
                             <button
@@ -1423,12 +1443,20 @@ export const MembersPage: React.FC = () => {
                         <span className="text-amber-700 text-[11px]">Cần Chủ tịch/HĐQT phê duyệt để kích hoạt thành viên.</span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleOpenApprove(selectedMember)}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11.5px] rounded-lg shadow-xs shrink-0 flex items-center gap-1.5 transition-all"
-                    >
-                      <UserCheck className="w-4 h-4" /> Duyệt hồ sơ ngay
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleOpenApprove(selectedMember)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11.5px] rounded-lg shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <UserCheck className="w-4 h-4" /> Duyệt hồ sơ
+                      </button>
+                      <button
+                        onClick={() => handleOpenReject(selectedMember)}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11.5px] rounded-lg shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <UserX className="w-4 h-4" /> Từ chối
+                      </button>
+                    </div>
                   </div>
                 )}
 
