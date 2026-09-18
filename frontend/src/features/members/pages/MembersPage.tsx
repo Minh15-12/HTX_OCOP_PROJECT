@@ -59,6 +59,7 @@ import {
   saveCapitalTransactionsToStorage,
   updateMemberInStorage,
 } from '@/services/dbStorage';
+import { openVoucherPrintWindow } from '@/utils/voucherDocumentGenerator';
 import {
   Member,
   CapitalTransaction,
@@ -1690,18 +1691,27 @@ export const MembersPage: React.FC = () => {
                           <span className="text-[10.5px] text-slate-400 block font-mono">Phiếu thu/Chứng từ nộp vốn đợt 1</span>
                         </div>
                       </div>
-                      <button
-                        onClick={() =>
-                          handlePreviewWizardFile(
-                            undefined,
-                            selectedMember.notary_document_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-                            `Phiếu thu góp vốn ${selectedMember.member_code}.pdf`
-                          )
-                        }
-                        className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded text-[11px] shrink-0 transition-colors cursor-pointer"
-                      >
-                        Xem/Tải file
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => openVoucherPrintWindow(selectedMember)}
+                          className="px-2 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded text-[11px] transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                          title="In/Xem chứng từ kế toán chuẩn theo mẫu docs"
+                        >
+                          <Printer className="w-3 h-3" /> In/Xem chứng từ
+                        </button>
+                        <button
+                          onClick={() =>
+                            handlePreviewWizardFile(
+                              undefined,
+                              selectedMember.notary_document_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                              `Phiếu thu góp vốn ${selectedMember.member_code}.pdf`
+                            )
+                          }
+                          className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded text-[11px] transition-colors cursor-pointer"
+                        >
+                          Tải tệp scan
+                        </button>
+                      </div>
                     </div>
 
                     {/* Transaction Receipts attached */}
@@ -1716,18 +1726,27 @@ export const MembersPage: React.FC = () => {
                               <span className="text-[10.5px] text-slate-400 block font-mono">Số chứng từ: {tx.receipt_number || tx.transaction_code} ({tx.contribution_date})</span>
                             </div>
                           </div>
-                          <button
-                            onClick={() =>
-                              handlePreviewWizardFile(
-                                undefined,
-                                tx.receipt_file_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-                                tx.receipt_file_name || `Chứng từ ${tx.receipt_number}.pdf`
-                              )
-                            }
-                            className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold rounded text-[11px] shrink-0 transition-colors cursor-pointer"
-                          >
-                            Xem file
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => openVoucherPrintWindow(selectedMember, tx)}
+                              className="px-2 py-1 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded text-[11px] transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                              title="In chứng từ mẫu chuẩn theo quy định"
+                            >
+                              <Printer className="w-3 h-3" /> In chứng từ
+                            </button>
+                            <button
+                              onClick={() =>
+                                handlePreviewWizardFile(
+                                  undefined,
+                                  tx.receipt_file_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                                  tx.receipt_file_name || `Chứng từ ${tx.receipt_number}.pdf`
+                                )
+                              }
+                              className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold rounded text-[11px] transition-colors cursor-pointer"
+                            >
+                              Xem file
+                            </button>
+                          </div>
                         </div>
                       ))}
                   </div>
