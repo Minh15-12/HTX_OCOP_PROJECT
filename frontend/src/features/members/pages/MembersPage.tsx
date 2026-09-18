@@ -2904,8 +2904,12 @@ export const MembersPage: React.FC = () => {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        const url = URL.createObjectURL(file);
-                        setCapitalForm({ ...capitalForm, fileName: file.name, fileUrl: url });
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                          const dataUrl = evt.target?.result as string;
+                          setCapitalForm({ ...capitalForm, fileName: file.name, fileUrl: dataUrl });
+                        };
+                        reader.readAsDataURL(file);
                       }
                     }}
                   />
@@ -4972,11 +4976,28 @@ export const MembersPage: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="flex-1 bg-slate-100 p-4 overflow-hidden">
-              {viewingVoucherTx.receipt_file_url ? (
+            <div className="flex-1 bg-slate-100 p-4 overflow-auto flex items-center justify-center">
+              {viewingVoucherTx.receipt_file_url &&
+              (viewingVoucherTx.receipt_file_url.startsWith('data:image/') ||
+                viewingVoucherTx.receipt_file_name?.match(/\.(png|jpg|jpeg|webp|gif)$/i)) ? (
+                <div className="bg-white p-4 rounded-xl shadow-md max-h-full flex flex-col items-center justify-center overflow-auto border border-slate-200">
+                  <img
+                    src={viewingVoucherTx.receipt_file_url}
+                    alt={viewingVoucherTx.receipt_file_name || viewingVoucherTx.receipt_number}
+                    className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-sm"
+                  />
+                  {viewingVoucherTx.receipt_file_name && (
+                    <div className="mt-3 text-xs font-bold text-slate-600">
+                      📁 File đính kèm: {viewingVoucherTx.receipt_file_name}
+                    </div>
+                  )}
+                </div>
+              ) : viewingVoucherTx.receipt_file_url &&
+                (viewingVoucherTx.receipt_file_url.startsWith('data:application/pdf') ||
+                  viewingVoucherTx.receipt_file_name?.endsWith('.pdf')) ? (
                 <iframe
                   src={viewingVoucherTx.receipt_file_url}
-                  title="Chứng từ đính kèm"
+                  title="Chứng từ PDF đính kèm"
                   className="w-full h-full border-0 rounded-xl bg-white shadow-sm"
                 />
               ) : (
