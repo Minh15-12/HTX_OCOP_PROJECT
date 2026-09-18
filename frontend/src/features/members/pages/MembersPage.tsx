@@ -184,6 +184,9 @@ export const MembersPage: React.FC = () => {
     member_type: 'CHINH_THUC' as MemberType,
     profit_share_rate: 2.85,
     payout_method: 'CASH' as 'CASH' | 'BANK_TRANSFER',
+    bank_name: '',
+    bank_account: '',
+    account_holder: '',
     notes: '',
   });
 
@@ -511,8 +514,9 @@ export const MembersPage: React.FC = () => {
       capital_status: capitalStat,
       profit_share_rate: wizardForm.profit_share_rate,
       payout_method: wizardForm.payout_method,
-      bank_account: '',
-      bank_name: '',
+      bank_account: wizardForm.bank_account,
+      bank_name: wizardForm.bank_name,
+      account_holder: wizardForm.account_holder || wizardForm.full_name,
       notes: wizardForm.notes,
       status: 'PENDING',
       join_date: new Date().toISOString().split('T')[0],
@@ -3309,6 +3313,53 @@ export const MembersPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {wizardForm.payout_method === 'BANK_TRANSFER' && (
+                    <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-3 animate-fade-in">
+                      <div className="flex items-center gap-2 text-blue-900 font-bold text-[12.5px]">
+                        <i className="ri-bank-card-line text-blue-600 text-base"></i>
+                        <span>Thông tin tài khoản nhận chuyển khoản</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-bold text-slate-700 mb-1">Tên Ngân hàng *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Ví dụ: Agribank, Vietcombank, MB Bank..."
+                            value={wizardForm.bank_name}
+                            onChange={(e) => setWizardForm({ ...wizardForm, bank_name: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-medium text-slate-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-slate-700 mb-1">Số tài khoản (STK) *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Nhập STK ngân hàng"
+                            value={wizardForm.bank_account}
+                            onChange={(e) => setWizardForm({ ...wizardForm, bank_account: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono font-bold text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Tên chủ tài khoản *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Mặc định lấy tên xã viên hoặc tên chủ thẻ"
+                          value={wizardForm.account_holder || wizardForm.full_name}
+                          onChange={(e) => setWizardForm({ ...wizardForm, account_holder: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-900"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Ghi chú</label>
                     <textarea
@@ -3379,6 +3430,13 @@ export const MembersPage: React.FC = () => {
                         <div className="space-y-1 pl-1">
                           <div className="flex justify-between"><span className="text-slate-500">Tỷ lệ phân chia:</span> <strong className="text-slate-900">{wizardForm.profit_share_rate}%</strong></div>
                           <div className="flex justify-between"><span className="text-slate-500">Hình thức nhận:</span> <span>{wizardForm.payout_method === 'CASH' ? 'Bằng tiền mặt' : 'Chuyển khoản'}</span></div>
+                          {wizardForm.payout_method === 'BANK_TRANSFER' && (
+                            <>
+                              <div className="flex justify-between"><span className="text-slate-500">Ngân hàng:</span> <strong className="text-blue-700">{wizardForm.bank_name || 'Chưa nhập'}</strong></div>
+                              <div className="flex justify-between"><span className="text-slate-500">STK:</span> <strong className="font-mono text-slate-900">{wizardForm.bank_account || 'Chưa nhập'}</strong></div>
+                              <div className="flex justify-between"><span className="text-slate-500">Chủ TK:</span> <span>{wizardForm.account_holder || wizardForm.full_name}</span></div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
