@@ -249,6 +249,32 @@ export const DashboardPage: React.FC = () => {
                 </div>
               </li>
 
+              {/* Task Item 5: Cảnh báo Hạn sử dụng Vật tư Sinh học (Luồng mở rộng) */}
+              <li className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2 hover:border-rose-300 transition-all">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="pill-badge pill-red text-[10px]">Cảnh báo HSD</span>
+                    <strong className="text-[13px] text-rose-950 font-extrabold flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-rose-600" />
+                      Chế phẩm Trichoderma Bio-VT sắp hết hạn (15/10/2026)
+                    </strong>
+                  </div>
+                  <span className="text-[10.5px] text-rose-400 shrink-0 font-medium">Mới</span>
+                </div>
+                <p className="text-[12px] text-slate-600">
+                  Còn 45 chai Trichoderma có HSD đến tháng 10/2026. Ưu tiên tạo phiếu xuất cấp cho Vụ Đông Xuân để xử lý rơm rạ & mùn đất.
+                </p>
+                <div className="flex items-center justify-between pt-1 border-t border-rose-200/80">
+                  <span className="text-[11px] text-rose-800 font-semibold">📍 Phân hệ: Kho Vật tư & Mùa vụ</span>
+                  <button
+                    onClick={() => navigate('/inventory/materials')}
+                    className="px-2.5 py-1 bg-rose-700 hover:bg-rose-800 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                  >
+                    Cấp phát mùa vụ &rarr;
+                  </button>
+                </div>
+              </li>
+
               {/* Task Item 4: Minh chứng OCOP */}
               <li className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 hover:border-slate-300 transition-all">
                 <div className="flex items-start justify-between gap-2">
