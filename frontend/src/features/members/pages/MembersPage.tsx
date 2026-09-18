@@ -1668,6 +1668,70 @@ export const MembersPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* 6. HỒ SƠ & CHỨNG TỪ ĐÍNH KÈM */}
+                <div className="p-3 bg-white border border-slate-200/80 rounded-xl space-y-2 text-[12px]">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-500 font-extrabold flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-emerald-600" /> 6. Hồ sơ &amp; Chứng từ đính kèm
+                    </div>
+                    <span className="text-[10px] text-slate-400">Lưu trữ tệp tin</span>
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    {/* File 1: Giấy đăng ký kết nạp / Chứng từ nộp vốn */}
+                    <div className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11.8px]">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <div className="truncate">
+                          <strong className="text-slate-800 block truncate">
+                            {selectedMember.notary_document_url ? 'Giay_Bien_Nhan_Gop_Von.pdf' : `Phieu_Thu_Gop_Von_${selectedMember.member_code}.pdf`}
+                          </strong>
+                          <span className="text-[10.5px] text-slate-400 block font-mono">Phiếu thu/Chứng từ nộp vốn đợt 1</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() =>
+                          handlePreviewWizardFile(
+                            undefined,
+                            selectedMember.notary_document_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                            `Phiếu thu góp vốn ${selectedMember.member_code}.pdf`
+                          )
+                        }
+                        className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded text-[11px] shrink-0 transition-colors cursor-pointer"
+                      >
+                        Xem/Tải file
+                      </button>
+                    </div>
+
+                    {/* Transaction Receipts attached */}
+                    {transactions
+                      .filter((t) => t.member_id === selectedMember.id || t.member_code === selectedMember.member_code)
+                      .map((tx) => (
+                        <div key={tx.id} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11.8px]">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                            <div className="truncate">
+                              <strong className="text-slate-800 block truncate">{tx.receipt_file_name || `Chung_Tu_${tx.receipt_number || tx.transaction_code}.pdf`}</strong>
+                              <span className="text-[10.5px] text-slate-400 block font-mono">Số chứng từ: {tx.receipt_number || tx.transaction_code} ({tx.contribution_date})</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() =>
+                              handlePreviewWizardFile(
+                                undefined,
+                                tx.receipt_file_url || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                                tx.receipt_file_name || `Chứng từ ${tx.receipt_number}.pdf`
+                              )
+                            }
+                            className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold rounded text-[11px] shrink-0 transition-colors cursor-pointer"
+                          >
+                            Xem file
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
               </div>
 
               {/* Fixed Footer Quick Actions */}
