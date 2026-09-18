@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   Search,
@@ -71,6 +72,7 @@ import {
 } from '@/types/memberTypes';
 
 export const MembersPage: React.FC = () => {
+  const navigate = useNavigate();
   const [members, setMembers] = React.useState<Member[]>(() => getStoredMembers() || mockMembersList);
   const [loadingMembers, setLoadingMembers] = React.useState<boolean>(false);
   const [transactions, setTransactions] = useState<CapitalTransaction[]>(() => getStoredCapitalTransactions() || mockCapitalTransactions);
@@ -1213,7 +1215,7 @@ export const MembersPage: React.FC = () => {
 
             {/* Card 5: Tổng vốn góp Xã viên */}
             <div
-              onClick={() => setActiveTab('capital')}
+              onClick={() => navigate('/capital')}
               className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all group"
             >
               <div className="flex items-center justify-between">
@@ -1226,9 +1228,9 @@ export const MembersPage: React.FC = () => {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setActiveTab('capital');
+                  navigate('/capital');
                 }}
-                className="text-[11.5px] text-emerald-700 hover:underline font-bold inline-flex items-center gap-0.5"
+                className="text-[11.5px] text-emerald-700 hover:underline font-bold inline-flex items-center gap-0.5 cursor-pointer"
               >
                 Quản lý vốn &rarr;
               </button>
@@ -1781,14 +1783,30 @@ export const MembersPage: React.FC = () => {
         <div className="space-y-4 animate-fade-in">
           {/* Breadcrumb Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-              <span>Vốn góp</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-              <span className="text-slate-800">Tổng quan</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setActiveTab('members')}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-emerald-700" /> Quay lại Danh sách Xã viên
+              </button>
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                <span>Vốn góp</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="text-slate-800">Tổng quan</span>
+              </div>
             </div>
-            <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-emerald-600" />
-              <span>01/01/2025 - 31/12/2025</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/capital')}
+                className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+              >
+                Chuyển sang Phân hệ Vốn góp chính <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                <span>01/01/2025 - 31/12/2025</span>
+              </div>
             </div>
           </div>
 
