@@ -157,57 +157,121 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Panel: Actionable To-do / Timeline */}
-        <div className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#e7e9ec] bg-slate-50/50">
-            <h3 className="font-bold text-[14.5px] text-slate-900">Việc cần xử lý ngay</h3>
-            <span className="pill-badge pill-red text-[11px]">4 nhắc nhở</span>
+        {/* Right Panel: Trung tâm Nhắc việc & Thao tác Tập trung (Actionable Task Hub) */}
+        <div id="task-hub" className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-[#e7e9ec] bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-[15px] text-slate-900">Trung tâm Nhắc việc & Thao tác</h3>
+                <span className="pill-badge pill-red text-[10.5px]">5 việc cần xử lý</span>
+              </div>
+              <p className="text-[11.8px] text-slate-500 mt-0.5">Kế hoạch phê duyệt, hoàn vốn, nhập kho & bổ sung hồ sơ</p>
+            </div>
           </div>
-          <div className="p-4">
-            <ul className="space-y-3.5">
-              <li className="timeline-item">
-                <div className="flex items-start justify-between">
-                  <span className="font-bold text-slate-900">Duyệt đơn gia nhập xã viên mới</span>
-                  <span className="text-[10.8px] text-slate-400">Hôm nay</span>
+
+          <div className="p-4 space-y-4 flex-1">
+            <ul className="space-y-3">
+              {/* Task Item 1: Hoàn tiền từ chối kết nạp */}
+              <li className="p-3 bg-amber-50/60 border border-amber-200/90 rounded-xl space-y-2 hover:border-amber-300 transition-all">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="pill-badge pill-red text-[10px]">Cần chi trả</span>
+                    <strong className="text-[13px] text-slate-900 font-extrabold">
+                      Hoàn tiền vốn nộp lại cho xã viên Võ Văn G (TV008)
+                    </strong>
+                  </div>
+                  <span className="text-[10.5px] text-slate-400 shrink-0 font-medium">10 phút trước</span>
                 </div>
-                <p className="text-slate-600 mt-0.5">Xã viên Nguyễn Văn B (Thôn 3) vừa gửi yêu cầu tham gia HTX.</p>
-                <button
-                  onClick={() => navigate('/members')}
-                  className="mt-1 text-[11.5px] text-emerald-700 hover:underline font-bold"
-                >
-                  Xem đơn gia nhập &rarr;
-                </button>
+                <p className="text-[12px] text-slate-600">
+                  Hồ sơ bị từ chối kết nạp. Kế toán cần lập Phiếu Chi hoàn trả số tiền tạm thu: <strong className="text-rose-700 font-mono font-bold">10.000.000 ₫</strong>.
+                </p>
+                <div className="flex items-center justify-between pt-1 border-t border-amber-200/60">
+                  <span className="text-[11px] text-amber-800 font-semibold">📍 Phân hệ: Quản lý Xã viên & Vốn</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate('/members')}
+                      className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] rounded-lg shadow-2xs transition-colors cursor-pointer"
+                    >
+                      Lập phiếu chi hoàn tiền &rarr;
+                    </button>
+                  </div>
+                </div>
               </li>
 
-              <li className="timeline-item">
-                <div className="flex items-start justify-between">
-                  <span className="font-bold text-amber-800 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                    Cảnh báo tồn kho Phân bón NPK 16-16-8
-                  </span>
-                  <span className="text-[10.8px] text-slate-400">Hôm qua</span>
+              {/* Task Item 2: Duyệt xã viên mới */}
+              <li className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 hover:border-slate-300 transition-all">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="pill-badge pill-amber text-[10px]">Chờ duyệt</span>
+                    <strong className="text-[13px] text-slate-900 font-extrabold">
+                      Duyệt đơn gia nhập xã viên Nguyễn Thành Đạt (TV007)
+                    </strong>
+                  </div>
+                  <span className="text-[10.5px] text-slate-400 shrink-0 font-medium">Hôm nay</span>
                 </div>
-                <p className="text-slate-600 mt-0.5">Số lượng còn 150 kg (dưới ngưỡng tối thiểu 300 kg).</p>
-                <button
-                  onClick={() => navigate('/inventory/materials')}
-                  className="mt-1 text-[11.5px] text-emerald-700 hover:underline font-bold"
-                >
-                  Tạo phiếu nhập kho &rarr;
-                </button>
+                <p className="text-[12px] text-slate-600">
+                  Đã hoàn thành hồ sơ đăng ký chính thức & cam kết nộp <strong className="font-mono text-emerald-800">10.000.000 ₫</strong> tiền góp vốn.
+                </p>
+                <div className="flex items-center justify-between pt-1 border-t border-slate-200/80">
+                  <span className="text-[11px] text-slate-500 font-semibold">📍 Người phụ trách: Ban Giám đốc / HĐQT</span>
+                  <button
+                    onClick={() => navigate('/members')}
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                  >
+                    Xem & Phê duyệt &rarr;
+                  </button>
+                </div>
               </li>
 
-              <li className="timeline-item">
-                <div className="flex items-start justify-between">
-                  <span className="font-bold text-slate-900">Bổ sung minh chứng OCOP Trà Oolong</span>
-                  <span className="text-[10.8px] text-slate-400">2 ngày trước</span>
+              {/* Task Item 3: Cảnh báo kho */}
+              <li className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 hover:border-slate-300 transition-all">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="pill-badge pill-amber text-[10px]">Cảnh báo kho</span>
+                    <strong className="text-[13px] text-amber-900 font-extrabold flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                      Phân bón NPK 16-16-8 dưới ngưỡng tồn kho
+                    </strong>
+                  </div>
+                  <span className="text-[10.5px] text-slate-400 shrink-0 font-medium">Hôm qua</span>
                 </div>
-                <p className="text-slate-600 mt-0.5">Cần tải lên Giấy chứng nhận ATVSTP trước ngày 15/09/2026.</p>
-                <button
-                  onClick={() => navigate('/ocop/dossiers/DOS-2026-001')}
-                  className="mt-1 text-[11.5px] text-emerald-700 hover:underline font-bold"
-                >
-                  Cập nhật minh chứng &rarr;
-                </button>
+                <p className="text-[12px] text-slate-600">
+                  Tồn kho hiện tại còn 150 kg (ngưỡng an toàn tối thiểu là 300 kg). Cần lập phiếu mua bổ sung cho mùa vụ.
+                </p>
+                <div className="flex items-center justify-between pt-1 border-t border-slate-200/80">
+                  <span className="text-[11px] text-slate-500 font-semibold">📍 Phân hệ: Quản lý Kho vật tư</span>
+                  <button
+                    onClick={() => navigate('/inventory/materials')}
+                    className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                  >
+                    Tạo phiếu nhập kho &rarr;
+                  </button>
+                </div>
+              </li>
+
+              {/* Task Item 4: Minh chứng OCOP */}
+              <li className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 hover:border-slate-300 transition-all">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="pill-badge pill-blue text-[10px]">Hồ sơ OCOP</span>
+                    <strong className="text-[13px] text-slate-900 font-extrabold">
+                      Bổ sung minh chứng OCOP Trà Oolong Mê Linh
+                    </strong>
+                  </div>
+                  <span className="text-[10.5px] text-slate-400 shrink-0 font-medium">2 ngày trước</span>
+                </div>
+                <p className="text-[12px] text-slate-600">
+                  Cần tải bổ sung Giấy chứng nhận ATVSTP & Phiếu xét nghiệm mẫu nước trước ngày 15/09/2026.
+                </p>
+                <div className="flex items-center justify-between pt-1 border-t border-slate-200/80">
+                  <span className="text-[11px] text-slate-500 font-semibold">📍 Phân hệ: Quản lý Hồ sơ OCOP</span>
+                  <button
+                    onClick={() => navigate('/ocop/dossiers/DOS-2026-001')}
+                    className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                  >
+                    Tải lên minh chứng &rarr;
+                  </button>
+                </div>
               </li>
             </ul>
           </div>
@@ -216,3 +280,4 @@ export const DashboardPage: React.FC = () => {
     </div>
   );
 };
+

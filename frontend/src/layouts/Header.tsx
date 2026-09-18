@@ -1,22 +1,100 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, HelpCircle, LogOut, ChevronDown, Calendar } from 'lucide-react';
+import { Search, Bell, HelpCircle, LogOut, ChevronDown, Calendar, Check, ArrowRight, Wallet, FileText, Sprout, Users, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { useNavigate } from 'react-router-dom';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'tasks' | 'notifs'>('all');
   const [selectedSeason, setSelectedSeason] = useState('dx2025');
+
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setNotificationOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const notifications = [
+    {
+      id: 1,
+      title: 'Cần duyệt giao dịch vốn góp',
+      desc: 'Xã viên Trần Văn B vừa nộp 10.000.000đ góp vốn.',
+      time: '2 giờ trước',
+      type: 'tasks',
+      badge: 'Chờ duyệt',
+      badgeClass: 'bg-amber-100 text-amber-800',
+      icon: <Wallet className="w-4 h-4 text-rose-500" />,
+      iconBg: 'bg-rose-50',
+      link: '/members',
+    },
+    {
+      id: 2,
+      title: 'Bổ sung minh chứng hồ sơ OCOP',
+      desc: 'Hồ sơ OCOP sản phẩm Cà phê Arabica Mê Linh cần bổ sung Phiếu kiểm nghiệm.',
+      time: '4 giờ trước',
+      type: 'tasks',
+      badge: 'Cần xử lý',
+      badgeClass: 'bg-rose-100 text-rose-800',
+      icon: <FileText className="w-4 h-4 text-blue-500" />,
+      iconBg: 'bg-blue-50',
+      link: '/ocop/dossiers',
+    },
+    {
+      id: 3,
+      title: 'Nhắc lịch thu hoạch',
+      desc: 'Mùa vụ Hè Thu 2025 đến thời gian thu hoạch (dự kiến).',
+      time: '6 giờ trước',
+      type: 'tasks',
+      badge: 'Nhắc việc',
+      badgeClass: 'bg-blue-100 text-blue-800',
+      icon: <Sprout className="w-4 h-4 text-emerald-500" />,
+      iconBg: 'bg-emerald-50',
+      link: '/dashboard',
+    },
+    {
+      id: 4,
+      title: 'Xã viên chưa hoàn thành vốn góp',
+      desc: 'Có 23 xã viên còn thiếu vốn góp theo kế hoạch.',
+      time: '1 ngày trước',
+      type: 'tasks',
+      badge: 'Quan trọng',
+      badgeClass: 'bg-rose-100 text-rose-800 font-bold',
+      icon: <Users className="w-4 h-4 text-purple-500" />,
+      iconBg: 'bg-purple-50',
+      link: '/members',
+    },
+    {
+      id: 5,
+      title: 'Đến hạn báo cáo',
+      desc: 'Báo cáo tài chính quý II/2025 cần được hoàn thành trước ngày 30/06/2025.',
+      time: '1 ngày trước',
+      type: 'notifs',
+      badge: 'Nhắc việc',
+      badgeClass: 'bg-blue-100 text-blue-800',
+      icon: <AlertCircle className="w-4 h-4 text-cyan-500" />,
+      iconBg: 'bg-cyan-50',
+      link: '/dashboard',
+    },
+  ];
+
+  const filteredNotifs = notifications.filter((n) => {
+    if (activeTab === 'tasks') return n.type === 'tasks';
+    if (activeTab === 'notifs') return n.type === 'notifs';
+    return true;
+  });
 
   return (
     <header className="sticky top-0 z-30 h-14 w-full bg-white border-b border-[#e7e9ec] px-4 sm:px-6 flex items-center justify-between">
@@ -49,20 +127,122 @@ export const Header: React.FC = () => {
           </select>
         </div>
 
-        {/* Notification Bell */}
-        <button
-          className="relative p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-          title="Thông báo hệ thống"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute -top-1 -right-1 bg-rose-600 text-white font-bold text-[9.5px] rounded-full px-1.5 py-0.2 min-w-[16px] text-center leading-normal shadow-xs">
-            3
-          </span>
-        </button>
+        {/* Notification Bell Dropdown */}
+        <div className="relative" ref={notificationRef}>
+          <button
+            onClick={() => setNotificationOpen(!notificationOpen)}
+            className={`relative p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer ${
+              notificationOpen ? 'bg-slate-100 text-emerald-700' : ''
+            }`}
+            title="Thông báo hệ thống & Nhắc việc"
+          >
+            <Bell className="w-4.5 h-4.5" />
+            <span className="absolute -top-1 -right-1 bg-rose-600 text-white font-extrabold text-[9.5px] rounded-full px-1.5 py-0.2 min-w-[16px] text-center leading-normal shadow-xs">
+              5
+            </span>
+          </button>
+
+          {/* Popover Dropdown (Hình 2 Match) */}
+          {notificationOpen && (
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-fade-in text-slate-800">
+              {/* Header */}
+              <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-slate-700" />
+                  <h3 className="font-extrabold text-[13.5px] text-slate-900">Thông báo & Nhắc việc</h3>
+                  <span className="bg-rose-600 text-white font-extrabold text-[10px] px-1.5 py-0.5 rounded-full">
+                    5
+                  </span>
+                </div>
+                <button
+                  onClick={() => alert('Đã đánh dấu tất cả thông báo là đã đọc')}
+                  className="text-[11.5px] text-blue-600 hover:underline font-semibold cursor-pointer"
+                >
+                  Đánh dấu tất cả đã đọc
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex items-center border-b border-slate-100 px-3 text-[12px] font-bold bg-white">
+                <button
+                  onClick={() => setActiveTab('all')}
+                  className={`py-2 px-3 border-b-2 transition-colors cursor-pointer ${
+                    activeTab === 'all' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Tất cả (5)
+                </button>
+                <button
+                  onClick={() => setActiveTab('tasks')}
+                  className={`py-2 px-3 border-b-2 transition-colors cursor-pointer ${
+                    activeTab === 'tasks' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Nhắc việc (4)
+                </button>
+                <button
+                  onClick={() => setActiveTab('notifs')}
+                  className={`py-2 px-3 border-b-2 transition-colors cursor-pointer ${
+                    activeTab === 'notifs' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Thông báo (1)
+                </button>
+              </div>
+
+              {/* List */}
+              <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                {filteredNotifs.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      setNotificationOpen(false);
+                      navigate(item.link);
+                    }}
+                    className="p-3 hover:bg-slate-50 transition-colors flex items-start gap-3 cursor-pointer group"
+                  >
+                    <div className={`w-8 h-8 rounded-full ${item.iconBg} flex items-center justify-center shrink-0 mt-0.5`}>
+                      {item.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <h4 className="text-[12.5px] font-bold text-slate-900 truncate group-hover:text-emerald-700 transition-colors">
+                          {item.title}
+                        </h4>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md shrink-0 font-bold ${item.badgeClass}`}>
+                          {item.badge}
+                        </span>
+                      </div>
+                      <p className="text-[11.5px] text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">
+                        {item.desc}
+                      </p>
+                      <span className="text-[10.5px] text-slate-400 mt-1 block font-medium">
+                        {item.time}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div className="p-2.5 border-t border-slate-100 bg-slate-50 text-center">
+                <button
+                  onClick={() => {
+                    setNotificationOpen(false);
+                    navigate('/dashboard');
+                  }}
+                  className="text-[12px] font-bold text-slate-700 hover:text-emerald-700 inline-flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  Xem tất cả thông báo <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Help Circle */}
         <button
-          className="w-7 h-7 rounded-full border border-slate-200 text-slate-500 text-[12px] font-bold flex items-center justify-center hover:bg-slate-100 transition-colors"
+          className="w-7 h-7 rounded-full border border-slate-200 text-slate-500 text-[12px] font-bold flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer"
           title="Trợ giúp & Hướng dẫn"
         >
           <HelpCircle className="w-4 h-4" />
@@ -72,7 +252,7 @@ export const Header: React.FC = () => {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-slate-100 transition-colors text-left"
+            className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-slate-100 transition-colors text-left cursor-pointer"
           >
             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-[12.5px] shrink-0 border border-blue-200">
               {user?.full_name ? user.full_name.substring(0, 2).toUpperCase() : 'NA'}
@@ -93,7 +273,7 @@ export const Header: React.FC = () => {
               </div>
               <button
                 onClick={logout}
-                className="w-full flex items-center gap-2 px-4 py-2 text-[12.5px] font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+                className="w-full flex items-center gap-2 px-4 py-2 text-[12.5px] font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Đăng xuất</span>
@@ -105,3 +285,4 @@ export const Header: React.FC = () => {
     </header>
   );
 };
+

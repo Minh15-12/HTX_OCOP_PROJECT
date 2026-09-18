@@ -4415,26 +4415,45 @@ export const MembersPage: React.FC = () => {
             </div>
 
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-[11.5px] text-slate-600 text-left leading-relaxed">
-              📌 <strong>Chỉ dẫn kế toán:</strong> Vui lòng liên hệ người nộp để thực hiện lập <strong>Phiếu Chi hoàn trả tiền tạm thu</strong> hoặc lập <strong>Biên bản hoàn trả hiện vật</strong> có chữ ký xác nhận của hai bên.
+              📌 <strong>Hướng dẫn nghiệp vụ:</strong>
+              <ul className="list-disc pl-4 mt-1 space-y-1">
+                <li><strong>Nếu là HĐQT/Chủ tịch:</strong> Chọn <em>Chuyển lệnh chi cho Kế toán</em> để giao việc.</li>
+                <li><strong>Nếu là Kế toán/Thủ quỹ:</strong> Chọn <em>Lập Phiếu Chi & Đã chi tiền</em> nếu đã xuất quỹ hoàn xong.</li>
+              </ul>
             </div>
 
-            <div className="pt-2 flex justify-center gap-2">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
               <button
                 type="button"
                 onClick={() => {
-                  triggerToast(`Đã ghi nhận nhắc nhở hoàn vốn ${(showRefundNoticeModal.contributed_capital || 0).toLocaleString('vi-VN')} ₫ cho ${showRefundNoticeModal.full_name}.`, 'warning');
+                  triggerToast(`Đã chuyển lệnh chi hoàn trả ${(showRefundNoticeModal.contributed_capital || 0).toLocaleString('vi-VN')} ₫ sang Kế toán! (Lưu tại Trung tâm Nhắc việc)`, 'warning');
                   setShowRefundNoticeModal(null);
                 }}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                className="w-full sm:w-auto px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                title="Tạo nhắc việc cho Kế toán xuất quỹ (Tiền chưa bị trừ ngay)"
               >
-                <i className="ri-check-line text-sm"></i> Đã hoàn trả / Chuyển Kế toán chi trả
+                <i className="ri-send-plane-line text-sm"></i> 📋 Chuyển lệnh chi cho Kế toán
               </button>
               <button
                 type="button"
-                onClick={() => setShowRefundNoticeModal(null)}
-                className="px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                onClick={() => {
+                  triggerToast(`Đã lập Phiếu Chi & Xác nhận xuất quỹ hoàn tiền ${(showRefundNoticeModal.contributed_capital || 0).toLocaleString('vi-VN')} ₫ thành công!`, 'success');
+                  setShowRefundNoticeModal(null);
+                }}
+                className="w-full sm:w-auto px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                title="Kế toán/Thủ quỹ xác nhận đã giao tiền cho người nộp và trừ quỹ HTX"
               >
-                Đóng thông báo
+                <i className="ri-money-dollar-circle-line text-sm"></i> 💵 Lập Phiếu Chi & Đã chi tiền
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerToast(`Đã lưu nhiệm vụ hoàn vốn cho ${showRefundNoticeModal.full_name} vào Dashboard Task Hub để xử lý sau.`, 'info');
+                  setShowRefundNoticeModal(null);
+                }}
+                className="w-full sm:w-auto px-3 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs transition-all cursor-pointer"
+              >
+                ⏳ Để sau (Lưu vào Nhắc việc)
               </button>
             </div>
           </div>
