@@ -61,6 +61,7 @@ import {
   updateMemberInStorage,
 } from '@/services/dbStorage';
 import { openVoucherPrintWindow, getVoucherDocumentBlobUrl } from '@/utils/voucherDocumentGenerator';
+import { formatDate, numberToVietnameseWords } from '@/utils/formatters';
 import {
   Member,
   CapitalTransaction,
@@ -159,6 +160,7 @@ export const MembersPage: React.FC = () => {
   // Pending Capital Transactions Modal State
   const [showPendingCapitalModal, setShowPendingCapitalModal] = useState(false);
   const [showProfitFormulaModal, setShowProfitFormulaModal] = useState(false);
+  const [viewingVoucherTx, setViewingVoucherTx] = useState<CapitalTransaction | null>(null);
 
   // Capital Form State (Ghi nhận góp vốn)
   const [capitalForm, setCapitalForm] = useState({
@@ -170,6 +172,7 @@ export const MembersPage: React.FC = () => {
     content: 'Góp vốn đợt bổ sung',
     notes: '',
     fileName: '',
+    fileUrl: '',
   });
 
   // Profit Plan Form State (Cập nhật thông tin kỳ phân chia)
@@ -1032,6 +1035,8 @@ export const MembersPage: React.FC = () => {
       status: 'APPROVED',
       recorded_by: 'Nguyễn Văn A (Kế toán)',
       recorded_date: new Date().toLocaleDateString('vi-VN'),
+      receipt_file_name: capitalForm.fileName || `${capitalForm.receipt_number.toLowerCase()}.pdf`,
+      receipt_file_url: capitalForm.fileUrl || undefined,
     };
 
     setTransactions([newTx, ...transactions]);
@@ -1306,7 +1311,7 @@ export const MembersPage: React.FC = () => {
                       <td className="py-3 px-3 font-mono text-[12px] font-bold text-slate-600">{m.member_code}</td>
                       <td className="py-3 px-3 font-bold text-slate-900">{m.full_name}</td>
                       <td className="py-3 px-3 text-slate-600">{m.gender}</td>
-                      <td className="py-3 px-3 text-slate-600">{m.join_date}</td>
+                      <td className="py-3 px-3 text-slate-600">{formatDate(m.join_date)}</td>
                       <td className="py-3 px-3">
                         {m.member_type === 'CHINH_THUC' && <span className="pill-badge pill-green">Chính thức</span>}
                         {m.member_type === 'LIEN_KET_GOP_VON' && <span className="pill-badge pill-blue">LK góp vốn</span>}
@@ -1597,18 +1602,16 @@ export const MembersPage: React.FC = () => {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10.5px]">Ngày góp vốn:</span>
-                      <span className="text-slate-700">{selectedMember.contribution_date || selectedMember.join_date}</span>
+                      <span className="text-slate-700">{formatDate(selectedMember.contribution_date || selectedMember.join_date)}</span>
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10.5px]">Số cổ phần:</span>
                       <strong className="text-slate-900">{selectedMember.total_shares_held} cổ phần</strong>
                     </div>
-                    {selectedMember.capital_in_words && (
-                      <div className="col-span-2">
-                        <span className="text-slate-400 block text-[10.5px]">Bằng chữ:</span>
-                        <span className="italic text-slate-600 text-[11.5px]">"{selectedMember.capital_in_words}"</span>
-                      </div>
-                    )}
+                    <div className="col-span-2">
+                      <span className="text-slate-400 block text-[10.5px]">Bằng chữ:</span>
+                      <span className="italic text-slate-600 text-[11.5px]">"{numberToVietnameseWords(selectedMember.committed_capital || selectedMember.total_capital_contributed)}"</span>
+                    </div>
                   </div>
                 </div>
 
@@ -1972,7 +1975,7 @@ export const MembersPage: React.FC = () => {
                         <td className="py-3 px-3 text-slate-500 font-medium">{idx + 1}</td>
                         <td className="py-3 px-3 font-mono font-bold text-slate-600">{m.member_code}</td>
                         <td className="py-3 px-3 font-bold text-slate-900">{m.full_name}</td>
-                        <td className="py-3 px-3 text-slate-600">{m.join_date}</td>
+                        <td className="py-3 px-3 text-slate-600">{formatDate(m.join_date)}</td>
                         <td className="py-3 px-3 text-right font-bold text-slate-900">
                           {m.committed_capital?.toLocaleString('vi-VN')} ₫
                         </td>
@@ -2124,12 +2127,25 @@ export const MembersPage: React.FC = () => {
                         <tbody className="divide-y divide-slate-100">
                           {transactions.map((tx) => (
                             <tr key={tx.id}>
-                              <td className="py-2 px-2.5 text-slate-600">{tx.contribution_date}</td>
+                              <td className="py-2 px-2.5 text-slate-600">{formatDate(tx.contribution_date)}</td>
                               <td className="py-2 px-2.5 font-bold text-emerald-700">+{tx.amount.toLocaleString('vi-VN')} ₫</td>
                               <td className="py-2 px-2.5 text-slate-600">
                                 {tx.payment_method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}
                               </td>
-                              <td className="py-2 px-2.5 font-mono text-emerald-700 font-semibold">{tx.receipt_number}</td>
+                              <td className="py-2 px-2.5">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setViewingVoucherTx(tx);
+                                  }}
+                                  className="font-mono text-emerald-700 font-bold hover:underline inline-flex items-center gap-1 cursor-pointer bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition-colors"
+                                  title="Nhấn để xem / in file chứng từ"
+                                >
+                                  <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                                  {tx.receipt_number || 'PT000125'}
+                                </button>
+                              </td>
                               <td className="py-2 px-2.5">
                                 <span className="pill-badge pill-green text-[10px]">Đã duyệt</span>
                               </td>
@@ -2155,21 +2171,46 @@ export const MembersPage: React.FC = () => {
 
           {/* CHARTS GRID MATCHING IMAGE 2 BOTTOM */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Chart 1: Biểu đồ vốn góp theo thời gian */}
+            {/* Chart 1: Biểu đồ vốn góp theo thời gian 2025 */}
             <div className="bg-white border border-[#e7e9ec] p-4 rounded-xl shadow-subtle space-y-3">
               <div className="flex justify-between items-center">
-                <h3 className="font-extrabold text-slate-900 text-sm">Biểu đồ vốn góp theo thời gian</h3>
+                <h3 className="font-extrabold text-slate-900 text-sm">Biểu đồ tiến độ thu vốn góp 2025</h3>
                 <div className="flex items-center gap-3 text-[11px] font-bold">
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Vốn cam kết</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Vốn đã góp</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Cam kết</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Đã nộp</span>
                 </div>
               </div>
               <div className="h-44 flex items-end justify-between gap-1 pt-6 px-2 border-b border-slate-200">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-                  <div key={m} className="flex-1 flex items-end justify-center gap-0.5 group relative">
-                    <div className="w-2 bg-emerald-600 rounded-t-xs" style={{ height: `${40 + (m * 4) % 50}%` }}></div>
-                    <div className="w-2 bg-blue-500 rounded-t-xs" style={{ height: `${35 + (m * 3.8) % 45}%` }}></div>
-                    <span className="absolute -bottom-5 text-[10px] font-bold text-slate-400">T{m}</span>
+                {[
+                  { m: 1, c: 150000000, a: 140000000 },
+                  { m: 2, c: 180000000, a: 175000000 },
+                  { m: 3, c: 200000000, a: 190000000 },
+                  { m: 4, c: 220000000, a: 210000000 },
+                  { m: 5, c: 250000000, a: 245000000 },
+                  { m: 6, c: 280000000, a: 270000000 },
+                  { m: 7, c: 300000000, a: 290000000 },
+                  { m: 8, c: 320000000, a: 305000000 },
+                  { m: 9, c: 350000000, a: 340000000 },
+                  { m: 10, c: 380000000, a: 360000000 },
+                  { m: 11, c: 400000000, a: 385000000 },
+                  { m: 12, c: 450000000, a: 435000000 },
+                ].map((item) => (
+                  <div key={item.m} className="flex-1 flex items-end justify-center gap-0.5 group relative cursor-pointer">
+                    <div
+                      className="w-2 bg-emerald-600 rounded-t-xs hover:opacity-80 transition-all"
+                      style={{ height: `${(item.c / 500000000) * 100}%` }}
+                    ></div>
+                    <div
+                      className="w-2 bg-blue-500 rounded-t-xs hover:opacity-80 transition-all"
+                      style={{ height: `${(item.a / 500000000) * 100}%` }}
+                    ></div>
+                    <span className="absolute -bottom-5 text-[10px] font-bold text-slate-400">T{item.m}</span>
+                    {/* Hover Tooltip */}
+                    <div className="absolute bottom-full mb-2 hidden group-hover:block z-30 bg-slate-900 text-white text-[10px] p-2 rounded-lg shadow-xl whitespace-nowrap pointer-events-none">
+                      <div className="font-bold border-b border-slate-700 pb-1 mb-1">Tháng {item.m}/2025</div>
+                      <div className="text-emerald-300">Cam kết: {item.c.toLocaleString('vi-VN')} ₫</div>
+                      <div className="text-blue-300">Đã nộp: {item.a.toLocaleString('vi-VN')} ₫</div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2849,12 +2890,38 @@ export const MembersPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">File chứng từ</label>
-                <div className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-4 text-center bg-slate-50/50 cursor-pointer">
+                <label className="block font-bold text-slate-700 mb-1">File chứng từ đính kèm</label>
+                <label className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-4 text-center bg-slate-50/50 cursor-pointer block transition-colors">
                   <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
-                  <div className="text-slate-600 font-medium text-[12px]">Kéo thả file hoặc chọn file</div>
+                  <div className="text-slate-600 font-medium text-[12px]">
+                    {capitalForm.fileName ? `Đã chọn: ${capitalForm.fileName}` : 'Kéo thả file hoặc nhấn để chọn file đính kèm'}
+                  </div>
                   <div className="text-slate-400 text-[10.5px]">PDF, JPG, PNG (Tối đa 10MB)</div>
-                </div>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const url = URL.createObjectURL(file);
+                        setCapitalForm({ ...capitalForm, fileName: file.name, fileUrl: url });
+                      }
+                    }}
+                  />
+                </label>
+                {capitalForm.fileName && (
+                  <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center justify-between">
+                    <span className="font-semibold truncate">📁 {capitalForm.fileName}</span>
+                    <button
+                      type="button"
+                      onClick={() => setCapitalForm({ ...capitalForm, fileName: '', fileUrl: '' })}
+                      className="text-rose-600 hover:underline font-bold ml-2 cursor-pointer"
+                    >
+                      Xóa file
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -3286,9 +3353,11 @@ export const MembersPage: React.FC = () => {
                           const isOneTime = wizardForm.contribution_method === 'Góp một lần';
                           const actualVal = isOneTime ? val : Math.min(val, wizardForm.initial_contributed_capital);
                           const autoRate = calculateDynamicProfitRate(val, actualVal, wizardForm.contribution_method);
+                          const words = numberToVietnameseWords(val);
                           setWizardForm({
                             ...wizardForm,
                             committed_capital: val,
+                            capital_in_words: words,
                             initial_contributed_capital: actualVal,
                             profit_share_rate: autoRate,
                           });
@@ -4867,6 +4936,59 @@ export const MembersPage: React.FC = () => {
               >
                 Đóng lại
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PREVIEW FILE CHỨNG TỪ (HÌNH 5) */}
+      {viewingVoucherTx && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-4xl w-full h-[90vh] shadow-modal overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-extrabold text-slate-900 text-base">
+                  Xem file chứng từ đính kèm: <span className="font-mono text-emerald-800">{viewingVoucherTx.receipt_number}</span>
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mem = members.find((m) => m.id === viewingVoucherTx.member_id || m.member_code === viewingVoucherTx.member_code) || selectedMember || members[0];
+                    openVoucherPrintWindow(mem, viewingVoucherTx);
+                  }}
+                  className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" /> In chứng từ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingVoucherTx(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-slate-100 p-4 overflow-hidden">
+              {viewingVoucherTx.receipt_file_url ? (
+                <iframe
+                  src={viewingVoucherTx.receipt_file_url}
+                  title="Chứng từ đính kèm"
+                  className="w-full h-full border-0 rounded-xl bg-white shadow-sm"
+                />
+              ) : (
+                <iframe
+                  src={getVoucherDocumentBlobUrl(
+                    members.find((m) => m.id === viewingVoucherTx.member_id || m.member_code === viewingVoucherTx.member_code) || selectedMember || members[0],
+                    viewingVoucherTx
+                  )}
+                  title="Biên nhận chứng từ"
+                  className="w-full h-full border-0 rounded-xl bg-white shadow-sm"
+                />
+              )}
             </div>
           </div>
         </div>

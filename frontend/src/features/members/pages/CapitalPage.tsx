@@ -31,6 +31,8 @@ import {
   saveCapitalTransactionsToStorage,
 } from '@/services/dbStorage';
 import { Member, CapitalTransaction, LandContribution, CapitalCertificate } from '@/types/memberTypes';
+import { openVoucherPrintWindow, getVoucherDocumentBlobUrl } from '@/utils/voucherDocumentGenerator';
+import { formatDate, numberToVietnameseWords } from '@/utils/formatters';
 
 const nfc = (str?: string | number | null): string => {
   if (str === undefined || str === null) return '';
@@ -79,6 +81,7 @@ export const CapitalPage: React.FC = () => {
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [activeCertificate, setActiveCertificate] = useState<CapitalCertificate | null>(null);
   const [capitalDrawerTab, setCapitalDrawerTab] = useState<'history' | 'land' | 'certificate' | 'info'>('history');
+  const [viewingVoucherTx, setViewingVoucherTx] = useState<CapitalTransaction | null>(null);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
 
@@ -854,10 +857,23 @@ export const CapitalPage: React.FC = () => {
                         .filter((tx) => tx.member_id === selectedCapitalMember.id || tx.member_code === selectedCapitalMember.member_code)
                         .map((tx) => (
                           <tr key={tx.id}>
-                            <td className="py-2 px-2.5 text-slate-600">{tx.contribution_date}</td>
+                            <td className="py-2 px-2.5 text-slate-600">{formatDate(tx.contribution_date)}</td>
                             <td className="py-2 px-2.5 font-bold text-emerald-700">+{tx.amount.toLocaleString('vi-VN')} ₫</td>
                             <td className="py-2 px-2.5 text-slate-600">{tx.payment_method === 'CASH' ? 'Tiền mặt' : tx.payment_method === 'LAND' ? 'Ruộng đất (QSDĐ)' : 'Chuyển khoản'}</td>
-                            <td className="py-2 px-2.5 font-mono text-emerald-700 font-semibold">{tx.receipt_number}</td>
+                            <td className="py-2 px-2.5">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewingVoucherTx(tx);
+                                }}
+                                className="font-mono text-emerald-700 font-bold hover:underline inline-flex items-center gap-1 cursor-pointer bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition-colors"
+                                title="Nhấn để xem / in file chứng từ"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                                {tx.receipt_number || 'PT000125'}
+                              </button>
+                            </td>
                           </tr>
                         ))}
                     </tbody>
@@ -962,11 +978,36 @@ export const CapitalPage: React.FC = () => {
             </div>
           </div>
           <div className="h-44 flex items-end justify-between gap-1 pt-6 px-2 border-b border-slate-200">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-              <div key={m} className="flex-1 flex items-end justify-center gap-0.5 relative group">
-                <div className="w-2 bg-emerald-600 rounded-t-xs" style={{ height: `${40 + (m * 4) % 50}%` }}></div>
-                <div className="w-2 bg-blue-500 rounded-t-xs" style={{ height: `${35 + (m * 3.8) % 45}%` }}></div>
-                <span className="absolute -bottom-5 text-[10px] font-bold text-slate-400">T{m}</span>
+            {[
+              { m: 1, c: 150000000, a: 140000000 },
+              { m: 2, c: 180000000, a: 175000000 },
+              { m: 3, c: 200000000, a: 190000000 },
+              { m: 4, c: 220000000, a: 210000000 },
+              { m: 5, c: 250000000, a: 245000000 },
+              { m: 6, c: 280000000, a: 270000000 },
+              { m: 7, c: 300000000, a: 290000000 },
+              { m: 8, c: 320000000, a: 305000000 },
+              { m: 9, c: 350000000, a: 340000000 },
+              { m: 10, c: 380000000, a: 360000000 },
+              { m: 11, c: 400000000, a: 385000000 },
+              { m: 12, c: 450000000, a: 435000000 },
+            ].map((item) => (
+              <div key={item.m} className="flex-1 flex items-end justify-center gap-0.5 relative group cursor-pointer">
+                <div
+                  className="w-2 bg-emerald-600 rounded-t-xs hover:opacity-80 transition-all"
+                  style={{ height: `${(item.c / 500000000) * 100}%` }}
+                ></div>
+                <div
+                  className="w-2 bg-blue-500 rounded-t-xs hover:opacity-80 transition-all"
+                  style={{ height: `${(item.a / 500000000) * 100}%` }}
+                ></div>
+                <span className="absolute -bottom-5 text-[10px] font-bold text-slate-400">T{item.m}</span>
+                {/* Hover Tooltip */}
+                <div className="absolute bottom-full mb-2 hidden group-hover:block z-30 bg-slate-900 text-white text-[10px] p-2 rounded-lg shadow-xl whitespace-nowrap pointer-events-none">
+                  <div className="font-bold border-b border-slate-700 pb-1 mb-1">Tháng {item.m}/2025</div>
+                  <div className="text-emerald-300">Cam kết: {item.c.toLocaleString('vi-VN')} ₫</div>
+                  <div className="text-blue-300">Đã nộp: {item.a.toLocaleString('vi-VN')} ₫</div>
+                </div>
               </div>
             ))}
           </div>
@@ -1673,7 +1714,60 @@ export const CapitalPage: React.FC = () => {
                 >
                   <Printer className="w-4 h-4" /> In Giấy chứng nhận (A4)
                 </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+      {/* MODAL PREVIEW FILE CHỨNG TỪ (HÌNH 5) */}
+      {viewingVoucherTx && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-4xl w-full h-[90vh] shadow-modal overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-extrabold text-slate-900 text-base">
+                  Xem file chứng từ đính kèm: <span className="font-mono text-emerald-800">{viewingVoucherTx.receipt_number}</span>
+                </h3>
               </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mem = members.find((m) => m.id === viewingVoucherTx.member_id || m.member_code === viewingVoucherTx.member_code) || selectedCapitalMember || members[0];
+                    openVoucherPrintWindow(mem, viewingVoucherTx);
+                  }}
+                  className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" /> In chứng từ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingVoucherTx(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-slate-100 p-4 overflow-hidden">
+              {viewingVoucherTx.receipt_file_url ? (
+                <iframe
+                  src={viewingVoucherTx.receipt_file_url}
+                  title="Chứng từ đính kèm"
+                  className="w-full h-full border-0 rounded-xl bg-white shadow-sm"
+                />
+              ) : (
+                <iframe
+                  src={getVoucherDocumentBlobUrl(
+                    members.find((m) => m.id === viewingVoucherTx.member_id || m.member_code === viewingVoucherTx.member_code) || selectedCapitalMember || members[0],
+                    viewingVoucherTx
+                  )}
+                  title="Biên nhận chứng từ"
+                  className="w-full h-full border-0 rounded-xl bg-white shadow-sm"
+                />
+              )}
             </div>
           </div>
         </div>
