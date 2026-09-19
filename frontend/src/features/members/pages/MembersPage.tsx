@@ -132,9 +132,17 @@ export const MembersPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(6);
 
+  // Pagination State for Capital Table
+  const [capitalCurrentPage, setCapitalCurrentPage] = useState<number>(1);
+  const [capitalPageSize, setCapitalPageSize] = useState<number>(6);
+
   React.useEffect(() => {
     setCurrentPage(1);
   }, [search, typeFilter, statusFilter]);
+
+  React.useEffect(() => {
+    setCapitalCurrentPage(1);
+  }, [search, capitalStatusFilter]);
 
   // Toast State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' | 'warning' | 'info' } | null>(null);
@@ -1131,6 +1139,23 @@ export const MembersPage: React.FC = () => {
     return matchSearch && matchCapitalStatus;
   });
 
+  const totalCapitalPagesTab2 = Math.ceil(filteredMembersTab2.length / capitalPageSize) || 1;
+  const safeCapitalCurrentPageTab2 = Math.min(capitalCurrentPage, totalCapitalPagesTab2);
+  const paginatedMembersTab2 = filteredMembersTab2.slice(
+    (safeCapitalCurrentPageTab2 - 1) * capitalPageSize,
+    safeCapitalCurrentPageTab2 * capitalPageSize
+  );
+
+  const handleSelectCapitalMember = (m: Member) => {
+    setSelectedCapitalMember(m);
+    setTimeout(() => {
+      const el = document.getElementById('capital-detail-panel');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 50);
+  };
+
   const filteredSurplusItems = surplusItems.filter((i) => {
     const matchSearch =
       i.member_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -2049,15 +2074,17 @@ export const MembersPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredMembersTab2.map((m, idx) => (
+                    {paginatedMembersTab2.map((m, idx) => (
                       <tr
                         key={m.id}
-                        onClick={() => setSelectedCapitalMember(m)}
+                        onClick={() => handleSelectCapitalMember(m)}
                         className={`cursor-pointer hover:bg-slate-50 transition-colors ${
                           selectedCapitalMember?.id === m.id ? 'bg-emerald-50/60 font-semibold' : ''
                         }`}
                       >
-                        <td className="py-3 px-3 text-slate-500 font-medium">{idx + 1}</td>
+                        <td className="py-3 px-3 text-slate-500 font-medium">
+                          {(safeCapitalCurrentPageTab2 - 1) * capitalPageSize + idx + 1}
+                        </td>
                         <td className="py-3 px-3 font-mono font-bold text-slate-600">{m.member_code}</td>
                         <td className="py-3 px-3 font-bold text-slate-900">{m.full_name}</td>
                         <td className="py-3 px-3 text-slate-600">{formatDate(m.join_date)}</td>
@@ -2084,7 +2111,7 @@ export const MembersPage: React.FC = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedCapitalMember(m);
+                              handleSelectCapitalMember(m);
                             }}
                             className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
                           >
@@ -2108,11 +2135,71 @@ export const MembersPage: React.FC = () => {
                   </tfoot>
                 </table>
               </div>
+
+              {/* Pagination Controls Bar for Tab 2 */}
+              <div className="px-4 py-3 border-t border-[#e7e9ec] bg-slate-50/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 text-slate-500 font-medium">
+                  <span>Hiển thị</span>
+                  <select
+                    value={capitalPageSize}
+                    onChange={(e) => {
+                      setCapitalPageSize(Number(e.target.value));
+                      setCapitalCurrentPage(1);
+                    }}
+                    className="px-2 py-1 bg-white border border-slate-300 rounded-md font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value={5}>5 xã viên / trang</option>
+                    <option value={6}>6 xã viên / trang</option>
+                    <option value={8}>8 xã viên / trang</option>
+                    <option value={10}>10 xã viên / trang</option>
+                    <option value={20}>20 xã viên / trang</option>
+                  </select>
+                  <span>
+                    ({filteredMembersTab2.length > 0 ? (safeCapitalCurrentPageTab2 - 1) * capitalPageSize + 1 : 0} -{' '}
+                    {Math.min(safeCapitalCurrentPageTab2 * capitalPageSize, filteredMembersTab2.length)} trên tổng số{' '}
+                    <strong className="text-slate-800 font-extrabold">{filteredMembersTab2.length}</strong> xã viên)
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    disabled={safeCapitalCurrentPageTab2 <= 1}
+                    onClick={() => setCapitalCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Trước
+                  </button>
+
+                  <div className="flex items-center gap-1 px-1">
+                    {Array.from({ length: totalCapitalPagesTab2 }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCapitalCurrentPage(pageNum)}
+                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          safeCapitalCurrentPageTab2 === pageNum
+                            ? 'bg-emerald-600 text-white shadow-2xs'
+                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    disabled={safeCapitalCurrentPageTab2 >= totalCapitalPagesTab2}
+                    onClick={() => setCapitalCurrentPage((prev) => Math.min(prev + 1, totalCapitalPagesTab2))}
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                  >
+                    Sau <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* SIDE DRAWER CHI TIẾT VỐN GÓP MATCHING IMAGE 2 EXACTLY */}
             {selectedCapitalMember && (
-              <div className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle p-4 space-y-4 animate-fade-in">
+              <div id="capital-detail-panel" className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle p-4 space-y-4 animate-fade-in sticky top-16 z-20 max-h-[calc(100vh-140px)] overflow-y-auto">
                 <div className="flex items-start justify-between border-b border-[#e7e9ec] pb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-base border border-emerald-200 shrink-0">

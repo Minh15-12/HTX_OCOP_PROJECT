@@ -22,6 +22,8 @@ import {
   Building,
   ShieldAlert,
   Download,
+  ArrowLeft,
+  ArrowRight,
 } from 'lucide-react';
 import { mockMembersList, mockCapitalTransactions } from '@/services/memberService';
 import {
@@ -74,6 +76,14 @@ export const CapitalPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [capitalStatusFilter, setCapitalStatusFilter] = useState<string>('ALL');
   const [selectedCapitalMember, setSelectedCapitalMember] = useState<Member | null>(null);
+
+  // Pagination State for Capital List
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(6);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, capitalStatusFilter]);
 
   const [showRecordModal, setShowRecordModal] = useState(false);
   const [recordStep, setRecordStep] = useState<1 | 2 | 3>(1);
@@ -508,6 +518,23 @@ export const CapitalPage: React.FC = () => {
     return matchSearch && matchCapitalStatus;
   });
 
+  const totalPages = Math.ceil(filteredMembers.length / pageSize) || 1;
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedMembers = filteredMembers.slice(
+    (safeCurrentPage - 1) * pageSize,
+    safeCurrentPage * pageSize
+  );
+
+  const handleSelectCapitalMember = (m: Member) => {
+    setSelectedCapitalMember(m);
+    setTimeout(() => {
+      const el = document.getElementById('capital-drawer-panel');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 50);
+  };
+
   return (
     <div className="space-y-4 pb-12 animate-fade-in">
       {toast && (
@@ -708,7 +735,7 @@ export const CapitalPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredMembers.map((m, idx) => {
+                {paginatedMembers.map((m, idx) => {
                   const pct = m.ownership_percentage || Number((((m.contributed_capital || 0) / (totalContributedCapital || 1)) * 100).toFixed(2));
                   const isNearLimit = pct >= 25.0 && pct < 30.0;
                   const isLimitBreach = pct >= 30.0;
@@ -716,12 +743,14 @@ export const CapitalPage: React.FC = () => {
                   return (
                     <tr
                       key={m.id}
-                      onClick={() => setSelectedCapitalMember(m)}
+                      onClick={() => handleSelectCapitalMember(m)}
                       className={`cursor-pointer hover:bg-slate-50 transition-colors ${
                         selectedCapitalMember?.id === m.id ? 'bg-emerald-50/60 font-semibold' : ''
                       }`}
                     >
-                      <td className="py-3 px-3 text-slate-500 font-medium">{idx + 1}</td>
+                      <td className="py-3 px-3 text-slate-500 font-medium">
+                        {(safeCurrentPage - 1) * pageSize + idx + 1}
+                      </td>
                       <td className="py-3 px-3 font-mono font-bold text-slate-600">{m.member_code}</td>
                       <td className="py-3 px-3">
                         <strong className="text-slate-900 block">{m.full_name}</strong>
@@ -770,7 +799,7 @@ export const CapitalPage: React.FC = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedCapitalMember(m);
+                              handleSelectCapitalMember(m);
                             }}
                             className="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
                             title="Xem chi tiết vốn góp"
@@ -795,11 +824,71 @@ export const CapitalPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls Bar */}
+          <div className="px-4 py-3 border-t border-[#e7e9ec] bg-slate-50/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-slate-500 font-medium">
+              <span>Hiển thị</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2 py-1 bg-white border border-slate-300 rounded-md font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+              >
+                <option value={5}>5 xã viên / trang</option>
+                <option value={6}>6 xã viên / trang</option>
+                <option value={8}>8 xã viên / trang</option>
+                <option value={10}>10 xã viên / trang</option>
+                <option value={20}>20 xã viên / trang</option>
+              </select>
+              <span>
+                ({filteredMembers.length > 0 ? (safeCurrentPage - 1) * pageSize + 1 : 0} -{' '}
+                {Math.min(safeCurrentPage * pageSize, filteredMembers.length)} trên tổng số{' '}
+                <strong className="text-slate-800 font-extrabold">{filteredMembers.length}</strong> xã viên)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                disabled={safeCurrentPage <= 1}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Trước
+              </button>
+
+              <div className="flex items-center gap-1 px-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      safeCurrentPage === pageNum
+                        ? 'bg-emerald-600 text-white shadow-2xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                disabled={safeCurrentPage >= totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+              >
+                Sau <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* SIDE DRAWER FOR SELECTED MEMBER */}
         {selectedCapitalMember && (
-          <div className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle p-4 space-y-4 animate-fade-in">
+          <div id="capital-drawer-panel" className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle p-4 space-y-4 animate-fade-in sticky top-16 z-20 max-h-[calc(100vh-140px)] overflow-y-auto">
             <div className="flex items-start justify-between border-b border-[#e7e9ec] pb-3">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-sm border border-emerald-200 shrink-0">
