@@ -128,6 +128,14 @@ export const MembersPage: React.FC = () => {
   const [selectedCapitalMember, setSelectedCapitalMember] = useState<Member | null>(null);
   const [selectedSurplusItem, setSelectedSurplusItem] = useState<SurplusDistributionItem | null>(null);
 
+  // Pagination State for Members Table
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(6);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, typeFilter, statusFilter]);
+
   // Toast State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' | 'warning' | 'info' } | null>(null);
 
@@ -1098,6 +1106,23 @@ export const MembersPage: React.FC = () => {
     return matchSearch && matchType && matchStatus;
   });
 
+  const totalPagesTab1 = Math.ceil(filteredMembersTab1.length / pageSize) || 1;
+  const safeCurrentPageTab1 = Math.min(currentPage, totalPagesTab1);
+  const paginatedMembersTab1 = filteredMembersTab1.slice(
+    (safeCurrentPageTab1 - 1) * pageSize,
+    safeCurrentPageTab1 * pageSize
+  );
+
+  const handleSelectMember = (m: Member) => {
+    setSelectedMember(m);
+    setTimeout(() => {
+      const el = document.getElementById('member-detail-panel');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 50);
+  };
+
   const filteredMembersTab2 = members.filter((m) => {
     const matchSearch =
       m.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -1300,10 +1325,10 @@ export const MembersPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredMembersTab1.map((m) => (
+                  {paginatedMembersTab1.map((m) => (
                     <tr
                       key={m.id}
-                      onClick={() => setSelectedMember(m)}
+                      onClick={() => handleSelectMember(m)}
                       className={`cursor-pointer hover:bg-slate-50 transition-colors ${
                         selectedMember?.id === m.id ? 'bg-emerald-50/60 font-semibold' : ''
                       }`}
@@ -1368,7 +1393,7 @@ export const MembersPage: React.FC = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedMember(m);
+                              handleSelectMember(m);
                             }}
                             className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
                             title="Xem thông tin chi tiết"
@@ -1404,11 +1429,71 @@ export const MembersPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls Bar */}
+            <div className="px-4 py-3 border-t border-[#e7e9ec] bg-slate-50/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-500 font-medium">
+                <span>Hiển thị</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-1 bg-white border border-slate-300 rounded-md font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                >
+                  <option value={5}>5 xã viên / trang</option>
+                  <option value={6}>6 xã viên / trang</option>
+                  <option value={8}>8 xã viên / trang</option>
+                  <option value={10}>10 xã viên / trang</option>
+                  <option value={20}>20 xã viên / trang</option>
+                </select>
+                <span>
+                  ({filteredMembersTab1.length > 0 ? (safeCurrentPageTab1 - 1) * pageSize + 1 : 0} -{' '}
+                  {Math.min(safeCurrentPageTab1 * pageSize, filteredMembersTab1.length)} trên tổng số{' '}
+                  <strong className="text-slate-800 font-extrabold">{filteredMembersTab1.length}</strong> xã viên)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  disabled={safeCurrentPageTab1 <= 1}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Trước
+                </button>
+
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPagesTab1 }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        safeCurrentPageTab1 === pageNum
+                          ? 'bg-emerald-600 text-white shadow-2xs'
+                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  disabled={safeCurrentPageTab1 >= totalPagesTab1}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPagesTab1))}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                >
+                  Sau <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Drawer Details Member - COMPREHENSIVE VIEW MATCHING ALL WIZARD FIELDS */}
           {selectedMember && (
-            <div className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle animate-fade-in max-h-[calc(100vh-180px)] flex flex-col overflow-hidden">
+            <div id="member-detail-panel" className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle animate-fade-in max-h-[calc(100vh-140px)] flex flex-col overflow-hidden sticky top-16 z-20">
               {/* Fixed Header */}
               <div className="p-4 border-b border-[#e7e9ec] bg-white z-10 flex items-start justify-between shrink-0 shadow-2xs">
                 <div className="flex items-center gap-3">
