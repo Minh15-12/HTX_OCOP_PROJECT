@@ -736,7 +736,11 @@ export const CapitalPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {paginatedMembers.map((m, idx) => {
-                  const pct = m.ownership_percentage || Number((((m.contributed_capital || 0) / (totalContributedCapital || 1)) * 100).toFixed(2));
+                  const committed = m.committed_capital ?? m.total_capital_contributed ?? 30000000;
+                  const contributed = m.contributed_capital ?? m.total_capital_contributed ?? 0;
+                  const remaining = Math.max(0, committed - contributed);
+                  const isFullyPaid = contributed >= committed && committed > 0;
+                  const pct = totalContributedCapital > 0 ? Number(((contributed / totalContributedCapital) * 100).toFixed(2)) : (m.ownership_percentage || 0);
                   const isNearLimit = pct >= 25.0 && pct < 30.0;
                   const isLimitBreach = pct >= 30.0;
 
@@ -766,13 +770,13 @@ export const CapitalPage: React.FC = () => {
                         )}
                       </td>
                       <td className="py-3 px-3 text-right font-bold text-slate-900">
-                        {m.committed_capital?.toLocaleString('vi-VN')} ₫
+                        {committed.toLocaleString('vi-VN')} ₫
                       </td>
                       <td className="py-3 px-3 text-right font-extrabold text-emerald-700">
-                        {m.contributed_capital?.toLocaleString('vi-VN')} ₫
+                        {contributed.toLocaleString('vi-VN')} ₫
                       </td>
                       <td className="py-3 px-3 text-right font-bold text-amber-800">
-                        {m.remaining_capital?.toLocaleString('vi-VN')} ₫
+                        {remaining.toLocaleString('vi-VN')} ₫
                       </td>
                       <td className="py-3 px-3 text-right font-extrabold">
                         {isLimitBreach ? (
@@ -788,7 +792,7 @@ export const CapitalPage: React.FC = () => {
                         )}
                       </td>
                       <td className="py-3 px-3">
-                        {m.capital_status === 'DU_VON' ? (
+                        {isFullyPaid ? (
                           <span className="pill-badge pill-green">Đủ vốn</span>
                         ) : (
                           <span className="pill-badge pill-amber">Chưa đủ</span>

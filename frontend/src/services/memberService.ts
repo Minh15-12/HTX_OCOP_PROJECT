@@ -1,6 +1,7 @@
 import { Member, CapitalTransaction, SurplusDistributionPlan, SurplusDistributionItem } from '@/types/memberTypes';
 import { apiClient } from './apiClient';
 import { getStoredMembers, saveMembersToStorage, addMemberToStorage, updateMemberInStorage, deduplicateMembers } from './dbStorage';
+import { numberToVietnameseWords } from '@/utils/formatters';
 
 export const mockMembersList: Member[] = [
   {
@@ -788,8 +789,20 @@ export const mockSurplusItems: SurplusDistributionItem[] = [
 // Helper function to map API Response resource to Member frontend interface
 export const mapApiMemberToFrontend = (item: any): Member => {
   const info = item.identity_information || {};
+
+  const committed = typeof item.committed_capital === 'number'
+    ? item.committed_capital
+    : (info.committed_capital !== undefined ? Number(info.committed_capital) : 30000000);
+
+  const contributed = typeof item.contributed_capital === 'number'
+    ? item.contributed_capital
+    : (info.contributed_capital !== undefined ? Number(info.contributed_capital) : committed);
+
+  const remaining = Math.max(0, committed - contributed);
+  const status = contributed >= committed && committed > 0 ? 'DU_VON' : 'CHUA_DU';
+
   return {
-    id: item.id,
+    id: String(item.id),
     cooperative_id: item.cooperative_id || 'coop-01',
     member_code: item.member_code,
     full_name: info.full_name || 'Xã viên ' + item.member_code,
@@ -814,14 +827,14 @@ export const mapApiMemberToFrontend = (item: any): Member => {
     contribution_method: 'Góp một lần',
     member_type: item.member_type || 'CHINH_THUC',
     is_foreign_investor: item.is_foreign_investor || false,
-    committed_capital: item.committed_capital || 10000000,
-    contributed_capital: item.contributed_capital || 10000000,
-    remaining_capital: item.remaining_capital || 0,
-    total_capital_contributed: item.contributed_capital || 10000000,
-    capital_in_words: item.capital_in_words || 'Mười triệu đồng',
-    total_shares_held: Math.floor((item.contributed_capital || 10000000) / 100000),
-    ownership_percentage: item.ownership_percentage || 1.0,
-    capital_status: item.capital_status || 'DU_VON',
+    committed_capital: committed,
+    contributed_capital: contributed,
+    remaining_capital: remaining,
+    total_capital_contributed: contributed,
+    capital_in_words: item.capital_in_words || `${numberToVietnameseWords(committed)}`,
+    total_shares_held: Math.floor(contributed / 100000),
+    ownership_percentage: item.ownership_percentage,
+    capital_status: status,
     profit_share_rate: item.ownership_percentage || 1.0,
     payout_method: info.payout_method || 'BANK_TRANSFER',
     bank_account: info.bank_account || '',

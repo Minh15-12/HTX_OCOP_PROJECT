@@ -2074,39 +2074,46 @@ export const MembersPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {paginatedMembersTab2.map((m, idx) => (
-                      <tr
-                        key={m.id}
-                        onClick={() => handleSelectCapitalMember(m)}
-                        className={`cursor-pointer hover:bg-slate-50 transition-colors ${
-                          selectedCapitalMember?.id === m.id ? 'bg-emerald-50/60 font-semibold' : ''
-                        }`}
-                      >
-                        <td className="py-3 px-3 text-slate-500 font-medium">
-                          {(safeCapitalCurrentPageTab2 - 1) * capitalPageSize + idx + 1}
-                        </td>
-                        <td className="py-3 px-3 font-mono font-bold text-slate-600">{m.member_code}</td>
-                        <td className="py-3 px-3 font-bold text-slate-900">{m.full_name}</td>
-                        <td className="py-3 px-3 text-slate-600">{formatDate(m.join_date)}</td>
-                        <td className="py-3 px-3 text-right font-bold text-slate-900">
-                          {m.committed_capital?.toLocaleString('vi-VN')} ₫
-                        </td>
-                        <td className="py-3 px-3 text-right font-extrabold text-emerald-700">
-                          {m.contributed_capital?.toLocaleString('vi-VN')} ₫
-                        </td>
-                        <td className="py-3 px-3 text-right font-bold text-amber-800">
-                          {m.remaining_capital?.toLocaleString('vi-VN')} ₫
-                        </td>
-                        <td className="py-3 px-3 text-right font-bold text-slate-800">
-                          {Math.round(((m.contributed_capital || 0) / (m.committed_capital || 1)) * 100)}%
-                        </td>
-                        <td className="py-3 px-3">
-                          {m.capital_status === 'DU_VON' ? (
-                            <span className="pill-badge pill-green">Đủ vốn</span>
-                          ) : (
-                            <span className="pill-badge pill-amber">Chưa đủ</span>
-                          )}
-                        </td>
+                    {paginatedMembersTab2.map((m, idx) => {
+                      const committed = m.committed_capital ?? m.total_capital_contributed ?? 30000000;
+                      const contributed = m.contributed_capital ?? m.total_capital_contributed ?? 0;
+                      const remaining = Math.max(0, committed - contributed);
+                      const isFullyPaid = contributed >= committed && committed > 0;
+                      const completionPct = Math.min(100, Math.round((contributed / (committed || 1)) * 100));
+
+                      return (
+                        <tr
+                          key={m.id}
+                          onClick={() => handleSelectCapitalMember(m)}
+                          className={`cursor-pointer hover:bg-slate-50 transition-colors ${
+                            selectedCapitalMember?.id === m.id ? 'bg-emerald-50/60 font-semibold' : ''
+                          }`}
+                        >
+                          <td className="py-3 px-3 text-slate-500 font-medium">
+                            {(safeCapitalCurrentPageTab2 - 1) * capitalPageSize + idx + 1}
+                          </td>
+                          <td className="py-3 px-3 font-mono font-bold text-slate-600">{m.member_code}</td>
+                          <td className="py-3 px-3 font-bold text-slate-900">{m.full_name}</td>
+                          <td className="py-3 px-3 text-slate-600">{formatDate(m.join_date)}</td>
+                          <td className="py-3 px-3 text-right font-bold text-slate-900">
+                            {committed.toLocaleString('vi-VN')} ₫
+                          </td>
+                          <td className="py-3 px-3 text-right font-extrabold text-emerald-700">
+                            {contributed.toLocaleString('vi-VN')} ₫
+                          </td>
+                          <td className="py-3 px-3 text-right font-bold text-amber-800">
+                            {remaining.toLocaleString('vi-VN')} ₫
+                          </td>
+                          <td className="py-3 px-3 text-right font-bold text-slate-800">
+                            {completionPct}%
+                          </td>
+                          <td className="py-3 px-3">
+                            {isFullyPaid ? (
+                              <span className="pill-badge pill-green">Đủ vốn</span>
+                            ) : (
+                              <span className="pill-badge pill-amber">Chưa đủ</span>
+                            )}
+                          </td>
                         <td className="py-3 px-3 text-center">
                           <button
                             onClick={(e) => {
@@ -2119,7 +2126,8 @@ export const MembersPage: React.FC = () => {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                    );
+                  })}
                   </tbody>
 
                   {/* Summary Total Row matching Image 2 */}
