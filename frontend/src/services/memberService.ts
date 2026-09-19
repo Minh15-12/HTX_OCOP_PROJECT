@@ -1,6 +1,6 @@
 import { Member, CapitalTransaction, SurplusDistributionPlan, SurplusDistributionItem } from '@/types/memberTypes';
 import { apiClient } from './apiClient';
-import { getStoredMembers, saveMembersToStorage, addMemberToStorage, updateMemberInStorage } from './dbStorage';
+import { getStoredMembers, saveMembersToStorage, addMemberToStorage, updateMemberInStorage, deduplicateMembers } from './dbStorage';
 
 export const mockMembersList: Member[] = [
   {
@@ -848,21 +848,28 @@ export const getMembersFromApi = async (filters?: { search?: string; status?: st
 
   const stored = getStoredMembers();
   if (!stored || stored.length === 0) {
-    const initialList = apiMembers.length > 0 ? apiMembers : mockMembersList;
+    const initialList = deduplicateMembers(apiMembers.length > 0 ? apiMembers : mockMembersList);
     saveMembersToStorage(initialList);
     return initialList;
   }
 
+  const getKey = (m: Member) =>
+    m.member_code && m.member_code.trim()
+      ? m.member_code.trim().toUpperCase()
+      : m.cccd && m.cccd.trim()
+      ? m.cccd.trim()
+      : String(m.id).trim();
+
   // Merge API members and stored members, giving priority to user's updated local DB store
   const mergedMap = new Map<string, Member>();
   // 1. Add mock items first to ensure sample debt test data is present
-  mockMembersList.forEach(m => mergedMap.set(m.id, m));
+  mockMembersList.forEach((m) => mergedMap.set(getKey(m), m));
   // 2. Overlay API items
-  apiMembers.forEach(m => mergedMap.set(m.id, m));
-  // 3. Add stored items last so user's updates (approvals, rejections, edits) in localStorage take highest priority
-  stored.forEach(m => mergedMap.set(m.id, m));
+  apiMembers.forEach((m) => mergedMap.set(getKey(m), m));
+  // 3. Add stored items last so user's updates in localStorage take highest priority
+  stored.forEach((m) => mergedMap.set(getKey(m), m));
 
-  const mergedList = Array.from(new Set(Array.from(mergedMap.values())));
+  const mergedList = deduplicateMembers(Array.from(mergedMap.values()));
   saveMembersToStorage(mergedList);
   return mergedList;
 };
