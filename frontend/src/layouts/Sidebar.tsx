@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { navigationConfig } from '@/router/navigation';
 import { cn } from '@/utils/cn';
-import { Sprout } from 'lucide-react';
+import { Sprout, Settings } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   return (
@@ -66,6 +66,23 @@ export const Sidebar: React.FC = () => {
             </nav>
           </div>
         ))}
+        {/* Footer Quick Settings Link (Matching User Mockup) */}
+        <div className="mt-auto pt-2 border-t border-slate-100">
+          <NavLink
+            to="/system/settings"
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-150',
+                isActive
+                  ? 'bg-emerald-700 text-white shadow-sm'
+                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+              )
+            }
+          >
+            <Settings className="w-4.5 h-4.5 shrink-0" />
+            <span className="truncate flex-1">Cài đặt hệ thống</span>
+          </NavLink>
+        </div>
       </div>
     </aside>
   );

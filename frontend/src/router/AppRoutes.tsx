@@ -26,6 +26,7 @@ import { DecisionsPage } from '@/features/ocop/pages/DecisionsPage';
 import { FinancePage } from '@/features/finance/pages/FinancePage';
 import { ReportsPage } from '@/features/system/pages/ReportsPage';
 import { AuditPage } from '@/features/system/pages/AuditPage';
+import { SystemSettingsPage } from '@/features/system/pages/SystemSettingsPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -72,6 +73,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/finance/*" element={<FinancePage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/audit" element={<AuditPage />} />
+          <Route path="/system/settings" element={<SystemSettingsPage />} />
         </Route>
       </Route>
 

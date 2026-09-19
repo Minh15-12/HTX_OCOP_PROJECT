@@ -18,6 +18,7 @@ import {
   History,
   ShieldCheck,
   Coins,
+  Settings,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -162,6 +163,11 @@ export const navigationConfig: NavGroup[] = [
         title: 'Nhật ký kiểm toán',
         path: '/audit',
         icon: History,
+      },
+      {
+        title: 'Cài đặt hệ thống',
+        path: '/system/settings',
+        icon: Settings,
       },
     ],
   },

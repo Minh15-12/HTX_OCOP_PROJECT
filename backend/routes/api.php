@@ -17,6 +17,9 @@ use Modules\Finance\Presentation\Http\Controllers\CashTransactionController;
 use Modules\Finance\Presentation\Http\Controllers\ReceivablePayableController;
 use Modules\Finance\Presentation\Http\Controllers\SurplusDistributionController;
 use Modules\Identity\Presentation\Http\Controllers\AuthController;
+use Modules\Identity\Presentation\Http\Controllers\PermissionController;
+use Modules\Identity\Presentation\Http\Controllers\RoleController;
+use Modules\Identity\Presentation\Http\Controllers\SystemSettingController;
 use Modules\Identity\Presentation\Http\Controllers\UserController;
 use Modules\Inventory\Presentation\Http\Controllers\MaterialController;
 use Modules\Inventory\Presentation\Http\Controllers\StockCountController;
@@ -65,6 +68,21 @@ Route::middleware(['tenant.scope'])->group(function () {
     // Identity & User Management
     Route::get('/users', [UserController::class, 'index'])->name('api.users.index');
     Route::post('/users', [UserController::class, 'store'])->name('api.users.store');
+    Route::put('/users/{id}', [UserController::class, 'update'])->name('api.users.update');
+    Route::patch('/users/{id}/status', [UserController::class, 'toggleStatus'])->name('api.users.status');
+
+    // Role & Permission Management APIs
+    Route::get('/roles', [RoleController::class, 'index'])->name('api.roles.index');
+    Route::post('/roles', [RoleController::class, 'store'])->name('api.roles.store');
+    Route::get('/roles/{id}', [RoleController::class, 'show'])->name('api.roles.show');
+    Route::put('/roles/{id}', [RoleController::class, 'update'])->name('api.roles.update');
+    Route::put('/roles/{id}/permissions', [RoleController::class, 'updatePermissions'])->name('api.roles.permissions.update');
+
+    Route::get('/permissions', [PermissionController::class, 'index'])->name('api.permissions.index');
+
+    // System Settings & Security APIs
+    Route::get('/system-settings', [SystemSettingController::class, 'show'])->name('api.system-settings.show');
+    Route::put('/system-settings', [SystemSettingController::class, 'update'])->name('api.system-settings.update');
 
     // Cooperative Master Data Management
     Route::get('/cooperatives/my-cooperative', [CooperativeController::class, 'showMyCooperative'])->name('api.cooperative.show');

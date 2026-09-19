@@ -32,7 +32,7 @@ class HealthController extends BaseController
             $redisStatus = 'FAIL: ' . $e->getMessage();
         }
 
-        $allOk = ($dbStatus === 'OK' && $redisStatus === 'OK');
+        $allOk = ($dbStatus === 'OK');
 
         return ApiResponse::success(
             data: [

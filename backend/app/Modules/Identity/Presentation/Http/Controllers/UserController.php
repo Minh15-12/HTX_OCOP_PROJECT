@@ -90,4 +90,69 @@ class UserController extends BaseController
             status: 201
         );
     }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $user = UserModel::find($id);
+        if (!$user) {
+            return ApiResponse::error('NOT_FOUND', 'Không tìm thấy người dùng', status: 404);
+        }
+
+        $validated = $request->validate([
+            'full_name' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:30',
+            'email' => 'nullable|email|max:255|unique:users,email,' . $id,
+            'role_code' => 'nullable|string|exists:roles,code',
+            'status' => 'nullable|string|in:ACTIVE,LOCKED,DISABLED',
+        ]);
+
+        $user->update(array_filter([
+            'full_name' => $validated['full_name'] ?? null,
+            'phone_number' => $validated['phone_number'] ?? null,
+            'email' => isset($validated['email']) ? strtolower($validated['email']) : null,
+            'status' => $validated['status'] ?? null,
+        ]));
+
+        if (!empty($validated['role_code'])) {
+            $role = RoleModel::where('code', $validated['role_code'])->first();
+            if ($role) {
+                $user->roles()->sync([$role->id]);
+            }
+        }
+
+        $this->auditService->log(
+            action: 'USER_UPDATED',
+            entityType: 'User',
+            entityId: $user->id,
+            after: $validated
+        );
+
+        return ApiResponse::success(
+            data: new UserResource($user->load(['roles', 'cooperative'])),
+            message: 'Cập nhật người dùng thành công'
+        );
+    }
+
+    public function toggleStatus(Request $request, string $id): JsonResponse
+    {
+        $user = UserModel::find($id);
+        if (!$user) {
+            return ApiResponse::error('NOT_FOUND', 'Không tìm thấy người dùng', status: 404);
+        }
+
+        $newStatus = $user->status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
+        $user->update(['status' => $newStatus]);
+
+        $this->auditService->log(
+            action: 'USER_STATUS_TOGGLED',
+            entityType: 'User',
+            entityId: $user->id,
+            after: ['status' => $newStatus]
+        );
+
+        return ApiResponse::success(
+            data: new UserResource($user->load(['roles', 'cooperative'])),
+            message: $newStatus === 'ACTIVE' ? 'Đã kích hoạt tài khoản' : 'Đã khóa tài khoản'
+        );
+    }
 }
