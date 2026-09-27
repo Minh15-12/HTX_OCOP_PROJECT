@@ -142,4 +142,28 @@ class ReceivablePayableController extends BaseController
             status: 201
         );
     }
+
+    public function processHarvestSettlement(Request $request): JsonResponse
+    {
+        if (!Gate::allows('FINANCE.CREATE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền thực hiện quyết toán mùa vụ', status: 403);
+        }
+
+        $request->validate([
+            'member_id' => ['required', 'uuid', 'exists:members,id'],
+            'produce_value' => ['required', 'numeric', 'gt:0'],
+            'service_fee_rate' => ['nullable', 'numeric', 'between:0,1'],
+        ]);
+
+        $result = $this->debtService->offsetHarvestDebt(
+            memberId: $request->input('member_id'),
+            harvestProduceValue: (float) $request->input('produce_value'),
+            serviceFeeRate: (float) $request->input('service_fee_rate', 0.025)
+        );
+
+        return ApiResponse::success(
+            data: $result,
+            message: 'Quyết toán mùa vụ và cấn trừ công nợ tự động thành công'
+        );
+    }
 }

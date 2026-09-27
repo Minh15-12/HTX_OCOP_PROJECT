@@ -200,6 +200,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     // Debt Settlement APIs (Section 27 of 12_API_SPECIFICATION.md)
     Route::get('/receivable-payables/{debt_id}/settlements', [ReceivablePayableController::class, 'listSettlements'])->name('api.receivable-payables.settlements.index');
     Route::post('/receivable-payables/{debt_id}/settlements', [ReceivablePayableController::class, 'createSettlement'])->name('api.receivable-payables.settlements.store');
+    Route::post('/receivable-payables/harvest-settlements', [ReceivablePayableController::class, 'processHarvestSettlement'])->name('api.receivable-payables.harvest-settlement');
 
     // Surplus Distribution Plan APIs (Section 28 of 12_API_SPECIFICATION.md)
     Route::get('/surplus-distribution-plans', [SurplusDistributionController::class, 'index'])->name('api.surplus.plans.index');

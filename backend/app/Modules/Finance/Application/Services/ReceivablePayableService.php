@@ -254,4 +254,97 @@ class ReceivablePayableService
         $debt = $this->getDebtById($debtId);
         return $debt->settlements;
     }
+
+    public function offsetHarvestDebt(string $memberId, float $harvestProduceValue, float $serviceFeeRate = 0.025): array
+    {
+        if ($harvestProduceValue <= 0) {
+            throw new DomainException('Giá trị nông sản thu mua phải lớn hơn 0', 'ERR_FINANCE_INVALID_SETTLEMENT', null, 400);
+        }
+
+        $serviceFee = round($harvestProduceValue * $serviceFeeRate, 2);
+        $remainingAfterFee = max(0.0, $harvestProduceValue - $serviceFee);
+
+        $coopId = $this->tenantContext->getCooperativeId();
+
+        // Fetch open RECEIVABLE debts for this member
+        $openDebts = ReceivablePayableModel::where('counterparty_id', $memberId)
+            ->where('debt_type', 'RECEIVABLE')
+            ->whereIn('status', ['OPEN', 'PARTIALLY_SETTLED'])
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        $totalMemberDebt = (float) $openDebts->sum('outstanding_amount');
+        $debtOffset = min($totalMemberDebt, $remainingAfterFee);
+        $netPayout = round($remainingAfterFee - $debtOffset, 2);
+
+        return DB::transaction(function () use ($memberId, $openDebts, $debtOffset, $serviceFee, $netPayout, $harvestProduceValue, $totalMemberDebt, $coopId) {
+            $remainingOffsetToApply = $debtOffset;
+
+            foreach ($openDebts as $debtModel) {
+                if ($remainingOffsetToApply <= 0) break;
+
+                $offsetAmount = min((float) $debtModel->outstanding_amount, $remainingOffsetToApply);
+                $newOutstanding = (float) $debtModel->outstanding_amount - $offsetAmount;
+                $newStatus = $newOutstanding == 0 ? 'SETTLED' : 'PARTIALLY_SETTLED';
+
+                $debtModel->update([
+                    'outstanding_amount' => $newOutstanding,
+                    'status' => $newStatus,
+                ]);
+
+                DebtSettlementModel::create([
+                    'id' => (string) Str::uuid(),
+                    'cooperative_id' => $coopId,
+                    'debt_id' => $debtModel->id,
+                    'settlement_type' => 'HARVEST_OFFSET',
+                    'payment_method' => 'HARVEST_OFFSET',
+                    'amount' => $offsetAmount,
+                    'settlement_date' => now()->toDateString(),
+                    'note' => "Cấn trừ nợ tự động khi quyết toán nông sản ({$harvestProduceValue} VNĐ)",
+                    'status' => 'POSTED',
+                    'created_by' => auth()->check() ? auth()->id() : null,
+                ]);
+
+                $remainingOffsetToApply -= $offsetAmount;
+            }
+
+            // If netPayout > 0, record Cash Expense transaction to pay member
+            if ($netPayout > 0 && $coopId) {
+                CashTransactionModel::create([
+                    'id' => (string) Str::uuid(),
+                    'cooperative_id' => $coopId,
+                    'voucher_number' => strtoupper("PC-QT-" . now()->format('Ymd') . '-' . Str::random(4)),
+                    'transaction_type' => 'EXPENSE',
+                    'amount' => $netPayout,
+                    'transaction_date' => now()->toDateString(),
+                    'category' => 'QUYET_TOAN_MUA_VU',
+                    'description' => "Thực chi thanh toán quyết toán nông sản sau cấn trừ nợ",
+                    'member_id' => $memberId,
+                    'status' => 'POSTED',
+                    'created_by' => auth()->check() ? auth()->id() : null,
+                ]);
+            }
+
+            $this->auditService->log(
+                action: 'HARVEST_SETTLEMENT_PROCESSED',
+                entityType: 'Member',
+                entityId: $memberId,
+                after: [
+                    'produce_value' => $harvestProduceValue,
+                    'service_fee' => $serviceFee,
+                    'debt_offset' => $debtOffset,
+                    'net_payout' => $netPayout,
+                ],
+                cooperativeId: $coopId
+            );
+
+            return [
+                'gross_produce_value' => $harvestProduceValue,
+                'service_fee' => $serviceFee,
+                'total_debt_offset' => $debtOffset,
+                'net_payout' => $netPayout,
+                'remaining_member_debt' => max(0.0, $totalMemberDebt - $debtOffset),
+            ];
+        });
+    }
 }
