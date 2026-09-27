@@ -8,6 +8,8 @@ class ProductLotModel extends Model
 {
     public $timestamps = false;
 
+    public $incrementing = false;
+
     protected $table = 'product_lots';
 
     protected $fillable = [

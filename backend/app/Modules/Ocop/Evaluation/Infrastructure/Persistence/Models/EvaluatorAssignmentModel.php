@@ -2,7 +2,7 @@
 
 namespace Modules\Ocop\Evaluation\Infrastructure\Persistence\Models;
 
-use App\Models\User;
+use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -39,7 +39,7 @@ class EvaluatorAssignmentModel extends Model
 
     public function evaluator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'evaluator_id');
+        return $this->belongsTo(UserModel::class, 'evaluator_id');
     }
 
     public function scores(): HasMany

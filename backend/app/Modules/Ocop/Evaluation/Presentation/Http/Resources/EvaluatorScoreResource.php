@@ -22,7 +22,7 @@ class EvaluatorScoreResource extends JsonResource
                 'code' => $this->indicator->code ?? null,
                 'name' => $this->indicator->name ?? null,
                 'max_score' => (float) ($this->indicator->max_score ?? 0),
-                'is_mandatory' => (bool) ($this->indicator->is_mandatory ?? false),
+                'is_mandatory' => (bool) ($this->indicator->mandatory ?? false),
             ]),
         ];
     }

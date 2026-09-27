@@ -23,7 +23,7 @@ class FarmingLogService
 
     public function listLogs(array $filters = [], int $perPage = 15, string $sort = '-activity_date'): LengthAwarePaginator
     {
-        $query = FarmingLogModel::with(['cropSeason.productionUnit', 'plot', 'performer', 'materialUsages', 'phiCalculations']);
+        $query = FarmingLogModel::with(['cropSeason.productionUnit', 'plot', 'performer', 'material', 'materialUsages', 'phiCalculations']);
 
         if ($this->tenantContext->hasTenant()) {
             $tenantId = $this->tenantContext->getCooperativeId();
@@ -67,7 +67,7 @@ class FarmingLogService
 
     public function getLogById(string $id): FarmingLogModel
     {
-        $log = FarmingLogModel::with(['cropSeason.productionUnit.cooperative', 'plot', 'performer', 'materialUsages', 'phiCalculations'])->find($id);
+        $log = FarmingLogModel::with(['cropSeason.productionUnit.cooperative', 'plot', 'performer', 'material', 'materialUsages', 'phiCalculations'])->find($id);
 
         if (!$log) {
             throw new DomainException('Nhật ký canh tác không tồn tại trong hệ thống', 'FARMING_LOG_NOT_FOUND', null, 404);
@@ -115,7 +115,31 @@ class FarmingLogService
             'description' => $domainEntity->description,
             'performed_by' => $domainEntity->performedBy,
             'attachment_reference' => $domainEntity->attachmentReference,
+            'material_id' => $dto->materialId,
+            'material_batch_number' => $dto->materialBatchNumber,
+            'quantity_applied' => $dto->quantityApplied,
+            'unit' => $dto->unit,
+            'phi_days' => $dto->phiDays,
+            'gps_latitude' => $dto->gpsLatitude,
+            'gps_longitude' => $dto->gpsLongitude,
         ]);
+
+        if ($dto->phiDays && $dto->phiDays > 0) {
+            $appDate = \Carbon\Carbon::parse($dto->activityDate);
+            $safetyDate = $appDate->copy()->addDays($dto->phiDays)->format('Y-m-d');
+            
+            \Modules\Agriculture\Infrastructure\Persistence\Models\PhiCalculationModel::create([
+                'id' => (string) Str::uuid(),
+                'farming_log_id' => $log->id,
+                'material_id' => $dto->materialId,
+                'application_date' => $dto->activityDate,
+                'configured_phi_days' => $dto->phiDays,
+                'safety_date' => $safetyDate,
+                'status' => 'ACTIVE',
+                'source_reference' => ['source' => 'FARMING_LOG', 'log_id' => $log->id],
+                'created_at' => now(),
+            ]);
+        }
 
         $this->auditService->log(
             action: 'FARMING_LOG_CREATED',
@@ -125,7 +149,7 @@ class FarmingLogService
             cooperativeId: $season->productionUnit->cooperative_id
         );
 
-        return $log->load(['cropSeason.productionUnit', 'plot', 'performer']);
+        return $log->load(['cropSeason.productionUnit', 'plot', 'performer', 'material', 'phiCalculations']);
     }
 
     public function updateLog(string $id, UpdateFarmingLogDTO $dto): FarmingLogModel
@@ -154,9 +178,35 @@ class FarmingLogService
         if ($dto->description !== null) $updates['description'] = $dto->description;
         if ($dto->performedBy !== null) $updates['performed_by'] = $dto->performedBy;
         if ($dto->attachmentReference !== null) $updates['attachment_reference'] = $dto->attachmentReference;
+        if ($dto->materialId !== null) $updates['material_id'] = $dto->materialId;
+        if ($dto->materialBatchNumber !== null) $updates['material_batch_number'] = $dto->materialBatchNumber;
+        if ($dto->quantityApplied !== null) $updates['quantity_applied'] = $dto->quantityApplied;
+        if ($dto->unit !== null) $updates['unit'] = $dto->unit;
+        if ($dto->phiDays !== null) $updates['phi_days'] = $dto->phiDays;
+        if ($dto->gpsLatitude !== null) $updates['gps_latitude'] = $dto->gpsLatitude;
+        if ($dto->gpsLongitude !== null) $updates['gps_longitude'] = $dto->gpsLongitude;
 
         if (!empty($updates)) {
             $log->update($updates);
+
+            if (isset($updates['phi_days']) && $updates['phi_days'] > 0) {
+                $actDate = $updates['activity_date'] ?? $log->activity_date->format('Y-m-d');
+                $appDate = \Carbon\Carbon::parse($actDate);
+                $safetyDate = $appDate->copy()->addDays($updates['phi_days'])->format('Y-m-d');
+
+                \Modules\Agriculture\Infrastructure\Persistence\Models\PhiCalculationModel::updateOrCreate(
+                    ['farming_log_id' => $log->id],
+                    [
+                        'material_id' => $updates['material_id'] ?? $log->material_id,
+                        'application_date' => $actDate,
+                        'configured_phi_days' => $updates['phi_days'],
+                        'safety_date' => $safetyDate,
+                        'status' => 'ACTIVE',
+                        'source_reference' => ['source' => 'FARMING_LOG', 'log_id' => $log->id],
+                        'created_at' => now(),
+                    ]
+                );
+            }
 
             $this->auditService->log(
                 action: 'FARMING_LOG_UPDATED',
@@ -168,6 +218,6 @@ class FarmingLogService
             );
         }
 
-        return $log->fresh(['cropSeason.productionUnit', 'plot', 'performer']);
+        return $log->fresh(['cropSeason.productionUnit', 'plot', 'performer', 'material', 'phiCalculations']);
     }
 }

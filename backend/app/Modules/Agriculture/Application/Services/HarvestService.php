@@ -108,6 +108,12 @@ class HarvestService
             'quantity' => $domainEntity->quantity,
             'unit' => $domainEntity->unit,
             'quality_information' => $domainEntity->qualityInformation,
+            'kcs_status' => $dto->kcsStatus ?? 'PENDING_KCS',
+            'kcs_gate_check' => $dto->kcsGateCheck,
+            'kcs_quick_lab' => $dto->kcsQuickLab,
+            'grade' => $dto->grade ?? 'GRADE_B',
+            'brix_level' => $dto->brixLevel,
+            'uniformity_rate' => $dto->uniformityRate,
         ]);
 
         $this->auditService->log(
@@ -175,9 +181,25 @@ class HarvestService
 
         if ($activeIsolation) {
             $safetyDateStr = $activeIsolation->safety_date->format('Y-m-d');
+
+            $season = $this->seasonService->getSeasonById($seasonId);
+            $this->auditService->log(
+                action: 'PHI_VIOLATION_ATTEMPTED',
+                entityType: 'Harvest',
+                entityId: $plotId,
+                after: [
+                    'crop_season_id' => $seasonId,
+                    'plot_id' => $plotId,
+                    'harvest_date' => $harvestDate,
+                    'safety_date' => $safetyDateStr,
+                    'active_isolation_id' => $activeIsolation->id,
+                ],
+                cooperativeId: $season->productionUnit->cooperative_id
+            );
+
             throw new DomainException(
                 "Cảnh báo an toàn PHI: Thửa đất đang trong thời gian cách ly sử dụng vật tư đến hết ngày [{$safetyDateStr}]. Ngày thu hoạch [{$harvestDate}] chưa đủ điều kiện an toàn!",
-                'PHI_ISOLATION_VIOLATION',
+                'ERR_HARVEST_PHI_VIOLATION',
                 null,
                 400
             );

@@ -24,13 +24,15 @@ class DashboardReportService
 
         if ($coopId) {
             $membersQuery->where('cooperative_id', $coopId);
-            $capitalQuery->where('cooperative_id', $coopId);
+            $capitalQuery->whereIn('member_id', function ($q) use ($coopId) {
+                $q->select('id')->from('members')->where('cooperative_id', $coopId);
+            });
             $productsQuery->where('cooperative_id', $coopId);
             $applicationsQuery->where('cooperative_id', $coopId);
         }
 
         $totalMembers = $membersQuery->count();
-        $totalCapital = (float) $capitalQuery->where('status', 'COMPLETED')->sum('amount');
+        $totalCapital = (float) $capitalQuery->whereIn('status', ['COMPLETED', 'PAID'])->sum('amount');
         $totalProducts = $productsQuery->count();
         $totalApplications = $applicationsQuery->count();
 
@@ -47,7 +49,7 @@ class DashboardReportService
             $plotsQuery->join('production_units', 'farm_plots.production_unit_id', '=', 'production_units.id')
                 ->where('production_units.cooperative_id', $coopId);
         }
-        $totalPlotAreaHa = (float) $plotsQuery->sum('area_ha');
+        $totalPlotAreaHa = (float) $plotsQuery->sum('farm_plots.area');
         $totalPlots = $plotsQuery->count();
 
         // Active crop seasons count

@@ -318,9 +318,12 @@ class CropSeasonAndFarmingLogTest extends TestCase
             'status' => 'ACTIVE',
         ]);
 
+        $appDate = now()->format('Y-m-d');
+        $expectedSafetyDate = now()->addDays(14)->format('Y-m-d');
+
         $payload = [
             'material_id' => $material->id,
-            'application_date' => '2026-09-01',
+            'application_date' => $appDate,
         ];
 
         $response = $this->actingAs($user, 'sanctum')
@@ -328,7 +331,7 @@ class CropSeasonAndFarmingLogTest extends TestCase
 
         $response->assertStatus(201);
         $response->assertJsonPath('data.configured_phi_days', 14);
-        $response->assertJsonPath('data.safety_date', '2026-09-15'); // 2026-09-01 + 14 days
+        $response->assertJsonPath('data.safety_date', $expectedSafetyDate);
         $response->assertJsonPath('data.status', 'ISOLATED');
 
         $this->assertDatabaseHas('phi_calculations', [

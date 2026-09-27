@@ -69,7 +69,14 @@ class FarmingLogController extends BaseController
             activityDate: $request->input('activity_date'),
             description: $request->input('description'),
             performedBy: $request->input('performed_by'),
-            attachmentReference: $request->input('attachment_reference')
+            attachmentReference: $request->input('attachment_reference'),
+            materialId: $request->input('material_id'),
+            materialBatchNumber: $request->input('material_batch_number'),
+            quantityApplied: $request->filled('quantity_applied') ? (float) $request->input('quantity_applied') : null,
+            unit: $request->input('unit'),
+            phiDays: $request->filled('phi_days') ? (int) $request->input('phi_days') : null,
+            gpsLatitude: $request->filled('gps_latitude') ? (float) $request->input('gps_latitude') : null,
+            gpsLongitude: $request->filled('gps_longitude') ? (float) $request->input('gps_longitude') : null
         );
 
         $log = $this->logService->createLog($dto);
@@ -92,7 +99,14 @@ class FarmingLogController extends BaseController
             activityDate: $request->input('activity_date'),
             description: $request->input('description'),
             performedBy: $request->input('performed_by'),
-            attachmentReference: $request->input('attachment_reference')
+            attachmentReference: $request->input('attachment_reference'),
+            materialId: $request->input('material_id'),
+            materialBatchNumber: $request->input('material_batch_number'),
+            quantityApplied: $request->filled('quantity_applied') ? (float) $request->input('quantity_applied') : null,
+            unit: $request->input('unit'),
+            phiDays: $request->filled('phi_days') ? (int) $request->input('phi_days') : null,
+            gpsLatitude: $request->filled('gps_latitude') ? (float) $request->input('gps_latitude') : null,
+            gpsLongitude: $request->filled('gps_longitude') ? (float) $request->input('gps_longitude') : null
         );
 
         $log = $this->logService->updateLog($id, $dto);

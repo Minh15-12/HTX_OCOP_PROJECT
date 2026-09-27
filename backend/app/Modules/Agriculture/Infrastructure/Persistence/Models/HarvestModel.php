@@ -21,12 +21,22 @@ class HarvestModel extends Model
         'unit',
         'quality_information',
         'lot_id',
+        'kcs_status',
+        'kcs_gate_check',
+        'kcs_quick_lab',
+        'grade',
+        'brix_level',
+        'uniformity_rate',
     ];
 
     protected $casts = [
         'harvest_date' => 'date:Y-m-d',
         'quantity' => 'decimal:4',
         'quality_information' => 'array',
+        'kcs_gate_check' => 'array',
+        'kcs_quick_lab' => 'array',
+        'brix_level' => 'decimal:2',
+        'uniformity_rate' => 'decimal:2',
     ];
 
     public function cropSeason(): BelongsTo

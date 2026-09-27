@@ -85,7 +85,7 @@ class FinalDecisionService
             );
         }
 
-        return DB::transaction(function () use ($application, $dto) {
+        return DB::transaction(function () use ($applicationId, $application, $dto) {
             $decisionModel = FinalDecisionModel::create([
                 'id' => (string) Str::uuid(),
                 'application_id' => $applicationId,

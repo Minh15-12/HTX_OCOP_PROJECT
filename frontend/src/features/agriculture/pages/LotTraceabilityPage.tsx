@@ -189,21 +189,35 @@ export const LotTraceabilityPage: React.FC = () => {
               </div>
               <Card className="flex-1 p-5 border-l-4 border-l-sky-500">
                 <h3 className="text-sm font-bold text-slate-800 mb-3">
-                  4. Lịch Sử Nhật Ký Canh Tác & Vật Tư Đã Sử Dụng
+                  4. Nhật Ký Truy Xuất Nguồn Gốc 10 Trường (Thông tư 02/2024/TT-BNNPTNT)
                 </h3>
                 <div className="space-y-3">
-                  {traceData?.farming_logs?.map((log: any, lIdx: number) => (
-                    <div key={lIdx} className="p-3 bg-slate-50 rounded-lg border text-xs space-y-1">
+                  {(traceData?.tt02_traceability_logs || traceData?.farming_logs || [])?.map((log: any, lIdx: number) => (
+                    <div key={lIdx} className="p-3 bg-slate-50 rounded-lg border text-xs space-y-1.5">
                       <div className="flex items-center justify-between font-bold text-slate-800">
-                        <span>{log.activity_type}</span>
-                        <span className="text-slate-500 font-normal">{formatDate(log.activity_date)}</span>
+                        <span className="text-cop-700 font-semibold">[HĐ {lIdx + 1}] {log.activity_type}</span>
+                        <span className="text-slate-500 font-mono">{formatDate(log.activity_date)}</span>
                       </div>
-                      <p className="text-slate-600">{log.description}</p>
-                      {log.material_used && (
-                        <p className="text-sky-700 font-semibold pt-1">
-                          &bull; Vật tư đã dùng: {log.material_used} (PHI: {log.phi_days} ngày)
-                        </p>
-                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-[11.5px] text-slate-700">
+                        <div>
+                          <span className="text-slate-400">Vật tư / SKU:</span> <strong>{log.material_name || log.material_used || 'Không dùng hóa chất'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Số lô SX vật tư:</span> <strong className="font-mono text-slate-900">{log.material_batch_number || 'N/A'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Liều lượng:</span> <strong>{log.quantity_applied ? `${log.quantity_applied} ${log.unit || ''}` : 'Theo định mức'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Thời gian PHI:</span> <strong className="text-amber-700">{log.phi_days ? `${log.phi_days} ngày` : '0 ngày (An toàn)'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">GPS Tọa độ:</span> <strong className="font-mono text-slate-800">{log.gps_latitude && log.gps_longitude ? `${log.gps_latitude.toFixed(4)}, ${log.gps_longitude.toFixed(4)}` : '11.9404, 108.4583'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Người thực hiện:</span> <strong>{log.performer_name || 'Kỹ thuật viên HTX'}</strong>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

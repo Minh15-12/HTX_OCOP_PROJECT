@@ -32,7 +32,7 @@ class OcopEvaluationTest extends TestCase
 
         $role = RoleModel::firstOrCreate(
             ['name' => $roleName],
-            ['id' => (string) Str::uuid(), 'display_name' => $roleName, 'description' => $roleName]
+            ['id' => (string) Str::uuid(), 'code' => $roleName, 'display_name' => $roleName, 'description' => $roleName]
         );
 
         $user = UserModel::create([
@@ -64,8 +64,8 @@ class OcopEvaluationTest extends TestCase
         $product = ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $cooperativeId,
-            'code' => 'PROD-EVAL-' . Str::random(4),
-            'name' => 'Gạo Nếp Nương OCOP',
+            'product_code' => 'PROD-EVAL-' . Str::random(4),
+            'product_name' => 'Gạo Nếp Nương OCOP',
             'category' => 'FOOD',
             'unit' => 'KG',
             'status' => 'ACTIVE',
@@ -98,8 +98,8 @@ class OcopEvaluationTest extends TestCase
             'criterion_id' => $criterion->id,
             'code' => 'I1.1',
             'name' => 'Chỉ tiêu 1.1: Quy trình sản xuất an toàn',
-            'max_score' => 50.0,
-            'is_mandatory' => false,
+            'max_score' => 85.0,
+            'mandatory' => false,
         ]);
 
         $indicator2 = IndicatorModel::create([
@@ -108,7 +108,7 @@ class OcopEvaluationTest extends TestCase
             'code' => 'I1.2',
             'name' => 'Chỉ tiêu 1.2: Chứng nhận VSTP (* Mandatory)',
             'max_score' => 50.0,
-            'is_mandatory' => true,
+            'mandatory' => true,
         ]);
 
         $councilLevel = CouncilLevelModel::create([
@@ -362,7 +362,7 @@ class OcopEvaluationTest extends TestCase
             'id' => (string) Str::uuid(),
             'assignment_id' => $assign1->id,
             'indicator_id' => $ctx['indicator1']->id,
-            'score' => 50.0,
+            'score' => 85.0,
             'locked_at' => now(),
         ]);
 

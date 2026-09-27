@@ -12,6 +12,12 @@ class CreateHarvestDTO extends BaseDTO
         public readonly string $harvestDate,
         public readonly float $quantity,
         public readonly string $unit,
-        public readonly ?array $qualityInformation = null
+        public readonly ?array $qualityInformation = null,
+        public readonly ?string $kcsStatus = 'PENDING_KCS',
+        public readonly ?array $kcsGateCheck = null,
+        public readonly ?array $kcsQuickLab = null,
+        public readonly ?string $grade = 'GRADE_B',
+        public readonly ?float $brixLevel = null,
+        public readonly ?float $uniformityRate = null
     ) {}
 }

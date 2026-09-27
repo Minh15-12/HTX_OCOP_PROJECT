@@ -81,6 +81,13 @@ class LotService
         $coop = $unit->cooperative;
         $plot = $harvest->plot;
 
+        $logs = \Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel::with(['performer', 'material'])
+            ->where('crop_season_id', $season->id)
+            ->where('plot_id', $plot->id)
+            ->where('activity_date', '<=', $harvest->harvest_date->format('Y-m-d'))
+            ->orderBy('activity_date', 'desc')
+            ->get();
+
         return [
             'lot' => [
                 'id' => $lot->id,
@@ -96,6 +103,12 @@ class LotService
                 'quantity' => (float) $harvest->quantity,
                 'unit' => $harvest->unit,
                 'quality_information' => $harvest->quality_information,
+                'kcs_status' => $harvest->kcs_status ?? 'PENDING_KCS',
+                'kcs_gate_check' => $harvest->kcs_gate_check,
+                'kcs_quick_lab' => $harvest->kcs_quick_lab,
+                'grade' => $harvest->grade ?? 'GRADE_B',
+                'brix_level' => $harvest->brix_level ? (float) $harvest->brix_level : null,
+                'uniformity_rate' => $harvest->uniformity_rate ? (float) $harvest->uniformity_rate : null,
             ],
             'crop_season' => [
                 'id' => $season->id,
@@ -121,6 +134,23 @@ class LotService
                 'cooperative_code' => $coop?->cooperative_code,
                 'legal_name' => $coop?->legal_name,
             ],
+            'tt02_traceability_logs' => $logs->map(fn($log) => [
+                'id' => $log->id,
+                'activity_type' => $log->activity_type,
+                'activity_date' => $log->activity_date?->format('Y-m-d'),
+                'plot_code' => $plot->plot_code,
+                'season_code' => $season->name,
+                'material_name' => $log->material?->name,
+                'material_batch_number' => $log->material_batch_number,
+                'quantity_applied' => $log->quantity_applied ? (float) $log->quantity_applied : null,
+                'unit' => $log->unit,
+                'phi_days' => $log->phi_days,
+                'gps_latitude' => $log->gps_latitude ? (float) $log->gps_latitude : null,
+                'gps_longitude' => $log->gps_longitude ? (float) $log->gps_longitude : null,
+                'attachment_reference' => $log->attachment_reference,
+                'performer_name' => $log->performer?->full_name,
+                'recorded_at' => $log->created_at?->toIso8601String(),
+            ]),
         ];
     }
 
@@ -131,15 +161,17 @@ class LotService
         $quantity = $dto->quantity ?: (float) $harvest->quantity;
         $unit = $dto->unit ?: $harvest->unit;
 
-        // Generate lot_code if not specified
-        $coopCode = $harvest->cropSeason->productionUnit->cooperative->cooperative_code ?? 'HTX';
+        // Generate lot_code according to GS1 Standard: LOT-[CoopCode]-[PlotCode]-[YYYYMMDD]-[Seq]
+        $coopCode = $harvest->cropSeason->productionUnit->cooperative->cooperative_code ?? 'TT';
+        $plotCode = $harvest->plot->plot_code ?? 'P001';
         $dateStr = now()->format('Ymd');
-        $lotCode = $dto->customLotCode ?: strtoupper("LOT-{$coopCode}-{$dateStr}-" . Str::random(4));
+        $seq = str_pad((string) (LotModel::whereDate('created_at', now()->toDateString())->count() + 1), 2, '0', STR_PAD_LEFT);
+        $lotCode = $dto->customLotCode ?: strtoupper("LOT-{$coopCode}-{$plotCode}-{$dateStr}-{$seq}");
 
         // Uniqueness check
         $exists = LotModel::where('lot_code', $lotCode)->exists();
         if ($exists) {
-            throw new DomainException("Mã lô hàng [{$lotCode}] đã tồn tại trong hệ thống", 'DUPLICATE_LOT_CODE', null, 409);
+            $lotCode = strtoupper("LOT-{$coopCode}-{$plotCode}-{$dateStr}-" . Str::random(4));
         }
 
         $domainEntity = new Lot(

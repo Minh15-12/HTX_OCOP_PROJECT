@@ -27,7 +27,7 @@ class OcopCriteriaTest extends TestCase
 
         $role = RoleModel::firstOrCreate(
             ['name' => $roleName],
-            ['id' => (string) Str::uuid(), 'display_name' => $roleName, 'description' => $roleName]
+            ['id' => (string) Str::uuid(), 'code' => $roleName, 'display_name' => $roleName, 'description' => $roleName]
         );
 
         $user = UserModel::create([
@@ -131,7 +131,7 @@ class OcopCriteriaTest extends TestCase
                 'mandatory' => true,
             ]);
         $indicatorResp->assertStatus(201);
-        $indicatorResp->assertJsonPath('data.max_score', 40.0);
+        $indicatorResp->assertJsonPath('data.max_score', 40);
     }
 
     public function test_publish_version_fails_when_total_score_is_not_100(): void

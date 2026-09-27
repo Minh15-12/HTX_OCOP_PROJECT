@@ -28,7 +28,7 @@ class AuditAndReportTest extends TestCase
 
         $role = RoleModel::firstOrCreate(
             ['name' => $roleName],
-            ['id' => (string) Str::uuid(), 'display_name' => $roleName, 'description' => $roleName]
+            ['id' => (string) Str::uuid(), 'code' => $roleName, 'display_name' => $roleName, 'description' => $roleName]
         );
 
         $user = UserModel::create([
@@ -55,13 +55,13 @@ class AuditAndReportTest extends TestCase
         ];
     }
 
-    private function createApplication(string $cooperativeId): array
+    private function createTestApplicationContext(string $cooperativeId): array
     {
         $product = ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $cooperativeId,
-            'code' => 'PROD-RPT-' . Str::random(4),
-            'name' => 'Mật Ong Rừng OCOP',
+            'product_code' => 'PROD-RPT-' . Str::random(4),
+            'product_name' => 'Mật Ong Rừng OCOP',
             'category' => 'FOOD',
             'unit' => 'BOTTLE',
             'status' => 'ACTIVE',
@@ -157,7 +157,7 @@ class AuditAndReportTest extends TestCase
     public function test_trace_ocop_application_lifecycle(): void
     {
         $auth = $this->createAuthUser();
-        $ctx = $this->createApplication($auth['cooperative']->id);
+        $ctx = $this->createTestApplicationContext($auth['cooperative']->id);
 
         AuditEventModel::create([
             'id' => (string) Str::uuid(),
@@ -181,7 +181,7 @@ class AuditAndReportTest extends TestCase
     public function test_dashboard_summary_report(): void
     {
         $auth = $this->createAuthUser();
-        $this->createApplication($auth['cooperative']->id);
+        $this->createTestApplicationContext($auth['cooperative']->id);
 
         $response = $this->withHeaders($auth['headers'])
             ->getJson('/api/v1/reports/dashboard');
@@ -196,7 +196,7 @@ class AuditAndReportTest extends TestCase
     public function test_ocop_readiness_checklist(): void
     {
         $auth = $this->createAuthUser();
-        $ctx = $this->createApplication($auth['cooperative']->id);
+        $ctx = $this->createTestApplicationContext($auth['cooperative']->id);
 
         $response = $this->withHeaders($auth['headers'])
             ->getJson("/api/v1/reports/ocop-readiness/{$ctx['app']->id}");
@@ -212,7 +212,7 @@ class AuditAndReportTest extends TestCase
     {
         Storage::fake('local');
         $auth = $this->createAuthUser();
-        $ctx = $this->createApplication($auth['cooperative']->id);
+        $ctx = $this->createTestApplicationContext($auth['cooperative']->id);
 
         // Request dossier PDF generation
         $genResp = $this->withHeaders($auth['headers'])
@@ -246,7 +246,7 @@ class AuditAndReportTest extends TestCase
     {
         Storage::fake('local');
         $auth = $this->createAuthUser();
-        $ctx = $this->createApplication($auth['cooperative']->id);
+        $ctx = $this->createTestApplicationContext($auth['cooperative']->id);
 
         // Attach Final Decision (APPROVED)
         $decision = FinalDecisionModel::create([

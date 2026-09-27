@@ -64,7 +64,7 @@ Route::prefix('auth')->group(function () {
 });
 
 // Protected Business Routes
-Route::middleware(['tenant.scope'])->group(function () {
+Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     // Identity & User Management
     Route::get('/users', [UserController::class, 'index'])->name('api.users.index');
     Route::post('/users', [UserController::class, 'store'])->name('api.users.store');

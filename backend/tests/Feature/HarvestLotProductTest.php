@@ -176,7 +176,7 @@ class HarvestLotProductTest extends TestCase
         ]);
 
         $response->assertStatus(400);
-        $response->assertJsonPath('error.code', 'PHI_ISOLATION_VIOLATION');
+        $response->assertJsonPath('error.code', 'ERR_HARVEST_PHI_VIOLATION');
     }
 
     // --- LOT & TRACEABILITY TESTS ---

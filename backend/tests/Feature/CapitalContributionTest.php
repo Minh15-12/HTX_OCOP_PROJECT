@@ -69,6 +69,26 @@ class CapitalContributionTest extends TestCase
             'status' => 'ACTIVE',
         ]);
 
+        // Create 3 other members with 50M contribution each so total coop capital is 150M
+        for ($i = 2; $i <= 4; $i++) {
+            $otherMember = MemberModel::create([
+                'id' => (string) Str::uuid(),
+                'cooperative_id' => $coop->id,
+                'member_code' => "XV_CAP_{$i}",
+                'identity_information' => ['full_name' => "Thành Viên {$i}"],
+                'member_type' => 'OFFICIAL',
+                'status' => 'ACTIVE',
+            ]);
+            CapitalContributionModel::create([
+                'id' => (string) Str::uuid(),
+                'member_id' => $otherMember->id,
+                'contribution_type' => 'INITIAL',
+                'amount' => 50000000.00,
+                'status' => 'PAID',
+                'transaction_date' => '2026-01-01',
+            ]);
+        }
+
         $payload = [
             'contribution_type' => 'INITIAL',
             'amount' => 50000000.00, // 50 triệu VNĐ

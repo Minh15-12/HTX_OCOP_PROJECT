@@ -58,4 +58,9 @@ class OcopApplicationModel extends Model
     {
         return $this->hasMany(ApplicationReviewModel::class, 'application_id');
     }
+
+    public function evidences(): HasMany
+    {
+        return $this->hasMany(\Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel::class, 'application_id');
+    }
 }

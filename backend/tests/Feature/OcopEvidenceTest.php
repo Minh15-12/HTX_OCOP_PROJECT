@@ -31,7 +31,7 @@ class OcopEvidenceTest extends TestCase
 
         $role = RoleModel::firstOrCreate(
             ['name' => $roleName],
-            ['id' => (string) Str::uuid(), 'display_name' => $roleName, 'description' => $roleName]
+            ['id' => (string) Str::uuid(), 'code' => $roleName, 'display_name' => $roleName, 'description' => $roleName]
         );
 
         $user = UserModel::create([
@@ -58,13 +58,13 @@ class OcopEvidenceTest extends TestCase
         ];
     }
 
-    private function createApplication(string $cooperativeId): array
+    private function createTestApplicationContext(string $cooperativeId): array
     {
         $product = ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $cooperativeId,
-            'code' => 'PROD-EVID-' . Str::random(4),
-            'name' => 'Chè Shan Tuyết OCOP',
+            'product_code' => 'PROD-EVID-' . Str::random(4),
+            'product_name' => 'Chè Shan Tuyết OCOP',
             'category' => 'FOOD',
             'unit' => 'KG',
             'status' => 'ACTIVE',
@@ -120,7 +120,7 @@ class OcopEvidenceTest extends TestCase
     {
         Storage::fake('local');
         $auth = $this->createAuthUser();
-        $ctx = $this->createApplication($auth['cooperative']->id);
+        $ctx = $this->createTestApplicationContext($auth['cooperative']->id);
 
         $file = UploadedFile::fake()->create('cert_vietgap.pdf', 1024, 'application/pdf');
 
@@ -151,7 +151,7 @@ class OcopEvidenceTest extends TestCase
     {
         Storage::fake('local');
         $auth = $this->createAuthUser();
-        $ctx = $this->createApplication($auth['cooperative']->id);
+        $ctx = $this->createTestApplicationContext($auth['cooperative']->id);
 
         $invalidFile = UploadedFile::fake()->create('executable_file.exe', 500, 'application/x-msdownload');
 
@@ -169,7 +169,7 @@ class OcopEvidenceTest extends TestCase
     {
         Storage::fake('local');
         $auth = $this->createAuthUser();
-        $ctx = $this->createApplication($auth['cooperative']->id);
+        $ctx = $this->createTestApplicationContext($auth['cooperative']->id);
 
         $file = UploadedFile::fake()->create('test_photo.jpg', 500, 'image/jpeg');
         $uploadResp = $this->withHeaders($auth['headers'])
@@ -211,7 +211,7 @@ class OcopEvidenceTest extends TestCase
     {
         Storage::fake('local');
         $auth = $this->createAuthUser();
-        $ctx = $this->createApplication($auth['cooperative']->id);
+        $ctx = $this->createTestApplicationContext($auth['cooperative']->id);
 
         // Upload v1
         $file1 = UploadedFile::fake()->create('report_v1.pdf', 800, 'application/pdf');
@@ -254,7 +254,7 @@ class OcopEvidenceTest extends TestCase
     {
         Storage::fake('local');
         $auth = $this->createAuthUser();
-        $ctx = $this->createApplication($auth['cooperative']->id);
+        $ctx = $this->createTestApplicationContext($auth['cooperative']->id);
 
         $file = UploadedFile::fake()->create('doc_legal.pdf', 500, 'application/pdf');
         $uploadResp = $this->withHeaders($auth['headers'])
@@ -277,7 +277,7 @@ class OcopEvidenceTest extends TestCase
     {
         Storage::fake('local');
         $auth = $this->createAuthUser();
-        $ctx = $this->createApplication($auth['cooperative']->id);
+        $ctx = $this->createTestApplicationContext($auth['cooperative']->id);
 
         $file = UploadedFile::fake()->create('photo.png', 400, 'image/png');
         $uploadResp = $this->withHeaders($auth['headers'])
@@ -317,11 +317,10 @@ class OcopEvidenceTest extends TestCase
         Storage::fake('local');
         $auth1 = $this->createAuthUser();
         $auth2 = $this->createAuthUser();
-
-        $ctx1 = $this->createApplication($auth1['cooperative']->id);
+        $ctx1 = $this->createTestApplicationContext($auth1['cooperative']->id);
 
         $file = UploadedFile::fake()->create('secret.pdf', 500, 'application/pdf');
-        $uploadResp = $this->withHeaders($auth1['headers'])
+        $uploadResp = $this->actingAs($auth1['user'], 'sanctum')
             ->postJson("/api/v1/ocop/applications/{$ctx1['app']->id}/evidences", [
                 'title' => 'Tài Liệu Bảo Mật HTX 1',
                 'evidence_type' => 'LEGAL_DOCUMENT',
@@ -330,7 +329,7 @@ class OcopEvidenceTest extends TestCase
         $evidenceId = $uploadResp->json('data.id');
 
         // User from HTX 2 tries to download HTX 1's evidence -> Fails with 403 UNAUTHORIZED_TENANT_ACCESS
-        $response = $this->withHeaders($auth2['headers'])
+        $response = $this->actingAs($auth2['user'], 'sanctum')
             ->getJson("/api/v1/ocop/evidences/{$evidenceId}");
 
         $response->assertStatus(403);

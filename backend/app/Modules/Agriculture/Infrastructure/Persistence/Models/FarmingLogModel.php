@@ -22,11 +22,22 @@ class FarmingLogModel extends Model
         'description',
         'performed_by',
         'attachment_reference',
+        'material_id',
+        'material_batch_number',
+        'quantity_applied',
+        'unit',
+        'phi_days',
+        'gps_latitude',
+        'gps_longitude',
     ];
 
     protected $casts = [
         'activity_date' => 'date:Y-m-d',
         'attachment_reference' => 'array',
+        'quantity_applied' => 'decimal:4',
+        'phi_days' => 'integer',
+        'gps_latitude' => 'decimal:8',
+        'gps_longitude' => 'decimal:8',
     ];
 
     public function cropSeason(): BelongsTo
@@ -42,6 +53,11 @@ class FarmingLogModel extends Model
     public function performer(): BelongsTo
     {
         return $this->belongsTo(UserModel::class, 'performed_by');
+    }
+
+    public function material(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel::class, 'material_id');
     }
 
     public function materialUsages(): HasMany

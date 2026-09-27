@@ -64,6 +64,7 @@ class EnforceTenantScope
                 );
             }
 
+            $this->tenantContext->setCooperativeId($cooperativeId);
         } else {
             $tenantId = $request->header('X-Cooperative-ID') ?: 'a2bcb702-871d-4ad6-813d-c50726dd3a47';
             $this->tenantContext->setCooperativeId($tenantId);

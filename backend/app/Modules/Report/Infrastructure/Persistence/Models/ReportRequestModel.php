@@ -2,7 +2,7 @@
 
 namespace Modules\Report\Infrastructure\Persistence\Models;
 
-use App\Models\User;
+use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -35,6 +35,6 @@ class ReportRequestModel extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'requested_by');
+        return $this->belongsTo(UserModel::class, 'requested_by');
     }
 }

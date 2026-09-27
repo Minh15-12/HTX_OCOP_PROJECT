@@ -28,7 +28,7 @@ class EvidenceVersionService
             throw new DomainException('Minh chứng không tồn tại trong hệ thống', 'EVIDENCE_NOT_FOUND', null, 404);
         }
 
-        if ($this->tenantContext->hasTenant() && $evidence->application->cooperative_id !== $this->tenantContext->getCooperativeId()) {
+        if ($this->tenantContext->hasTenant() && $evidence->application?->cooperative_id !== $this->tenantContext->getCooperativeId()) {
             throw new DomainException('Bạn không có quyền truy cập minh chứng của Hợp tác xã khác', 'UNAUTHORIZED_TENANT_ACCESS', null, 403);
         }
 

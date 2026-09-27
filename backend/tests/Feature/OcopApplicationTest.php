@@ -28,7 +28,7 @@ class OcopApplicationTest extends TestCase
 
         $role = RoleModel::firstOrCreate(
             ['name' => $roleName],
-            ['id' => (string) Str::uuid(), 'display_name' => $roleName, 'description' => $roleName]
+            ['id' => (string) Str::uuid(), 'code' => $roleName, 'display_name' => $roleName, 'description' => $roleName]
         );
 
         $user = UserModel::create([
@@ -103,8 +103,8 @@ class OcopApplicationTest extends TestCase
         return ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $cooperativeId,
-            'code' => 'PROD-' . Str::random(4),
-            'name' => 'Gạo Nếp Nương OCOP',
+            'product_code' => 'PROD-' . Str::random(4),
+            'product_name' => 'Gạo Nếp Nương OCOP',
             'category' => 'FOOD',
             'unit' => 'KG',
             'status' => 'ACTIVE',
@@ -200,7 +200,7 @@ class OcopApplicationTest extends TestCase
             ]);
 
         $scoreResp->assertStatus(201);
-        $scoreResp->assertJsonPath('data.score', 50.0);
+        $scoreResp->assertJsonPath('data.score', 50);
 
         // Verify dossier status transitioned to SELF_ASSESSING
         $this->assertDatabaseHas('ocop_applications', [

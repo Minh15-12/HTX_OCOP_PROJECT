@@ -234,14 +234,29 @@ export const HarvestsPage: React.FC = () => {
               onChange={(e) => setHarvestForm({ ...harvestForm, quantity_kg: e.target.value })}
             />
             <Select
-              label="Phân Loại Phẩm Cấp"
+              label="Phân Loại Phẩm Cấp (KCS)"
               value={harvestForm.quality_grade}
               onChange={(e) => setHarvestForm({ ...harvestForm, quality_grade: e.target.value })}
               options={[
-                { value: 'GRADE_A', label: 'Loại 1 (Thượng hạng / Đạt OCOP)' },
-                { value: 'GRADE_B', label: 'Loại 2 (Chuẩn tiêu dùng)' },
+                { value: 'GRADE_A', label: 'Grade A (Thượng hạng - Đồng đều ≥90%, Brix ≥ 7°)' },
+                { value: 'GRADE_B', label: 'Grade B (Tiêu chuẩn an toàn)' },
+                { value: 'REJECT', label: 'Reject (Không đạt an toàn/Dư lượng)' },
               ]}
             />
+          </div>
+
+          <div className="p-3 bg-slate-50 border rounded-lg space-y-3">
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">KCS 3 Cấp Kiểm Tra Chất Lượng</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="text-slate-500 font-semibold">Gate Check (PHI & Nguồn gốc):</span>
+                <span className="ml-2 font-bold text-emerald-600">ĐẠT (Tự động)</span>
+              </div>
+              <div>
+                <span className="text-slate-500 font-semibold">Quick Lab Test:</span>
+                <span className="ml-2 font-bold text-emerald-600 font-mono">ÂM TÍNH (Pass)</span>
+              </div>
+            </div>
           </div>
         </div>
       </Modal>

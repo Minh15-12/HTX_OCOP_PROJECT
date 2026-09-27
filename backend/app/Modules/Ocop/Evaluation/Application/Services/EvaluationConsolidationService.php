@@ -110,7 +110,7 @@ class EvaluationConsolidationService
             $rawClassification = ProposedClassification::calculateRawClassification($totalScore);
 
             // Check mandatory star-limit indicators algorithm
-            $mandatoryIndicators = IndicatorModel::where('is_mandatory', true)->get();
+            $mandatoryIndicators = IndicatorModel::where('mandatory', true)->get();
             $failedMandatory = [];
 
             foreach ($mandatoryIndicators as $mInd) {

@@ -64,6 +64,7 @@ class SelfAssessmentService
                 'indicator_id' => $indicator->id,
             ],
             [
+                'id' => $domainEntity->id,
                 'score' => $domainEntity->score,
                 'explanation' => $domainEntity->explanation,
                 'status' => $domainEntity->status,

@@ -103,12 +103,14 @@ class AgricultureInfrastructureTest extends TestCase
             'status' => 'ACTIVE',
         ]);
 
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/production-units', [
-            'unit_code' => 'PUC_DUP',
-            'name' => 'Vùng trồng Mới Trùng',
-            'crop' => 'Nhãn',
-            'area' => 5.0,
-        ]);
+        $response = $this->actingAs($user, 'sanctum')
+            ->withHeaders(['X-Cooperative-ID' => $coop->id])
+            ->postJson('/api/v1/production-units', [
+                'unit_code' => 'PUC_DUP',
+                'name' => 'Vùng trồng Mới Trùng',
+                'crop' => 'Nhãn',
+                'area' => 5.0,
+            ]);
 
         $response->assertStatus(409);
         $response->assertJsonPath('error.code', 'DUPLICATE_UNIT_CODE');
@@ -129,7 +131,9 @@ class AgricultureInfrastructureTest extends TestCase
             'status' => 'ACTIVE',
         ]);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/production-units?search=Cam');
+        $response = $this->actingAs($user, 'sanctum')
+            ->withHeaders(['X-Cooperative-ID' => $coop->id])
+            ->getJson('/api/v1/production-units?search=Cam');
 
         $response->assertStatus(200);
         $response->assertJsonPath('meta.total', 1);
@@ -160,6 +164,7 @@ class AgricultureInfrastructureTest extends TestCase
         ];
 
         $response = $this->actingAs($user, 'sanctum')
+            ->withHeaders(['X-Cooperative-ID' => $coop->id])
             ->postJson("/api/v1/production-units/{$unit->id}/plots", $payload);
 
         $response->assertStatus(201);
@@ -215,6 +220,7 @@ class AgricultureInfrastructureTest extends TestCase
         ];
 
         $response = $this->actingAs($user, 'sanctum')
+            ->withHeaders(['X-Cooperative-ID' => $coop->id])
             ->postJson("/api/v1/farm-plots/{$plot->id}/member-assignments", $payload);
 
         $response->assertStatus(201);
@@ -248,7 +254,9 @@ class AgricultureInfrastructureTest extends TestCase
             'status' => 'ACTIVE',
         ]);
 
-        $response = $this->actingAs($userA, 'sanctum')->getJson("/api/v1/production-units/{$unitB->id}");
+        $response = $this->actingAs($userA, 'sanctum')
+            ->withHeaders(['X-Cooperative-ID' => $coopA->id])
+            ->getJson("/api/v1/production-units/{$unitB->id}");
 
         $response->assertStatus(404);
         $response->assertJsonPath('error.code', 'PRODUCTION_UNIT_NOT_FOUND');

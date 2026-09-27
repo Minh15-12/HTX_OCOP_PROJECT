@@ -80,7 +80,16 @@ Thứ tự ưu tiên đọc:
 21_BACKEND_PROJECT_STRUCTURE.md
 22_BACKEND_CODING_STANDARDS.md
 23_BACKEND_API_IMPLEMENTATION_PLAN.md
+
+# Quy trình nghiệp vụ chi tiết (đọc khi implement từng module):
+30_MEMBER_WORKFLOW.md       -- Thành viên & Vốn góp: FSM, Business Rules, Credit Limit
+31_FARMING_WORKFLOW.md      -- Vùng trồng, Thửa đất, PHI Guard, Lot ID, TT02/2024
+32_INVENTORY_WORKFLOW.md    -- Kho Vật tư, KCS 3 cấp, FEFO/FIFO, Credit Advance
+33_FINANCE_WORKFLOW.md      -- Tài chính, Cấn trừ công nợ, Phân chia lợi nhuận
+34_OCOP_WORKFLOW.md         -- OCOP QĐ148, Chấm điểm, Phân hạng, Evidence mapping
+35_APPROVAL_WORKFLOW.md     -- FSM Engine, Audit Hash Chaining, Notification Engine
 ```
+
 
 Nếu file quan trọng bị thiếu:
 
