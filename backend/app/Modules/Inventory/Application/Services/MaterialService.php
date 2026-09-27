@@ -102,6 +102,9 @@ class MaterialService
             throw new DomainException('Cần xác định Hợp tác xã trước khi thêm mới vật tư', 'TENANT_REQUIRED', null, 400);
         }
 
+        // Prohibited active ingredient check (MARD banned PPP list)
+        $this->validateProhibitedSubstances($dto->name, $dto->safetyInformation);
+
         $domainEntity = new Material(
             id: (string) Str::uuid(),
             cooperativeId: $coopId,
@@ -159,6 +162,13 @@ class MaterialService
         if ($dto->status !== null) $updates['status'] = $dto->status;
 
         if (!empty($updates)) {
+            if (isset($updates['name']) || isset($updates['safety_information'])) {
+                $this->validateProhibitedSubstances(
+                    $updates['name'] ?? $material->name,
+                    $updates['safety_information'] ?? $material->safety_information
+                );
+            }
+
             $material->update($updates);
 
             $this->auditService->log(
@@ -172,5 +182,35 @@ class MaterialService
         }
 
         return $material->fresh('cooperative');
+    }
+
+    public function validateProhibitedSubstances(?string $name, ?array $safetyInformation): void
+    {
+        $bannedSubstances = [
+            'PARAQUAT', '2,4-D', 'GLYPHOSATE', 'METHAMIDOPHOS', 'CARBOFURAN',
+            'CHLORDANE', 'ENDOSULFAN', 'HOAT_CHAT_CAM'
+        ];
+
+        $textToSearch = strtoupper(($name ?? '') . ' ' . json_encode($safetyInformation ?? []));
+
+        foreach ($bannedSubstances as $banned) {
+            if (str_contains($textToSearch, $banned)) {
+                throw new DomainException(
+                    "Vật tư hoặc chế phẩm chứa hoạt chất cấm [{$banned}] theo quy định của Bộ NN&PTNT",
+                    'ERR_SUPPLY_PROHIBITED_SUBSTANCE',
+                    null,
+                    422
+                );
+            }
+        }
+
+        if (!empty($safetyInformation['is_prohibited'])) {
+            throw new DomainException(
+                "Vật tư đánh dấu chứa hoạt chất cấm theo quy định của Bộ NN&PTNT",
+                'ERR_SUPPLY_PROHIBITED_SUBSTANCE',
+                null,
+                422
+            );
+        }
     }
 }
