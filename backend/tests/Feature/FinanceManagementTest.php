@@ -354,7 +354,7 @@ class FinanceManagementTest extends TestCase
         $planResp = $this->actingAs($user, 'sanctum')->postJson('/api/v1/surplus-distribution-plans', [
             'financial_year' => 2026,
             'total_surplus' => 1000.0,
-            'distributable_surplus' => 1000.0,
+            'distributable_surplus' => 950.0,
         ]);
 
         $planResp->assertStatus(201);
@@ -388,5 +388,70 @@ class FinanceManagementTest extends TestCase
 
         $response->assertStatus(404);
         $response->assertJsonPath('error.code', 'CASH_TRANSACTION_NOT_FOUND');
+    }
+
+    public function test_harvest_settlement_offset_debt_and_net_payout_calculation(): void
+    {
+        $coop = $this->createCooperative();
+        $user = $this->createUserWithPermissions($coop, ['FINANCE.CREATE', 'FINANCE.READ']);
+
+        $member = MemberModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'member_code' => 'XV_HARVEST_TEST',
+            'status' => 'ACTIVE',
+            'identity_information' => ['full_name' => 'Nguyễn Văn Nông Sản'],
+            'join_date' => '2025-01-01',
+        ]);
+
+        // Member has 3,000,000 outstanding material debt
+        $debt = ReceivablePayableModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'debt_code' => 'CN-HARVEST-01',
+            'debt_type' => 'RECEIVABLE',
+            'counterparty_type' => 'MEMBER',
+            'counterparty_id' => $member->id,
+            'counterparty_name' => 'Nguyễn Văn Nông Sản',
+            'original_amount' => 3000000.0,
+            'outstanding_amount' => 3000000.0,
+            'due_date' => '2026-10-01',
+            'status' => 'OPEN',
+        ]);
+
+        // Process harvest settlement: produce value 10,000,000 (Fee 2.5% = 250,000, Debt Offset = 3,000,000, Net = 6,750,000)
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/receivable-payables/harvest-settlements', [
+            'member_id' => $member->id,
+            'produce_value' => 10000000.0,
+            'service_fee_rate' => 0.025,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.gross_produce_value', 10000000);
+        $response->assertJsonPath('data.service_fee', 250000);
+        $response->assertJsonPath('data.total_debt_offset', 3000000);
+        $response->assertJsonPath('data.net_payout', 6750000);
+        $response->assertJsonPath('data.remaining_member_debt', 0);
+
+        // Verify debt was settled in DB
+        $updatedDebt = ReceivablePayableModel::find($debt->id);
+        $this->assertEquals(0, $updatedDebt->outstanding_amount);
+        $this->assertEquals('SETTLED', $updatedDebt->status);
+    }
+
+    public function test_surplus_plan_fails_when_distributable_exceeds_95_percent(): void
+    {
+        $coop = $this->createCooperative();
+        $user = $this->createUserWithPermissions($coop, ['FINANCE.CREATE']);
+
+        // Attempting distributable surplus = 98% (violates min 5% reserve fund)
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/surplus-distribution-plans', [
+            'financial_year' => 2026,
+            'total_surplus' => 100000000.0,
+            'distributable_surplus' => 98000000.0,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('error.code', 'ERR_FINANCE_INVALID_SURPLUS_PLAN');
     }
 }
