@@ -77,7 +77,8 @@ class StockIssueController extends BaseController
             memberId: $request->input('member_id'),
             purpose: $request->input('purpose'),
             customIssueNumber: $request->input('custom_issue_number'),
-            cooperativeId: $request->input('cooperative_id')
+            cooperativeId: $request->input('cooperative_id'),
+            isCredit: (bool) $request->input('is_credit', false)
         );
 
         $issue = $this->issueService->createIssue($dto);

@@ -16,6 +16,7 @@ class CreateStockIssueRequest extends FormRequest
         return [
             'issue_date' => ['required', 'date'],
             'member_id' => ['nullable', 'uuid', 'exists:members,id'],
+            'is_credit' => ['nullable', 'boolean'],
             'purpose' => ['nullable', 'string', 'max:255'],
             'custom_issue_number' => ['nullable', 'string', 'max:100'],
             'lines' => ['required', 'array', 'min:1'],

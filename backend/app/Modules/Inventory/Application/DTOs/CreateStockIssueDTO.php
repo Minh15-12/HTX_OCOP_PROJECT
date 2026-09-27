@@ -15,6 +15,7 @@ class CreateStockIssueDTO extends BaseDTO
         public readonly ?string $memberId = null,
         public readonly ?string $purpose = null,
         public readonly ?string $customIssueNumber = null,
-        public readonly ?string $cooperativeId = null
+        public readonly ?string $cooperativeId = null,
+        public readonly bool $isCredit = false
     ) {}
 }

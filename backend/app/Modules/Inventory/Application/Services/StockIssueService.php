@@ -125,6 +125,7 @@ class StockIssueService
                 'issue_number' => $issueNumber,
                 'issue_date' => $dto->issueDate,
                 'member_id' => $dto->memberId,
+                'is_credit' => $dto->isCredit,
                 'purpose' => $dto->purpose,
                 'status' => 'DRAFT',
                 'total_amount' => $totalAmount,
@@ -194,6 +195,29 @@ class StockIssueService
         $domainEntity->approve($approverId ?: 'SYSTEM');
 
         return DB::transaction(function () use ($issue, $domainEntity, $approverId) {
+            // Check member credit limit if issued on credit
+            if ($issue->is_credit && $issue->member_id) {
+                $member = \Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::find($issue->member_id);
+                if ($member) {
+                    $existingCreditDebt = (float) StockIssueModel::where('member_id', $issue->member_id)
+                        ->where('is_credit', true)
+                        ->where('status', 'APPROVED')
+                        ->where('id', '!=', $issue->id)
+                        ->sum('total_amount');
+
+                    $newTotal = $existingCreditDebt + (float) $issue->total_amount;
+                    $creditLimit = (float) ($member->credit_limit ?? 0);
+                    if ($creditLimit > 0 && $newTotal > $creditLimit) {
+                        throw new DomainException(
+                            "Giá trị xuất nợ [{$issue->total_amount}] làm tổng nợ [{$newTotal}] vượt quá trần tín dụng [{$creditLimit}] của xã viên",
+                            'ERR_MEMBER_CREDIT_LIMIT_EXCEEDED',
+                            null,
+                            422
+                        );
+                    }
+                }
+            }
+
             // Lock materials for update to prevent concurrent stock depletion
             foreach ($issue->lines as $line) {
                 $mat = MaterialModel::where('id', $line->material_id)->lockForUpdate()->first();
@@ -206,6 +230,22 @@ class StockIssueService
                         null,
                         400
                     );
+                }
+
+                // FEFO Batch stock deduction
+                $needed = (float) $line->quantity;
+                $batches = \Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel::where('material_id', $line->material_id)
+                    ->where('cooperative_id', $issue->cooperative_id)
+                    ->where('quantity', '>', 0)
+                    ->orderByRaw('expired_at ASC NULLS LAST')
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                foreach ($batches as $batch) {
+                    if ($needed <= 0) break;
+                    $deduct = min((float) $batch->quantity, $needed);
+                    $batch->decrement('quantity', $deduct);
+                    $needed -= $deduct;
                 }
             }
 
