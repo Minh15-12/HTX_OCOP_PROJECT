@@ -22,6 +22,7 @@ class UpdateMemberRequest extends FormRequest
             'member_type' => ['nullable', 'string', 'in:OFFICIAL,ASSOCIATED'],
             'user_id' => ['nullable', 'uuid', 'exists:users,id'],
             'admission_date' => ['nullable', 'date'],
+            'credit_limit' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

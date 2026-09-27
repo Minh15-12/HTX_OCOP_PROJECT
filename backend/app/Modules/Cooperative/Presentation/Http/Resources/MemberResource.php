@@ -46,6 +46,7 @@ class MemberResource extends JsonResource
             'ownership_percentage' => $ownershipPercentage,
             'capital_status' => ($contributedCapital >= $committedCapital && $committedCapital > 0) ? 'DU_VON' : 'CHUA_DU',
             'commitment_deadline' => $this->commitment_deadline?->format('Y-m-d'),
+            'credit_limit' => (float) ($this->credit_limit ?? 0),
             'status' => $this->status,
             'user_id' => $this->user_id,
             'user_email' => $this->user?->email,

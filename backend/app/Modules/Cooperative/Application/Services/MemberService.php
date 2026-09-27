@@ -120,6 +120,7 @@ class MemberService
             'status' => 'DRAFT',
             'user_id' => $dto->userId,
             'admission_date' => $dto->admissionDate ?: now()->toDateString(),
+            'credit_limit' => $dto->creditLimit ?? 0,
         ]);
 
         $this->auditService->log(
@@ -151,6 +152,9 @@ class MemberService
         if ($dto->admissionDate !== null) {
             $updates['admission_date'] = $dto->admissionDate;
         }
+        if ($dto->creditLimit !== null) {
+            $updates['credit_limit'] = $dto->creditLimit;
+        }
 
         if (!empty($updates)) {
             $member->update($updates);
@@ -166,6 +170,22 @@ class MemberService
         }
 
         return $member->fresh(['cooperative', 'user']);
+    }
+
+    public function deleteMember(string $memberId): void
+    {
+        $member = $this->getMemberById($memberId);
+        $before = $member->toArray();
+
+        $member->delete();
+
+        $this->auditService->log(
+            action: 'MEMBER_DELETED',
+            entityType: 'Member',
+            entityId: $member->id,
+            before: $before,
+            cooperativeId: $member->cooperative_id
+        );
     }
 
     public function approveMember(string $memberId): MemberModel

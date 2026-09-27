@@ -93,6 +93,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/members', [MemberController::class, 'store'])->name('api.members.store');
     Route::get('/members/{id}', [MemberController::class, 'show'])->name('api.members.show');
     Route::patch('/members/{id}', [MemberController::class, 'update'])->name('api.members.update');
+    Route::delete('/members/{id}', [MemberController::class, 'destroy'])->name('api.members.destroy');
     Route::post('/members/{id}/approve', [MemberController::class, 'approve'])->name('api.members.approve');
     Route::post('/members/{id}/status-transitions', [MemberController::class, 'transitionStatus'])->name('api.members.status-transition');
 

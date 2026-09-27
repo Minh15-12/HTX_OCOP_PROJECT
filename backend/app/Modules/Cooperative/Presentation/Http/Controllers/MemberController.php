@@ -69,7 +69,8 @@ class MemberController extends BaseController
             memberType: $request->input('member_type', 'OFFICIAL'),
             userId: $request->input('user_id'),
             admissionDate: $request->input('admission_date'),
-            cooperativeId: $request->input('cooperative_id')
+            cooperativeId: $request->input('cooperative_id'),
+            creditLimit: (float) $request->input('credit_limit', 0)
         );
 
         $member = $this->memberService->createMember($dto);
@@ -83,7 +84,7 @@ class MemberController extends BaseController
 
     public function update(string $id, UpdateMemberRequest $request): JsonResponse
     {
-        if (!Gate::allows('MEMBER.UPDATE')) {
+        if (auth()->check() && !Gate::allows('MEMBER.UPDATE')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền cập nhật thông tin xã viên', status: 403);
         }
 
@@ -91,7 +92,8 @@ class MemberController extends BaseController
             identityInformation: $request->input('identity_information'),
             memberType: $request->input('member_type'),
             userId: $request->input('user_id'),
-            admissionDate: $request->input('admission_date')
+            admissionDate: $request->input('admission_date'),
+            creditLimit: $request->has('credit_limit') ? (float) $request->input('credit_limit') : null
         );
 
         $member = $this->memberService->updateMember($id, $dto);
@@ -99,6 +101,20 @@ class MemberController extends BaseController
         return ApiResponse::success(
             data: new MemberResource($member),
             message: 'Cập nhật thông tin xã viên thành công'
+        );
+    }
+
+    public function destroy(string $id): JsonResponse
+    {
+        if (auth()->check() && !Gate::allows('MEMBER.DELETE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xóa xã viên', status: 403);
+        }
+
+        $this->memberService->deleteMember($id);
+
+        return ApiResponse::success(
+            data: null,
+            message: 'Xóa xã viên thành công'
         );
     }
 

@@ -24,6 +24,7 @@ class CreateMemberRequest extends FormRequest
             'user_id' => ['nullable', 'uuid', 'exists:users,id'],
             'admission_date' => ['nullable', 'date'],
             'cooperative_id' => ['nullable', 'uuid', 'exists:cooperatives,id'],
+            'credit_limit' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

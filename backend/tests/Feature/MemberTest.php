@@ -236,7 +236,39 @@ class MemberTest extends TestCase
         ]);
 
         $invalidResponse->assertStatus(400);
-        $invalidResponse->assertJsonPath('error.code', 'INVALID_STATUS_TRANSITION');
+        $invalidResponse->assertJsonPath('error.code', 'ERR_MEMBER_INVALID_STATUS_TRANSITION');
+    }
+
+    public function test_member_credit_limit_and_soft_delete(): void
+    {
+        $coop = $this->createCooperative();
+        $user = $this->createUserWithPermissions($coop, ['MEMBER.CREATE', 'MEMBER.READ', 'MEMBER.UPDATE', 'MEMBER.DELETE']);
+
+        // Create with credit_limit
+        $createRes = $this->actingAs($user, 'sanctum')->postJson('/api/v1/members', [
+            'member_code' => 'XV_CREDIT_01',
+            'identity_information' => ['full_name' => 'Nguyễn Văn Tín Dụng'],
+            'member_type' => 'OFFICIAL',
+            'credit_limit' => 50000000,
+        ]);
+        $createRes->assertStatus(201);
+        $createRes->assertJsonPath('data.credit_limit', 50000000);
+
+        $memberId = $createRes->json('data.id');
+
+        // Update credit_limit
+        $updateRes = $this->actingAs($user, 'sanctum')->patchJson("/api/v1/members/{$memberId}", [
+            'credit_limit' => 100000000,
+        ]);
+        $updateRes->assertStatus(200);
+        $updateRes->assertJsonPath('data.credit_limit', 100000000);
+
+        // Soft delete
+        $deleteRes = $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/members/{$memberId}");
+        $deleteRes->assertStatus(200);
+
+        $deletedMember = MemberModel::withTrashed()->find($memberId);
+        $this->assertNotNull($deletedMember->deleted_at);
     }
 
     public function test_cross_tenant_isolation_prevents_viewing_other_cooperative_members(): void
