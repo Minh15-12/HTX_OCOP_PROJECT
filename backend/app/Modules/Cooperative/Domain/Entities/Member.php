@@ -20,8 +20,8 @@ class Member
 
     public function approve(): void
     {
-        if ($this->status !== 'DRAFT') {
-            throw new DomainException('Chỉ xã viên ở trạng thái DRAFT mới có thể phê duyệt kết nạp', 'INVALID_STATUS_TRANSITION');
+        if (!in_array($this->status, ['DRAFT', 'PROSPECTIVE'], true)) {
+            throw new DomainException('Chỉ xã viên ở trạng thái DRAFT hoặc PROSPECTIVE mới có thể phê duyệt kết nạp', 'ERR_MEMBER_INVALID_STATUS_TRANSITION', null, 400);
         }
         $this->status = 'ACTIVE';
     }
@@ -29,16 +29,21 @@ class Member
     public function transitionTo(string $targetStatus): void
     {
         $allowedTransitions = [
-            'DRAFT' => ['ACTIVE'],
-            'ACTIVE' => ['PENDING_TERMINATION'],
-            'PENDING_TERMINATION' => ['TERMINATED'],
+            'DRAFT' => ['ACTIVE', 'PROSPECTIVE', 'TERMINATED'],
+            'PROSPECTIVE' => ['ACTIVE', 'TERMINATED'],
+            'ACTIVE' => ['SUSPENDED', 'LEAVING', 'PENDING_TERMINATION', 'TERMINATED'],
+            'SUSPENDED' => ['ACTIVE', 'TERMINATED'],
+            'LEAVING' => ['TERMINATED', 'ACTIVE'],
+            'PENDING_TERMINATION' => ['TERMINATED', 'ACTIVE'],
             'TERMINATED' => [],
         ];
 
         if (!isset($allowedTransitions[$this->status]) || !in_array($targetStatus, $allowedTransitions[$this->status], true)) {
             throw new DomainException(
-                "Không thể chuyển trạng thái từ [{$this->status}] sang [{$targetStatus}]",
-                'INVALID_STATUS_TRANSITION'
+                "Không thể chuyển trạng thái xã viên từ [{$this->status}] sang [{$targetStatus}]",
+                'ERR_MEMBER_INVALID_STATUS_TRANSITION',
+                null,
+                400
             );
         }
 
