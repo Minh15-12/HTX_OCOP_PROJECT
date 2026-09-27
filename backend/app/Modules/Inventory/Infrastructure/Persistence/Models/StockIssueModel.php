@@ -21,6 +21,7 @@ class StockIssueModel extends Model
         'issue_number',
         'issue_date',
         'member_id',
+        'is_credit',
         'purpose',
         'status',
         'total_amount',
@@ -31,6 +32,7 @@ class StockIssueModel extends Model
     protected $casts = [
         'issue_date' => 'date:Y-m-d',
         'total_amount' => 'decimal:2',
+        'is_credit' => 'boolean',
     ];
 
     public function cooperative(): BelongsTo

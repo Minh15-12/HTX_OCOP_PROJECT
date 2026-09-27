@@ -330,4 +330,116 @@ class InventoryManagementTest extends TestCase
         $response->assertStatus(404);
         $response->assertJsonPath('error.code', 'MATERIAL_NOT_FOUND');
     }
+
+    public function test_prohibited_substance_check_blocks_material_creation(): void
+    {
+        $coop = $this->createCooperative();
+        $user = $this->createUserWithPermissions($coop, ['INVENTORY.CREATE']);
+
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/materials', [
+            'sku' => 'BANNED_01',
+            'name' => 'Thuốc Trừ Sâu Chứa Paraquat',
+            'category' => 'PESTICIDE',
+            'unit' => 'LIT',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('error.code', 'ERR_SUPPLY_PROHIBITED_SUBSTANCE');
+    }
+
+    public function test_fefo_stock_issue_and_batch_creation(): void
+    {
+        $coop = $this->createCooperative();
+        $user = $this->createUserWithPermissions($coop, ['INVENTORY.CREATE', 'INVENTORY.READ', 'INVENTORY.UPDATE']);
+
+        $material = MaterialModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'sku' => 'FEFO_MAT_01',
+            'name' => 'Hạt Giống Sweet Palermo F1',
+            'category' => 'SEED',
+            'unit' => 'KG',
+            'status' => 'ACTIVE',
+        ]);
+
+        // Create approved receipt (creates batch)
+        $receipt = $this->actingAs($user, 'sanctum')->postJson('/api/v1/stock-receipts', [
+            'receipt_date' => '2026-09-01',
+            'lines' => [
+                [
+                    'material_id' => $material->id,
+                    'quantity' => 50.0,
+                    'unit_price' => 200000,
+                    'batch_code' => 'LOT-PALERMO-2026A',
+                    'expiry_date' => '2027-12-31',
+                ],
+            ],
+        ]);
+        $receiptId = $receipt->json('data.id');
+        $this->actingAs($user, 'sanctum')->postJson("/api/v1/stock-receipts/{$receiptId}/approve");
+
+        // Verify batch was created
+        $this->assertDatabaseHas('material_batches', [
+            'material_id' => $material->id,
+            'batch_number' => 'LOT-PALERMO-2026A',
+            'quantity' => 50.0,
+        ]);
+    }
+
+    public function test_credit_advance_issue_blocks_when_member_credit_limit_exceeded(): void
+    {
+        $coop = $this->createCooperative();
+        $user = $this->createUserWithPermissions($coop, ['INVENTORY.CREATE', 'INVENTORY.READ', 'INVENTORY.UPDATE']);
+
+        $member = \Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'member_code' => 'XV_CREDIT_TEST',
+            'identity_information' => ['full_name' => 'Xã Viên Thử Hạn Mức'],
+            'member_type' => 'OFFICIAL',
+            'credit_limit' => 10000000, // 10 triệu
+            'status' => 'ACTIVE',
+        ]);
+
+        $material = MaterialModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'sku' => 'FERT_CREDIT',
+            'name' => 'Phân Bón Trả Chậm',
+            'category' => 'FERTILIZER',
+            'unit' => 'KG',
+            'status' => 'ACTIVE',
+        ]);
+
+        // Add 1000 KG stock
+        $rcp = StockReceiptModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'receipt_number' => 'PNK_CREDIT_STOCK',
+            'receipt_date' => '2026-09-01',
+            'status' => 'APPROVED',
+        ]);
+        $rcp->lines()->create([
+            'id' => (string) Str::uuid(),
+            'material_id' => $material->id,
+            'quantity' => 1000.0,
+            'unit_price' => 50000,
+            'line_amount' => 50000000,
+        ]);
+
+        // Issue 15 triệu (exceeds 10M credit limit!)
+        $issueResp = $this->actingAs($user, 'sanctum')->postJson('/api/v1/stock-issues', [
+            'issue_date' => '2026-09-02',
+            'member_id' => $member->id,
+            'is_credit' => true,
+            'lines' => [
+                ['material_id' => $material->id, 'quantity' => 300.0, 'unit_price' => 50000], // 15 triệu
+            ],
+        ]);
+        $issueId = $issueResp->json('data.id');
+
+        $approveResp = $this->actingAs($user, 'sanctum')->postJson("/api/v1/stock-issues/{$issueId}/approve");
+        $approveResp->assertStatus(422);
+        $approveResp->assertJsonPath('error.code', 'ERR_MEMBER_CREDIT_LIMIT_EXCEEDED');
+    }
 }
