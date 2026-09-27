@@ -199,6 +199,24 @@ class StockReceiptService
                 'approved_by' => $approverId,
             ]);
 
+            // Create material batch records for FEFO tracking
+            foreach ($receipt->lines as $line) {
+                $existsBatch = \Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel::where('stock_receipt_line_id', $line->id)->exists();
+                if (!$existsBatch) {
+                    \Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel::create([
+                        'id' => (string) Str::uuid(),
+                        'cooperative_id' => $receipt->cooperative_id,
+                        'material_id' => $line->material_id,
+                        'stock_receipt_line_id' => $line->id,
+                        'batch_number' => $line->batch_code ?: ('BATCH-' . strtoupper(Str::random(6))),
+                        'quantity' => $line->quantity,
+                        'initial_quantity' => $line->quantity,
+                        'expired_at' => $line->expiry_date,
+                        'status' => 'ACTIVE',
+                    ]);
+                }
+            }
+
             $this->auditService->log(
                 action: 'STOCK_RECEIPT_APPROVED',
                 entityType: 'StockReceipt',
