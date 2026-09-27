@@ -83,6 +83,24 @@ class SurplusDistributionService
             throw new DomainException('Cần xác định Hợp tác xã trước khi tạo phương án phân phối thặng dư', 'TENANT_REQUIRED', null, 400);
         }
 
+        if ($dto->distributableSurplus > round($dto->totalSurplus * 0.95, 2)) {
+            throw new DomainException(
+                "Thặng dư phân phối [{$dto->distributableSurplus}] vượt quá 95% tổng thặng dư. Phải trích tối thiểu 5% vào quỹ không chia theo Luật HTX 2023",
+                'ERR_FINANCE_INVALID_SURPLUS_PLAN',
+                null,
+                422
+            );
+        }
+
+        if (round($dto->capitalWeight + $dto->serviceUsageWeight, 2) != 100.0) {
+            throw new DomainException(
+                "Tổng tỷ trọng phân phối theo vốn và dịch vụ phải bằng 100%",
+                'ERR_FINANCE_INVALID_SURPLUS_PLAN',
+                null,
+                400
+            );
+        }
+
         $planCode = $dto->customPlanCode ?: strtoupper("PADP-{$dto->financialYear}-" . Str::random(4));
 
         $exists = SurplusDistributionPlanModel::where('cooperative_id', $coopId)
