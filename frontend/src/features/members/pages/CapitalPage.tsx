@@ -118,7 +118,7 @@ export const CapitalPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className={`flex items-center gap-2 font-bold ${isWarning ? 'text-orange-600' : 'text-slate-700'}`}>
                           {ownershipPct.toFixed(2)}%
-                          {isWarning && <AlertTriangle className="w-4 h-4" title="Cảnh báo: Vượt trần 30% vốn điều lệ (BR-COOP-004)" />}
+                          {isWarning && <span title="Cảnh báo: Vượt trần 30% vốn điều lệ (BR-COOP-004)"><AlertTriangle className="w-4 h-4" /></span>}
                         </div>
                       </td>
                       <td className="px-6 py-4">

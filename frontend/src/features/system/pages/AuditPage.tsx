@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { History, Search, Download, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatDate } from '@/utils/formatters';
+import { formatDateTime } from '@/utils/formatters';
 
 interface AuditLog {
   id: string;
@@ -90,7 +90,7 @@ export const AuditPage: React.FC = () => {
               {filteredLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50 transition-colors">
                   <td className="py-4 px-6 font-mono text-xs text-slate-500">
-                    {formatDate(log.time, true)}
+                    {formatDateTime(log.time)}
                   </td>
                   <td className="py-4 px-6 font-bold text-slate-800">
                     {log.actor}
