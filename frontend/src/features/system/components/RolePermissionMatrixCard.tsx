@@ -52,30 +52,51 @@ export const RolePermissionMatrixCard: React.FC<Props> = ({
     onSavePermissions(role.id, Array.from(selectedPerms));
   };
 
-  // Matrix categories simulation matching screenshot (Vốn góp, Phân chia lợi nhuận, Báo cáo tài chính...)
+  // Matrix categories matching 15_AUTHORIZATION_MATRIX.md
   const matrixItems = [
     {
-      group: 'Vốn góp',
+      group: 'Hợp tác xã & Xã viên',
       items: [
-        { label: 'Xem danh sách vốn góp', view: 'MEMBER.READ', add: 'CAPITAL.CREATE', edit: 'CAPITAL.UPDATE', delete: 'CAPITAL.DELETE', approve: 'CAPITAL.APPROVE' },
-        { label: 'Thêm giao dịch vốn góp', view: 'MEMBER.READ', add: 'CAPITAL.CREATE', edit: null, delete: null, approve: null },
-        { label: 'Sửa giao dịch vốn góp', view: 'MEMBER.READ', add: null, edit: 'CAPITAL.UPDATE', delete: null, approve: null },
-        { label: 'Duyệt giao dịch vốn góp', view: 'MEMBER.READ', add: null, edit: null, delete: null, approve: 'CAPITAL.APPROVE' },
+        { label: 'Hồ sơ HTX', view: 'COOP.READ', add: 'COOP.CREATE', edit: 'COOP.UPDATE', delete: null, approve: null },
+        { label: 'Xã viên', view: 'MEMBER.READ', add: 'MEMBER.CREATE', edit: 'MEMBER.UPDATE', delete: 'MEMBER.DELETE', approve: 'MEMBER.APPROVE' },
       ],
     },
     {
-      group: 'Phân chia lợi nhuận',
+      group: 'Sản xuất Nông nghiệp',
       items: [
-        { label: 'Xem danh sách phân chia', view: 'FINANCE.READ', add: 'FINANCE.TRANSACTION.CREATE', edit: 'FINANCE.UPDATE', delete: null, approve: 'FINANCE.TRANSACTION.APPROVE' },
-        { label: 'Thực hiện phân chia', view: 'FINANCE.READ', add: 'FINANCE.TRANSACTION.CREATE', edit: null, delete: null, approve: null },
-        { label: 'Duyệt phân chia', view: 'FINANCE.READ', add: null, edit: null, delete: null, approve: 'FINANCE.TRANSACTION.APPROVE' },
+        { label: 'Vùng trồng & Thửa đất', view: 'AGRICULTURE.READ', add: 'AGRICULTURE.CREATE', edit: 'AGRICULTURE.UPDATE', delete: null, approve: null },
+        { label: 'Nhật ký canh tác', view: 'FARMING_LOG.READ', add: 'FARMING_LOG.CREATE', edit: 'FARMING_LOG.UPDATE', delete: null, approve: null },
+        { label: 'Thu hoạch & Lô hàng', view: 'HARVEST.READ', add: 'HARVEST.CREATE', edit: 'HARVEST.UPDATE', delete: null, approve: null },
       ],
     },
     {
-      group: 'Báo cáo tài chính',
+      group: 'Kho & Vật tư',
       items: [
-        { label: 'Xem báo cáo tài chính', view: 'FINANCE.READ', add: null, edit: null, delete: null, approve: null },
-        { label: 'Xuất file báo cáo', view: 'FINANCE.READ', add: 'REPORT.EXPORT', edit: null, delete: null, approve: null },
+        { label: 'Danh mục vật tư', view: 'INVENTORY.READ', add: 'INVENTORY.CREATE', edit: 'INVENTORY.UPDATE', delete: null, approve: null },
+        { label: 'Phiếu nhập/xuất kho', view: 'STOCK.READ', add: 'STOCK.CREATE', edit: 'STOCK.UPDATE', delete: null, approve: 'STOCK.APPROVE' },
+      ],
+    },
+    {
+      group: 'Tài chính & Lợi nhuận',
+      items: [
+        { label: 'Giao dịch vốn góp', view: 'FINANCE.READ', add: 'CAPITAL.CREATE', edit: 'CAPITAL.UPDATE', delete: null, approve: 'CAPITAL.APPROVE' },
+        { label: 'Phân chia lợi nhuận', view: 'FINANCE.READ', add: 'FINANCE.TRANSACTION.CREATE', edit: 'FINANCE.TRANSACTION.UPDATE', delete: null, approve: 'FINANCE.TRANSACTION.APPROVE' },
+      ],
+    },
+    {
+      group: 'Hồ sơ OCOP',
+      items: [
+        { label: 'Hồ sơ dự thi OCOP', view: 'OCOP_APPLICATION.READ', add: 'OCOP_APPLICATION.CREATE', edit: 'OCOP_APPLICATION.UPDATE', delete: null, approve: 'OCOP_APPLICATION.SUBMIT' },
+        { label: 'Minh chứng', view: 'OCOP_EVIDENCE.READ', add: 'OCOP_EVIDENCE.UPLOAD', edit: 'OCOP_EVIDENCE.REPLACE', delete: null, approve: 'OCOP_EVIDENCE.VERIFY' },
+        { label: 'Đánh giá & Chấm điểm', view: 'OCOP_EVALUATION.READ', add: 'OCOP_EVALUATION.SCORE', edit: 'OCOP_EVALUATION.CONSOLIDATE', delete: null, approve: 'OCOP_EVALUATION.LOCK' },
+      ],
+    },
+    {
+      group: 'Hệ thống & Báo cáo',
+      items: [
+        { label: 'Quản trị Người dùng', view: 'USER.READ', add: 'USER.CREATE', edit: 'USER.UPDATE', delete: 'USER.DELETE', approve: null },
+        { label: 'Phân quyền Vai trò', view: 'ROLE.READ', add: 'ROLE.MANAGE', edit: null, delete: null, approve: null },
+        { label: 'Báo cáo & Thống kê', view: 'REPORT.READ', add: 'REPORT.EXPORT', edit: null, delete: null, approve: null },
       ],
     },
   ];

@@ -53,11 +53,13 @@ export const SystemSettingsPage: React.FC = () => {
   });
 
   const [roles, setRoles] = useState<Role[]>([
-    { id: 'r1', code: 'HTX_OWNER', name: 'Quản trị viên', description: 'Toàn quyền hệ thống', user_count: 5, status: 'Hoạt động', permissions: ['USER.READ', 'USER.CREATE', 'ROLE.MANAGE', 'MEMBER.READ', 'FINANCE.READ', 'CAPITAL.CREATE'] },
-    { id: 'r2', code: 'HTX_STAFF', name: 'Kế toán', description: 'Quản lý tài chính, vốn góp', user_count: 3, status: 'Hoạt động', permissions: ['MEMBER.READ', 'FINANCE.READ', 'FINANCE.TRANSACTION.CREATE', 'FINANCE.TRANSACTION.APPROVE'] },
-    { id: 'r3', code: 'STAFF', name: 'Nhân viên HTX', description: 'Cán bộ quản lý nghiệp vụ', user_count: 8, status: 'Hoạt động', permissions: ['MEMBER.READ', 'AGRICULTURE.READ', 'INVENTORY.READ'] },
-    { id: 'r4', code: 'LEADER', name: 'Trưởng nhóm sản xuất', description: 'Quản lý vùng trồng, mùa vụ', user_count: 2, status: 'Hoạt động', permissions: ['AGRICULTURE.READ', 'AGRICULTURE.CREATE'] },
-    { id: 'r5', code: 'MEMBER', name: 'Xã viên', description: 'Xã viên HTX', user_count: 125, status: 'Hoạt động', permissions: ['MEMBER.READ'] },
+    { id: 'r1', code: 'HTX_OWNER', name: 'Ban Giám Đốc HTX', description: 'Toàn quyền tại HTX', user_count: 3, status: 'Hoạt động', permissions: ['MEMBER.READ', 'MEMBER.CREATE', 'FINANCE.READ', 'FINANCE.TRANSACTION.APPROVE'] },
+    { id: 'r2', code: 'ACCOUNTANT', name: 'Kế toán HTX', description: 'Quản lý tài chính, vốn góp', user_count: 2, status: 'Hoạt động', permissions: ['MEMBER.READ', 'FINANCE.READ', 'FINANCE.TRANSACTION.CREATE'] },
+    { id: 'r3', code: 'STOREKEEPER', name: 'Thủ kho', description: 'Quản lý xuất nhập tồn', user_count: 3, status: 'Hoạt động', permissions: ['INVENTORY.READ', 'INVENTORY.CREATE', 'INVENTORY.UPDATE'] },
+    { id: 'r4', code: 'AGRICULTURE_OFFICER', name: 'Cán bộ Nông nghiệp', description: 'Quản lý vùng trồng, mùa vụ', user_count: 5, status: 'Hoạt động', permissions: ['AGRICULTURE.READ', 'AGRICULTURE.CREATE', 'AGRICULTURE.UPDATE'] },
+    { id: 'r5', code: 'OCOP_PREPARER', name: 'Cán bộ OCOP', description: 'Lập hồ sơ OCOP', user_count: 2, status: 'Hoạt động', permissions: ['OCOP_APPLICATION.READ', 'OCOP_APPLICATION.CREATE', 'OCOP_APPLICATION.SUBMIT', 'OCOP_EVIDENCE.UPLOAD'] },
+    { id: 'r6', code: 'COUNCIL_MEMBER', name: 'Hội đồng OCOP', description: 'Thẩm định hồ sơ OCOP', user_count: 15, status: 'Hoạt động', permissions: ['OCOP_EVALUATION.READ', 'OCOP_EVALUATION.SCORE'] },
+    { id: 'r7', code: 'SYSTEM_ADMIN', name: 'Quản trị hệ thống', description: 'Cấu hình kỹ thuật', user_count: 1, status: 'Hoạt động', permissions: ['USER.CREATE', 'ROLE.MANAGE'] },
   ]);
 
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>('r2');
