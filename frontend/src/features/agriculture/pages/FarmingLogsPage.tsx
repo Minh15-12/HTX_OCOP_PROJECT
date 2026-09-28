@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../../services/apiClient';
 import { BookOpen, Plus, Search, ShieldAlert, CheckCircle, Calendar, AlertTriangle } from 'lucide-react';
 
 interface FarmingLog {
