@@ -19,12 +19,26 @@ class FarmPlotModel extends Model
         'land_relation',
         'area',
         'status',
+        'quarantine_until',
     ];
 
     protected $casts = [
         'area' => 'decimal:4',
         'land_relation' => 'array',
+        'quarantine_until' => 'date:Y-m-d',
     ];
+
+    public function isInQuarantine(?string $checkDate = null): bool
+    {
+        $date = $checkDate ? \Carbon\Carbon::parse($checkDate) : now();
+        if ($this->status === 'IN_QUARANTINE') {
+            return true;
+        }
+        if ($this->quarantine_until && $date->lessThanOrEqualTo($this->quarantine_until)) {
+            return true;
+        }
+        return false;
+    }
 
     public function productionUnit(): BelongsTo
     {

@@ -106,6 +106,13 @@ class FarmingLogService
             attachmentReference: $dto->attachmentReference
         );
 
+        // BR-FARM-003: Spraying activities require GPS coordinates
+        if (in_array(strtoupper($dto->activityType), ['SPRAYING', 'PHUN_THUOC'], true)) {
+            if ($dto->gpsLatitude === null || $dto->gpsLongitude === null) {
+                throw new DomainException('Nhật ký phun thuốc bảo vệ thực vật bắt buộc phải cung cấp tọa độ GPS', 'ERR_GPS_LOCATION_REQUIRED', null, 422);
+            }
+        }
+
         $log = FarmingLogModel::create([
             'id' => $domainEntity->id,
             'crop_season_id' => $domainEntity->cropSeasonId,
@@ -138,6 +145,12 @@ class FarmingLogService
                 'status' => 'ACTIVE',
                 'source_reference' => ['source' => 'FARMING_LOG', 'log_id' => $log->id],
                 'created_at' => now(),
+            ]);
+
+            // PHI Guard Lock: Lock plot to IN_QUARANTINE until safety_date
+            $plot->update([
+                'status' => 'IN_QUARANTINE',
+                'quarantine_until' => $safetyDate,
             ]);
         }
 
