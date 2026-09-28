@@ -28,6 +28,8 @@ class CreateFarmingLogRequest extends FormRequest
             'phi_days' => ['nullable', 'integer', 'min:0'],
             'gps_latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'gps_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'gps_lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'gps_lng' => ['nullable', 'numeric', 'between:-180,180'],
         ];
     }
 

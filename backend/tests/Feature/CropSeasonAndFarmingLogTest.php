@@ -174,6 +174,8 @@ class CropSeasonAndFarmingLogTest extends TestCase
             'activity_type' => 'SPRAYING',
             'activity_date' => '2026-02-15',
             'description' => 'Phun thuốc phòng trừ sâu róm đợt 1',
+            'gps_lat' => 11.9404,
+            'gps_lng' => 108.4583,
         ];
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/farming-logs', $payload);

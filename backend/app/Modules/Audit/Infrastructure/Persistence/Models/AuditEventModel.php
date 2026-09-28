@@ -23,6 +23,8 @@ class AuditEventModel extends Model
         'cooperative_id',
         'ip_address',
         'request_id',
+        'prev_hash',
+        'current_hash',
         'created_at',
     ];
 

@@ -75,8 +75,8 @@ class FarmingLogController extends BaseController
             quantityApplied: $request->filled('quantity_applied') ? (float) $request->input('quantity_applied') : null,
             unit: $request->input('unit'),
             phiDays: $request->filled('phi_days') ? (int) $request->input('phi_days') : null,
-            gpsLatitude: $request->filled('gps_latitude') ? (float) $request->input('gps_latitude') : null,
-            gpsLongitude: $request->filled('gps_longitude') ? (float) $request->input('gps_longitude') : null
+            gpsLatitude: ($request->input('gps_latitude') ?? $request->input('gps_lat')) !== null ? (float) ($request->input('gps_latitude') ?? $request->input('gps_lat')) : null,
+            gpsLongitude: ($request->input('gps_longitude') ?? $request->input('gps_lng')) !== null ? (float) ($request->input('gps_longitude') ?? $request->input('gps_lng')) : null
         );
 
         $log = $this->logService->createLog($dto);

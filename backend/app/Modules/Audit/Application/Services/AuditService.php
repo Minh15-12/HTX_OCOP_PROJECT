@@ -24,6 +24,22 @@ class AuditService
 
             // Append-only audit record creation (catches exceptions gracefully to avoid breaking main transaction)
             if (\Illuminate\Support\Facades\Schema::hasTable('audit_events')) {
+                $lastEvent = \Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel::orderBy('created_at', 'desc')->orderBy('id', 'desc')->first();
+                $prevHash = $lastEvent?->current_hash ?: str_repeat('0', 64);
+
+                $payload = json_encode([
+                    'action' => $action,
+                    'entity_type' => $entityType,
+                    'entity_id' => $entityId,
+                    'before' => $before,
+                    'after' => $after,
+                    'actor_id' => $currentActorId,
+                    'cooperative_id' => $currentCoopId,
+                    'request_id' => $requestId,
+                ]);
+
+                $currentHash = hash('sha256', $payload . $prevHash);
+
                 \Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel::create([
                     'actor_id' => $currentActorId,
                     'action' => $action,
@@ -34,6 +50,8 @@ class AuditService
                     'cooperative_id' => $currentCoopId,
                     'ip_address' => $ipAddress,
                     'request_id' => $requestId,
+                    'prev_hash' => $prevHash,
+                    'current_hash' => $currentHash,
                     'created_at' => now(),
                 ]);
             }
