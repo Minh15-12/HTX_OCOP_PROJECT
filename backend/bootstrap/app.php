@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         
         $middleware->alias([
             'tenant.scope' => \Modules\Cooperative\Presentation\Http\Middleware\EnforceTenantScope::class,
+            'idempotency' => \App\Shared\Presentation\Http\Middleware\IdempotencyMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

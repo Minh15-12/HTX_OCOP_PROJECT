@@ -192,9 +192,17 @@ class MaterialService
         ];
 
         $textToSearch = strtoupper(($name ?? '') . ' ' . json_encode($safetyInformation ?? []));
+        $cooperativeId = $this->tenantContext->hasTenant() ? $this->tenantContext->getCooperativeId() : null;
 
         foreach ($bannedSubstances as $banned) {
             if (str_contains($textToSearch, $banned)) {
+                $this->auditService->log(
+                    action: 'PROHIBITED_SUBSTANCE_DETECTED',
+                    entityType: 'Material',
+                    after: ['name' => $name, 'banned_substance' => $banned],
+                    cooperativeId: $cooperativeId
+                );
+                
                 throw new DomainException(
                     "Vật tư hoặc chế phẩm chứa hoạt chất cấm [{$banned}] theo quy định của Bộ NN&PTNT",
                     'ERR_SUPPLY_PROHIBITED_SUBSTANCE',
@@ -205,6 +213,13 @@ class MaterialService
         }
 
         if (!empty($safetyInformation['is_prohibited'])) {
+            $this->auditService->log(
+                action: 'PROHIBITED_SUBSTANCE_DETECTED',
+                entityType: 'Material',
+                after: ['name' => $name, 'banned_substance' => 'is_prohibited_flag'],
+                cooperativeId: $cooperativeId
+            );
+
             throw new DomainException(
                 "Vật tư đánh dấu chứa hoạt chất cấm theo quy định của Bộ NN&PTNT",
                 'ERR_SUPPLY_PROHIBITED_SUBSTANCE',

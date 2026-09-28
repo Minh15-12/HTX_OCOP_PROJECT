@@ -21,5 +21,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+        
+        \Illuminate\Support\Facades\Event::listen(
+            \Modules\Audit\Domain\Events\AuditEventCreated::class,
+            \Modules\Notification\Application\Listeners\AuditEventListener::class
+        );
     }
 }

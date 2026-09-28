@@ -272,4 +272,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/documents/generate/ocop-dossier/{applicationId}', [DocumentController::class, 'generateDossier'])->name('api.documents.generate.dossier');
     Route::post('/documents/generate/certificate/{applicationId}', [DocumentController::class, 'generateCertificate'])->name('api.documents.generate.certificate');
     Route::get('/documents/{id}/download', [DocumentController::class, 'download'])->name('api.documents.download');
+
+    // Notifications
+    require base_path('app/Modules/Notification/Presentation/Http/routes.php');
 });

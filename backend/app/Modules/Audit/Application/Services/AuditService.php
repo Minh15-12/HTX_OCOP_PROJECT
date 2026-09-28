@@ -40,7 +40,7 @@ class AuditService
 
                 $currentHash = hash('sha256', $payload . $prevHash);
 
-                \Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel::create([
+                $event = \Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel::create([
                     'actor_id' => $currentActorId,
                     'action' => $action,
                     'entity_type' => $entityType,
@@ -54,6 +54,8 @@ class AuditService
                     'current_hash' => $currentHash,
                     'created_at' => now(),
                 ]);
+
+                event(new \Modules\Audit\Domain\Events\AuditEventCreated($event));
             }
 
             Log::info("AUDIT EVENT: [{$action}] on [{$entityType}:{$entityId}] by User [{$currentActorId}]", [
