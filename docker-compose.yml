@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: htx-ocop-backend
+    container_name: htx-ocop-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=http://localhost:8000
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=htx_ocop
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+      - QUEUE_CONNECTION=redis
+      - SESSION_DRIVER=redis
+      - CACHE_DRIVER=redis
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./backend:/var/www/html
+      - ./backend/.env.production:/var/www/html/.env
+    networks:
+      - htx-network
+
+  queue:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: htx-ocop-backend
+    container_name: htx-ocop-queue
+    restart: unless-stopped
+    command: php artisan queue:work redis --sleep=3 --tries=3 --timeout=90
+    environment:
+      - APP_ENV=production
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=htx_ocop
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE_CONNECTION=redis
+    depends_on:
+      - db
+      - redis
+    networks:
+      - htx-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: htx-ocop-frontend
+    container_name: htx-ocop-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - htx-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: htx-ocop-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=htx_ocop
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - htx-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: htx-ocop-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - htx-network
+
+networks:
+  htx-network:
+    driver: bridge
+
+volumes:
+  db-data:
+  redis-data:
