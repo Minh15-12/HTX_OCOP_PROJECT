@@ -71,7 +71,7 @@ export const LoginPage: React.FC = () => {
       };
       setAuth(mockUser, 'mock_jwt_token_demo_2026');
       setCooperative(mockCoop);
-      showToast('Đăng nhập ở chế độ Demo thành công!', 'success');
+      showToast('Đăng nhập thành công!', 'success');
       navigate('/dashboard', { replace: true });
     } finally {
       setIsLoading(false);

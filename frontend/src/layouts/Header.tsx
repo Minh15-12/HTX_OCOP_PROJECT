@@ -272,7 +272,10 @@ export const Header: React.FC = () => {
                 <p className="text-[11px] text-slate-500 truncate">{user?.email || 'admin@htx.vn'}</p>
               </div>
               <button
-                onClick={logout}
+                onClick={() => {
+                  logout();
+                  window.location.href = '/login';
+                }}
                 className="w-full flex items-center gap-2 px-4 py-2 text-[12.5px] font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />

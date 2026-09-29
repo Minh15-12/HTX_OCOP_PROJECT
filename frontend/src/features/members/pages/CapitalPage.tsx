@@ -25,6 +25,7 @@ import {
   ArrowLeft,
   ArrowRight,
 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { mockMembersList, mockCapitalTransactions } from '@/services/memberService';
 import {
   getStoredMembers,
@@ -75,6 +76,8 @@ export const CapitalPage: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [capitalStatusFilter, setCapitalStatusFilter] = useState<string>('ALL');
+  const [txTypeFilter, setTxTypeFilter] = useState<string>('ALL');
+  const [dateFilter, setDateFilter] = useState<string>('');
   const [selectedCapitalMember, setSelectedCapitalMember] = useState<Member | null>(null);
 
   // Pagination State for Capital List
@@ -592,91 +595,99 @@ export const CapitalPage: React.FC = () => {
         </div>
       )}
 
-      {/* TOP 6 KPI STATS CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-        <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Tổng vốn góp</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+      {/* TOP 6 KPI STATS CARDS - MODERN GLASSMORPHISM */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        {/* Card 1: Tổng vốn góp */}
+        <div className="bg-white/90 backdrop-blur-md border border-white/60 p-5 rounded-2xl shadow-xl shadow-slate-200/40 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-full blur-2xl opacity-60 group-hover:scale-150 transition-transform duration-500 pointer-events-none"></div>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Tổng vốn góp</span>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-700 flex items-center justify-center shadow-sm">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg font-black text-slate-900">{totalCommittedCapital.toLocaleString('vi-VN')} ₫</div>
-          <div className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> +8,5% so với năm trước
+          <div className="text-xl font-black text-slate-900 mt-2 relative z-10">{totalCommittedCapital.toLocaleString('vi-VN')} ₫</div>
+          <div className="text-xs font-bold text-emerald-600 flex items-center gap-1 mt-1.5 relative z-10">
+            <TrendingUp className="w-3.5 h-3.5" /> +8,5% so với năm trước
           </div>
         </div>
 
-        <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Đã góp</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+        {/* Card 2: Đã góp */}
+        <div className="bg-white/90 backdrop-blur-md border border-white/60 p-5 rounded-2xl shadow-xl shadow-slate-200/40 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full blur-2xl opacity-60 group-hover:scale-150 transition-transform duration-500 pointer-events-none"></div>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Đã góp</span>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700 flex items-center justify-center shadow-sm">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg font-black text-slate-900">{totalContributedCapital.toLocaleString('vi-VN')} ₫</div>
-          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
-            <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${overallCapitalPct}%` }}></div>
+          <div className="text-xl font-black text-slate-900 mt-2 relative z-10">{totalContributedCapital.toLocaleString('vi-VN')} ₫</div>
+          <div className="w-full bg-slate-100 rounded-full h-2 mt-2.5 overflow-hidden relative z-10 shadow-inner">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(37,99,235,0.4)]" style={{ width: `${overallCapitalPct}%` }}></div>
           </div>
         </div>
 
-        <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Còn phải góp</span>
-            <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+        {/* Card 3: Còn phải góp */}
+        <div className="bg-white/90 backdrop-blur-md border border-white/60 p-5 rounded-2xl shadow-xl shadow-slate-200/40 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-amber-100 to-amber-50 rounded-full blur-2xl opacity-60 group-hover:scale-150 transition-transform duration-500 pointer-events-none"></div>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Còn phải góp</span>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 text-amber-700 flex items-center justify-center shadow-sm">
               <AlertCircle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg font-black text-amber-800">{totalRemainingCapital.toLocaleString('vi-VN')} ₫</div>
-          <div className="text-[11px] text-slate-500 font-semibold">{members.filter((m) => m.capital_status === 'CHUA_DU').length} xã viên chưa đủ</div>
+          <div className="text-xl font-black text-amber-600 mt-2 relative z-10">{totalRemainingCapital.toLocaleString('vi-VN')} ₫</div>
+          <div className="text-xs text-slate-500 font-semibold mt-1.5 relative z-10">
+            <span className="text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded">{members.filter((m) => m.capital_status === 'CHUA_DU').length}</span> xã viên chưa đủ
+          </div>
         </div>
 
-        <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Khối liên kết (Max 30%)</span>
-            <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+        {/* Card 4: Khối liên kết */}
+        <div className="bg-white/90 backdrop-blur-md border border-white/60 p-5 rounded-2xl shadow-xl shadow-slate-200/40 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-50 rounded-full blur-2xl opacity-60 group-hover:scale-150 transition-transform duration-500 pointer-events-none"></div>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Khối liên kết</span>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 flex items-center justify-center shadow-sm">
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg font-black text-slate-900">{associateGroupPct}%</div>
-          <div className="text-[11px] text-slate-500 font-medium">
-            Vốn góp: <strong className="text-purple-700">{associateGroupCapital.toLocaleString('vi-VN')} ₫</strong>
+          <div className="text-xl font-black text-slate-900 mt-2 relative z-10">{associateGroupPct}% <span className="text-xs text-slate-400 font-medium">(Max 30%)</span></div>
+          <div className="w-full bg-slate-100 rounded-full h-2 mt-2.5 overflow-hidden relative z-10 shadow-inner">
+            <div className={`h-2 rounded-full transition-all duration-1000 ${isAssociateGroupOverLimit ? 'bg-rose-500' : 'bg-gradient-to-r from-purple-500 to-purple-600'}`} style={{ width: `${Math.min(associateGroupPct, 100)}%` }}></div>
           </div>
         </div>
 
-        <div className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Ruộng đất góp vốn</span>
-            <div className="w-7 h-7 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center">
+        {/* Card 5: Ruộng đất góp vốn */}
+        <div className="bg-white/90 backdrop-blur-md border border-white/60 p-5 rounded-2xl shadow-xl shadow-slate-200/40 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-teal-100 to-teal-50 rounded-full blur-2xl opacity-60 group-hover:scale-150 transition-transform duration-500 pointer-events-none"></div>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Đất góp vốn</span>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-100 to-teal-200 text-teal-700 flex items-center justify-center shadow-sm">
               <MapPin className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg font-black text-slate-900">45.000 m²</div>
-          <div className="text-[11px] text-slate-500 font-semibold">Đã sang tên HTX</div>
+          <div className="text-xl font-black text-slate-900 mt-2 relative z-10">45.000 <span className="text-sm">m²</span></div>
+          <div className="text-xs text-teal-600 font-semibold mt-1.5 relative z-10 bg-teal-50 inline-block px-2 py-0.5 rounded-md border border-teal-100">Đã sang tên HTX</div>
         </div>
 
-        <div
+        {/* Card 6: Chờ duyệt */}
+        <div 
           onClick={() => setShowPendingCapitalModal(true)}
-          className="bg-white border border-[#e7e9ec] p-3.5 rounded-xl shadow-subtle space-y-1 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all group"
+          className="bg-gradient-to-br from-white to-rose-50/50 backdrop-blur-md border border-rose-100/60 p-5 rounded-2xl shadow-xl shadow-rose-200/40 relative overflow-hidden group hover:-translate-y-1 hover:border-rose-300 transition-all duration-300 cursor-pointer"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase group-hover:text-amber-700 transition-colors">Chờ duyệt</span>
-            <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-rose-200 to-rose-100 rounded-full blur-2xl opacity-60 group-hover:scale-150 transition-transform duration-500 pointer-events-none"></div>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="text-xs font-extrabold text-rose-500 uppercase tracking-wider group-hover:text-rose-700 transition-colors">Chờ duyệt</span>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-100 to-rose-200 text-rose-700 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
               <AlertCircle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg font-black text-rose-700">
-            {transactions.filter((t) => t.status === 'PENDING').length} giao dịch
+          <div className="text-xl font-black text-rose-700 mt-2 relative z-10">
+            {transactions.filter((t) => t.status === 'PENDING').length} <span className="text-sm font-bold">giao dịch</span>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowPendingCapitalModal(true);
-            }}
-            className="text-[11px] text-emerald-700 hover:underline font-bold inline-flex items-center gap-0.5"
-          >
+          <div className="text-xs text-rose-600 font-bold mt-1.5 relative z-10 flex items-center gap-1 group-hover:underline">
             Xem chi tiết &rarr;
-          </button>
+          </div>
         </div>
       </div>
 
@@ -696,7 +707,7 @@ export const CapitalPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <select
+                            <select
                 value={capitalStatusFilter}
                 onChange={(e) => setCapitalStatusFilter(e.target.value)}
                 className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12.5px] text-slate-700 font-medium focus:outline-none"
@@ -705,6 +716,25 @@ export const CapitalPage: React.FC = () => {
                 <option value="DU_VON">Đủ vốn</option>
                 <option value="CHUA_DU">Chưa đủ</option>
               </select>
+              
+              <select
+                value={txTypeFilter}
+                onChange={(e) => setTxTypeFilter(e.target.value)}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12.5px] text-slate-700 font-medium focus:outline-none"
+              >
+                <option value="ALL">Loại giao dịch: Tất cả</option>
+                <option value="CASH">Tiền mặt</option>
+                <option value="BANK_TRANSFER">Chuyển khoản</option>
+                <option value="LAND">Hiện vật / QSDĐ</option>
+              </select>
+
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[12.5px] text-slate-700 font-medium focus:outline-none"
+                title="Lọc theo thời gian"
+              />
 
               <button
                 onClick={() => {
@@ -719,9 +749,9 @@ export const CapitalPage: React.FC = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-[12.8px]">
+            <table className="w-full text-left border-collapse text-[12.8px] bg-white">
               <thead>
-                <tr className="border-b border-[#e7e9ec] text-[11px] uppercase tracking-wider text-slate-400 font-bold bg-slate-50">
+                <tr className="border-b border-[#e7e9ec] text-[11px] uppercase tracking-wider text-slate-500 font-bold bg-gradient-to-r from-slate-50 to-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                   <th className="py-2.5 px-3">STT</th>
                   <th className="py-2.5 px-3">Mã xã viên</th>
                   <th className="py-2.5 px-3">Họ và tên</th>
@@ -825,7 +855,16 @@ export const CapitalPage: React.FC = () => {
                     </tr>
                   );
                 })}
-              </tbody>
+                            </tbody>
+              <tfoot className="bg-slate-50 border-t border-slate-200 font-bold text-[12.5px] text-slate-900 shadow-[0_-1px_2px_rgba(0,0,0,0.02)]">
+                <tr>
+                  <td colSpan={4} className="py-3 px-3 text-right text-slate-600 uppercase tracking-wider">Tổng cộng:</td>
+                  <td className="py-3 px-3 text-right">{paginatedMembers.reduce((sum, m) => sum + (m.committed_capital ?? m.total_capital_contributed ?? 30000000), 0).toLocaleString('vi-VN')} ₫</td>
+                  <td className="py-3 px-3 text-right text-emerald-700">{paginatedMembers.reduce((sum, m) => sum + (m.contributed_capital ?? m.total_capital_contributed ?? 0), 0).toLocaleString('vi-VN')} ₫</td>
+                  <td className="py-3 px-3 text-right text-amber-800">{paginatedMembers.reduce((sum, m) => sum + Math.max(0, (m.committed_capital ?? m.total_capital_contributed ?? 30000000) - (m.contributed_capital ?? m.total_capital_contributed ?? 0)), 0).toLocaleString('vi-VN')} ₫</td>
+                  <td colSpan={3}></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
 
@@ -969,8 +1008,9 @@ export const CapitalPage: React.FC = () => {
                             </td>
                           </tr>
                         ))}
-                    </tbody>
-                  </table>
+                                  </tbody>
+
+            </table>
                 </div>
               </div>
             )}
@@ -1060,104 +1100,119 @@ export const CapitalPage: React.FC = () => {
         )}
       </div>
 
-      {/* CHARTS GRID MATCHING IMAGE 2 BOTTOM */}
+      {/* BOTTOM CHARTS & STATS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-white border border-[#e7e9ec] p-4 rounded-xl shadow-subtle space-y-3">
-          <div className="flex justify-between items-center">
-            <h3 className="font-extrabold text-slate-900 text-sm">Biểu đồ tiến độ thu vốn góp 2025</h3>
-            <div className="flex items-center gap-3 text-[11px] font-bold">
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Cam kết</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Đã nộp</span>
+        {/* Chart 1: Biểu đồ cột theo tháng */}
+        <div className="col-span-1 lg:col-span-2 bg-white border border-[#e7e9ec] rounded-xl shadow-subtle p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[15px] font-extrabold text-slate-900">
+              Biểu đồ tiến độ thu vốn góp 2025
+            </h3>
+            <div className="flex items-center gap-4 text-xs font-bold text-slate-900">
+              <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> Cam kết</div>
+              <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-blue-500"></div> Đã nộp</div>
             </div>
           </div>
-          <div className="h-44 flex items-end justify-between gap-1 pt-6 px-2 border-b border-slate-200">
-            {[
-              { m: 1, c: 150000000, a: 140000000 },
-              { m: 2, c: 180000000, a: 175000000 },
-              { m: 3, c: 200000000, a: 190000000 },
-              { m: 4, c: 220000000, a: 210000000 },
-              { m: 5, c: 250000000, a: 245000000 },
-              { m: 6, c: 280000000, a: 270000000 },
-              { m: 7, c: 300000000, a: 290000000 },
-              { m: 8, c: 320000000, a: 305000000 },
-              { m: 9, c: 350000000, a: 340000000 },
-              { m: 10, c: 380000000, a: 360000000 },
-              { m: 11, c: 400000000, a: 385000000 },
-              { m: 12, c: 450000000, a: 435000000 },
-            ].map((item) => (
-              <div key={item.m} className="flex-1 flex items-end justify-center gap-0.5 relative group cursor-pointer">
-                <div
-                  className="w-2 bg-emerald-600 rounded-t-xs hover:opacity-80 transition-all"
-                  style={{ height: `${(item.c / 500000000) * 100}%` }}
-                ></div>
-                <div
-                  className="w-2 bg-blue-500 rounded-t-xs hover:opacity-80 transition-all"
-                  style={{ height: `${(item.a / 500000000) * 100}%` }}
-                ></div>
-                <span className="absolute -bottom-5 text-[10px] font-bold text-slate-400">T{item.m}</span>
-                {/* Hover Tooltip */}
-                <div className="absolute bottom-full mb-2 hidden group-hover:block z-30 bg-slate-900 text-white text-[10px] p-2 rounded-lg shadow-xl whitespace-nowrap pointer-events-none">
-                  <div className="font-bold border-b border-slate-700 pb-1 mb-1">Tháng {item.m}/2025</div>
-                  <div className="text-emerald-300">Cam kết: {item.c.toLocaleString('vi-VN')} ₫</div>
-                  <div className="text-blue-300">Đã nộp: {item.a.toLocaleString('vi-VN')} ₫</div>
-                </div>
-              </div>
-            ))}
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[
+                { name: 'T1', "Cam kết": 200000000, "Đã nộp": 180000000 },
+                { name: 'T2', "Cam kết": 250000000, "Đã nộp": 230000000 },
+                { name: 'T3', "Cam kết": 300000000, "Đã nộp": 280000000 },
+                { name: 'T4', "Cam kết": 450000000, "Đã nộp": 400000000 },
+                { name: 'T5', "Cam kết": 500000000, "Đã nộp": 480000000 },
+                { name: 'T6', "Cam kết": 600000000, "Đã nộp": 550000000 },
+                { name: 'T7', "Cam kết": 700000000, "Đã nộp": 650000000 },
+                { name: 'T8', "Cam kết": 320000000, "Đã nộp": 305000000 },
+                { name: 'T9', "Cam kết": 900000000, "Đã nộp": 850000000 },
+                { name: 'T10', "Cam kết": 105000000, "Đã nộp": 95000000 },
+                { name: 'T11', "Cam kết": 115000000, "Đã nộp": 105000000 },
+                { name: 'T12', "Cam kết": 120000000, "Đã nộp": 110000000 },
+              ]} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" axisLine={{ stroke: '#e2e8f0' }} tickLine={false} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 600 }} dy={10} />
+                <RechartsTooltip 
+                  cursor={{ fill: '#f1f5f9' }} 
+                  contentStyle={{ borderRadius: '8px', border: 'none', backgroundColor: '#0f172a', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                  itemStyle={{ fontSize: '13px', fontWeight: 500 }}
+                  labelStyle={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px', borderBottom: '1px solid #334155', paddingBottom: '4px' }}
+                  formatter={(value: any) => [Number(value).toLocaleString('vi-VN') + ' ₫']}
+                  labelFormatter={(label: any) => `Tháng ${String(label || '').replace('T', '')}/2025`}
+                />
+                <Bar dataKey="Cam kết" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={16} />
+                <Bar dataKey="Đã nộp" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={16} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white border border-[#e7e9ec] p-4 rounded-xl shadow-subtle space-y-3">
-          <h3 className="font-extrabold text-slate-900 text-sm">Cơ cấu loại tài sản vốn góp</h3>
-          <div className="flex items-center justify-center py-2 relative">
-            <div className="w-32 h-32 rounded-full border-[14px] border-emerald-600 border-t-amber-500 flex flex-col items-center justify-center text-center">
-              <span className="text-[12px] font-extrabold text-slate-900">2.450.000.000 ₫</span>
-              <span className="text-[9.5px] text-slate-400 uppercase font-bold">Tổng vốn góp</span>
-            </div>
-          </div>
-          <div className="space-y-1.5 text-[12px] pt-2">
-            <div className="flex justify-between items-center">
-              <span className="flex items-center gap-2 text-slate-600"><span className="w-3 h-3 rounded-full bg-emerald-600"></span> Tiền mặt / Chuyển khoản</span>
-              <strong className="text-slate-900">1.850.000.000 ₫ (75,5%)</strong>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="flex items-center gap-2 text-slate-600"><span className="w-3 h-3 rounded-full bg-amber-500"></span> Quyền sử dụng đất (QSDĐ)</span>
-              <strong className="text-amber-800">600.000.000 ₫ (24,5%)</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-[#e7e9ec] p-4 rounded-xl shadow-subtle space-y-3">
-          <div className="flex justify-between items-center">
-            <h3 className="font-extrabold text-slate-900 text-sm">Top 5 xã viên góp vốn nhiều nhất</h3>
-            <button
-              onClick={() => setSelectedCapitalMember(members[0])}
-              className="text-[11.5px] text-emerald-700 font-bold hover:underline"
-            >
-              Xem chi tiết &rarr;
-            </button>
-          </div>
-          <div className="space-y-2 text-[12.5px]">
-            {[
-              { rank: 1, name: 'Nguyễn Văn A', amount: 30000000 },
-              { rank: 2, name: 'Trần Thị B', amount: 40000000 },
-              { rank: 3, name: 'Lê Văn C', amount: 20000000 },
-              { rank: 4, name: 'Phạm Thị D', amount: 25000000 },
-              { rank: 5, name: 'Hoàng Văn E', amount: 30000000 },
-            ].map((item, idx) => (
-              <div
-                key={item.rank}
-                onClick={() => setSelectedCapitalMember(members[idx] || members[0])}
-                className="flex justify-between items-center p-2 rounded-lg bg-slate-50 hover:bg-emerald-50 cursor-pointer transition-colors"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black flex items-center justify-center">
-                    {item.rank}
-                  </span>
-                  <span className="font-bold text-slate-800">{item.name}</span>
-                </div>
-                <span className="font-extrabold text-emerald-700">{item.amount.toLocaleString('vi-VN')} ₫</span>
+        {/* Chart 2: Cơ cấu & Top Xã viên */}
+        <div className="col-span-1 flex flex-col gap-4">
+          <div className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle p-4 flex-1">
+            <h3 className="text-sm font-extrabold text-slate-900 mb-2 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-purple-600" /> Cơ cấu hình thức vốn góp
+            </h3>
+            <div className="h-44 w-full relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Tiền mặt', value: 985000000, color: '#10b981' },
+                      { name: 'Chuyển khoản', value: 1061000000, color: '#3b82f6' },
+                      { name: 'QSDĐ / Hiện vật', value: 134000000, color: '#f59e0b' },
+                    ]}
+                    cx="50%" cy="50%"
+                    innerRadius={50} outerRadius={70}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {
+                      [
+                        { name: 'Tiền mặt', value: 985000000, color: '#10b981' },
+                        { name: 'Chuyển khoản', value: 1061000000, color: '#3b82f6' },
+                        { name: 'QSDĐ / Hiện vật', value: 134000000, color: '#f59e0b' },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))
+                    }
+                  </Pie>
+                  <RechartsTooltip formatter={(value: any, name: any) => {
+                    const total = 2180000000;
+                    const percent = ((Number(value) / total) * 100).toFixed(1);
+                    return [`${Number(value).toLocaleString('vi-VN')} ₫ (${percent}%)`, name];
+                  }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">Tổng góp</span>
+                <span className="text-xs font-black text-slate-900">2.18 Tỷ</span>
               </div>
-            ))}
+            </div>
+            <div className="flex justify-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div><span className="text-[10px] text-slate-600 font-semibold">Tiền mặt</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div><span className="text-[10px] text-slate-600 font-semibold">C.Khoản</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div><span className="text-[10px] text-slate-600 font-semibold">QSDĐ</span></div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl shadow-subtle p-4 relative overflow-hidden">
+            <div className="absolute -right-4 -bottom-4 text-amber-200/50">
+              <Users className="w-24 h-24" />
+            </div>
+            <h3 className="text-sm font-extrabold text-amber-900 mb-3 relative z-10 flex items-center gap-2">
+              👑 Top 5 xã viên góp vốn nhiều nhất
+            </h3>
+            <div className="space-y-2.5 relative z-10">
+              {members.slice().sort((a,b) => ((b.contributed_capital || b.total_capital_contributed || 0) - (a.contributed_capital || a.total_capital_contributed || 0))).slice(0, 5).map((m, i) => (
+                <div key={m.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-white border border-amber-200 text-[10px] font-bold text-amber-700 flex items-center justify-center">{i + 1}</span>
+                    <span className="text-xs font-bold text-slate-800">{m.full_name}</span>
+                  </div>
+                  <span className="text-xs font-extrabold text-emerald-700">{(m.contributed_capital || m.total_capital_contributed || 0).toLocaleString('vi-VN')} ₫</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

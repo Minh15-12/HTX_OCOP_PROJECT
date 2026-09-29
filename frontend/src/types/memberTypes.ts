@@ -1,5 +1,5 @@
 export type MemberType = 'CHINH_THUC' | 'LIEN_KET_GOP_VON' | 'LIEN_KET_KHONG_GOP_VON';
-export type MemberStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'REJECTED';
+export type MemberStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'REJECTED' | 'SUSPENDED' | 'PENDING_TERMINATION' | 'TERMINATED';
 export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'LAND' | 'ASSET';
 export type CapitalForm = 'TIEN_MAT' | 'HIEN_VAT' | 'QUYEN_SU_DUNG_DAT';
 
@@ -111,6 +111,8 @@ export interface Member {
   current_debt: number; // Công nợ tồn đọng (vật tư, thủy nông)
   annual_product_output_kg: number;
   notary_document_url?: string;
+  deleted_at?: string; // For Soft Delete
+  deleted_reason?: string; // Lý do chấm dứt tư cách
 }
 
 export interface CapitalTransaction {
@@ -119,6 +121,7 @@ export interface CapitalTransaction {
   member_code: string;
   member_name: string;
   transaction_code: string;
+  transaction_type?: 'GOP_VON' | 'HOAN_TRA' | 'GOP_BO_SUNG'; // Loại giao dịch
   amount: number;
   share_quantity: number;
   contribution_date: string;

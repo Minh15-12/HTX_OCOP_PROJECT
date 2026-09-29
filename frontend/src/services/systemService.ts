@@ -47,6 +47,12 @@ export interface SystemSettings {
   limit_failed_login: boolean;
   auto_logout_idle: boolean;
   idle_timeout_minutes: number;
+  
+  // Cấu hình nghiệp vụ (Business Settings)
+  min_capital_contribution?: number;
+  service_fee_rate?: number;
+  profit_share_member_rate?: number;
+  profit_share_coop_rate?: number;
 }
 
 export const systemService = {

@@ -28,12 +28,37 @@ import { SystemAuditLogCard } from '../components/SystemAuditLogCard';
 import { BackupRestoreCard } from '../components/BackupRestoreCard';
 import { SecuritySettingsCard } from '../components/SecuritySettingsCard';
 import { UserModal } from '../components/UserModal';
+import { BusinessSettingsCard } from '../components/BusinessSettingsCard';
 
-type TabKey = 'overview' | 'permissions' | 'users' | 'roles' | 'config' | 'audit' | 'backup';
+type TabKey = 'overview' | 'permissions' | 'users' | 'roles' | 'config' | 'business' | 'audit' | 'backup';
+
+
+const MOCK_PERMISSION_GROUPS: PermissionGroup[] = [
+  {
+    module: 'Quản lý Xã viên',
+    permissions: [
+      { id: 'p1', code: 'MEMBER.READ', name: 'Xem danh sách xã viên', module: 'Xã viên' },
+      { id: 'p2', code: 'MEMBER.CREATE', name: 'Tạo hồ sơ xã viên', module: 'Xã viên' },
+      { id: 'p3', code: 'MEMBER.APPROVE', name: 'Phê duyệt kết nạp', module: 'Xã viên' },
+      { id: 'p4', code: 'MEMBER.UPDATE', name: 'Cập nhật thông tin', module: 'Xã viên' },
+      { id: 'p5', code: 'MEMBER.APPROVE_LEGAL_CHANGE', name: 'Duyệt thay đổi pháp lý', module: 'Xã viên' },
+      { id: 'p6', code: 'MEMBER.SUSPEND', name: 'Đình chỉ tư cách', module: 'Xã viên' },
+      { id: 'p7', code: 'MEMBER.TERMINATE', name: 'Chấm dứt tư cách', module: 'Xã viên' },
+      { id: 'p8', code: 'MEMBER.READ_OWN', name: 'Xem hồ sơ cá nhân', module: 'Xã viên' },
+    ],
+  },
+  {
+    module: 'Quản lý Vốn góp',
+    permissions: [
+      { id: 'p9', code: 'CAPITAL.MANAGE', name: 'Ghi nhận vốn góp', module: 'Vốn góp' },
+      { id: 'p10', code: 'CAPITAL.APPROVE', name: 'Phê duyệt vốn góp', module: 'Vốn góp' },
+    ],
+  },
+];
 
 export const SystemSettingsPage: React.FC = () => {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<TabKey>('permissions');
+  const [activeTab, setActiveTab] = useState<TabKey>('overview');
 
   const [settings, setSettings] = useState<SystemSettings>({
     system_name: 'HTX Nông nghiệp Xanh Phú Thịnh',
@@ -63,7 +88,7 @@ export const SystemSettingsPage: React.FC = () => {
   ]);
 
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>('r2');
-  const [permissionsGrouped, setPermissionsGrouped] = useState<PermissionGroup[]>([]);
+  const [permissionsGrouped, setPermissionsGrouped] = useState<PermissionGroup[]>(MOCK_PERMISSION_GROUPS);
   const [users, setUsers] = useState<UserItem[]>([
     { id: 'u1', username: 'admin', full_name: 'Nguyễn Văn A', email: 'admin@htx.vn', status: 'ACTIVE', roles: [{ id: 'r1', code: 'HTX_OWNER', name: 'Quản trị viên' }] },
     { id: 'u2', username: 'ketoan01', full_name: 'Trần Thị B', email: 'ketoan01@htx.vn', status: 'ACTIVE', roles: [{ id: 'r2', code: 'HTX_STAFF', name: 'Kế toán' }] },
@@ -220,10 +245,9 @@ export const SystemSettingsPage: React.FC = () => {
         <nav className="flex space-x-2 overflow-x-auto scrollbar-none" aria-label="Tabs">
           {[
             { key: 'overview', label: 'Tổng quan', icon: Building },
-            { key: 'permissions', label: 'Phân quyền', icon: ShieldCheck },
+            { key: 'config', label: 'Cấu hình nghiệp vụ', icon: Settings },
+            { key: 'roles', label: 'Vai trò & Phân quyền', icon: ShieldCheck },
             { key: 'users', label: 'Người dùng', icon: Users },
-            { key: 'roles', label: 'Vai trò', icon: Lock },
-            { key: 'config', label: 'Cấu hình hệ thống', icon: Settings },
             { key: 'audit', label: 'Nhật ký hệ thống', icon: History },
             { key: 'backup', label: 'Sao lưu & Phục hồi', icon: Database },
           ].map((tab) => {
@@ -248,107 +272,25 @@ export const SystemSettingsPage: React.FC = () => {
       </div>
 
       {/* Tab Contents */}
-      <div className="space-y-6">
-        {/* TAB 1: PHÂN QUYỀN (MAIN DISPLAY MATCHING SCREENSHOT) */}
-        {activeTab === 'permissions' && (
-          <div className="space-y-6">
-            {/* Grid Row 1: System Info & Role List */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-6">
-                <SystemInfoCard
-                  settings={settings}
-                  onChange={handleSettingChange}
-                  onSave={handleSaveSettings}
-                  isSaving={isSaving}
-                />
-              </div>
-
-              <div className="lg:col-span-6">
-                <RoleManagementCard
-                  roles={roles}
-                  selectedRoleId={selectedRoleId}
-                  onSelectRole={(id) => setSelectedRoleId(id)}
-                  onAddRole={() => {
-                    showToast('Vui lòng nhập tên vai trò mới', 'info');
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Grid Row 2: Role Permission Matrix & User Management */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-6">
-                <RolePermissionMatrixCard
-                  role={selectedRole}
-                  permissionGroups={permissionsGrouped}
-                  onSavePermissions={handleSaveRolePermissions}
-                  isSaving={isSaving}
-                />
-              </div>
-
-              <div className="lg:col-span-6">
-                <UserManagementCard
-                  users={users}
-                  onAddUser={() => {
-                    setUserToEdit(null);
-                    setIsUserModalOpen(true);
-                  }}
-                  onEditUser={(u) => {
-                    setUserToEdit(u);
-                    setIsUserModalOpen(true);
-                  }}
-                  onToggleStatus={handleToggleUserStatus}
-                />
-              </div>
-            </div>
-
-            {/* Grid Row 3: Audit Log, Backup & Security Settings */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-4">
-                <SystemAuditLogCard />
-              </div>
-              <div className="lg:col-span-4">
-                <BackupRestoreCard />
-              </div>
-              <div className="lg:col-span-4">
-                <SecuritySettingsCard
-                  settings={settings}
-                  onChange={handleSettingChange}
-                  onSave={handleSaveSettings}
-                  isSaving={isSaving}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: OVERVIEW */}
+      <div className="p-6 bg-slate-50/50">
+        {/* TAB 1: OVERVIEW */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
             <SystemInfoCard settings={settings} onChange={handleSettingChange} onSave={handleSaveSettings} isSaving={isSaving} />
             <SecuritySettingsCard settings={settings} onChange={handleSettingChange} onSave={handleSaveSettings} isSaving={isSaving} />
           </div>
         )}
 
-        {/* TAB 3: USERS */}
-        {activeTab === 'users' && (
-          <UserManagementCard
-            users={users}
-            onAddUser={() => {
-              setUserToEdit(null);
-              setIsUserModalOpen(true);
-            }}
-            onEditUser={(u) => {
-              setUserToEdit(u);
-              setIsUserModalOpen(true);
-            }}
-            onToggleStatus={handleToggleUserStatus}
-          />
+        {/* TAB 2: CONFIG / BUSINESS SETTINGS */}
+        {activeTab === 'config' && (
+          <div className="animate-fade-in">
+            <BusinessSettingsCard settings={settings} onChange={handleSettingChange} onSave={handleSaveSettings} isSaving={isSaving} />
+          </div>
         )}
 
-        {/* TAB 4: ROLES */}
+        {/* TAB 3: ROLES & PERMISSIONS */}
         {activeTab === 'roles' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
             <div className="lg:col-span-5">
               <RoleManagementCard roles={roles} selectedRoleId={selectedRoleId} onSelectRole={(id) => setSelectedRoleId(id)} onAddRole={() => {}} />
             </div>
@@ -358,16 +300,37 @@ export const SystemSettingsPage: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 5: CONFIG */}
-        {activeTab === 'config' && (
-          <SystemInfoCard settings={settings} onChange={handleSettingChange} onSave={handleSaveSettings} isSaving={isSaving} />
+        {/* TAB 4: USERS */}
+        {activeTab === 'users' && (
+          <div className="animate-fade-in">
+            <UserManagementCard
+              users={users}
+              onAddUser={() => {
+                setUserToEdit(null);
+                setIsUserModalOpen(true);
+              }}
+              onEditUser={(u) => {
+                setUserToEdit(u);
+                setIsUserModalOpen(true);
+              }}
+              onToggleStatus={handleToggleUserStatus}
+            />
+          </div>
         )}
 
-        {/* TAB 6: AUDIT */}
-        {activeTab === 'audit' && <SystemAuditLogCard />}
+        {/* TAB 5: AUDIT */}
+        {activeTab === 'audit' && (
+          <div className="animate-fade-in">
+            <SystemAuditLogCard />
+          </div>
+        )}
 
-        {/* TAB 7: BACKUP */}
-        {activeTab === 'backup' && <BackupRestoreCard />}
+        {/* TAB 6: BACKUP */}
+        {activeTab === 'backup' && (
+          <div className="animate-fade-in">
+            <BackupRestoreCard />
+          </div>
+        )}
       </div>
 
       {/* Add / Edit User Modal */}
