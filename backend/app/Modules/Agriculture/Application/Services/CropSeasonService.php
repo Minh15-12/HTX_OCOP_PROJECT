@@ -2,6 +2,7 @@
 
 namespace Modules\Agriculture\Application\Services;
 
+use Illuminate\Support\Facades\DB;
 use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
@@ -126,6 +127,17 @@ class CropSeasonService
             throw new DomainException('Không thể chỉnh sửa mùa vụ đã kết thúc hoặc đã hủy', 'SEASON_CLOSED', null, 400);
         }
 
+        if ($dto->status !== null && $dto->status !== $season->status) {
+            $allowed = [
+                'PLANNED' => ['ACTIVE', 'CANCELLED'],
+                'ACTIVE' => ['HARVESTING', 'CANCELLED'],
+                'HARVESTING' => ['CANCELLED'],
+            ];
+            if (!in_array($dto->status, $allowed[$season->status] ?? [], true)) {
+                throw new DomainException('Không thể chuyển trạng thái mùa vụ từ ' . $season->status . ' sang ' . $dto->status, 'INVALID_STATUS_TRANSITION', null, 400);
+            }
+        }
+
         $before = $season->toArray();
         $updates = [];
 
@@ -134,8 +146,8 @@ class CropSeasonService
         if ($dto->startDate !== null) $updates['start_date'] = $dto->startDate;
         if ($dto->expectedEndDate !== null) {
             $startDate = $dto->startDate ?: $season->start_date->format('Y-m-d');
-            if ($dto->expectedEndDate < $startDate) {
-                throw new DomainException('Ngày dự kiến kết thúc không thể trước ngày bắt đầu mùa vụ', 'INVALID_SEASON_DATES', null, 400);
+            if ($dto->expectedEndDate <= $startDate) {
+                throw new DomainException('Ngày dự kiến kết thúc phải sau ngày bắt đầu mùa vụ', 'INVALID_SEASON_DATES', null, 400);
             }
             $updates['expected_end_date'] = $dto->expectedEndDate;
         }
