@@ -1,24 +1,67 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { navigationConfig } from '@/router/navigation';
+import { useTenantContextStore } from '@/stores/tenantContextStore';
 import { cn } from '@/utils/cn';
 import { Sprout, Settings } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
+  const { activeCooperative } = useTenantContextStore();
+
+  const rawName = activeCooperative?.legal_name || 'HTX NÔNG NGHIỆP XANH PHÚ THỊNH';
+
+  const formatBrandHeader = (name: string) => {
+    const uppercase = name.toUpperCase().trim();
+    if (uppercase.startsWith('HTX NÔNG NGHIỆP')) {
+      return {
+        line1: 'HTX NÔNG NGHIỆP',
+        line2: uppercase.replace('HTX NÔNG NGHIỆP', '').trim() || 'XANH PHÚ THỊNH',
+      };
+    }
+    if (uppercase.startsWith('HỢP TÁC XÃ NÔNG NGHIỆP')) {
+      return {
+        line1: 'HTX NÔNG NGHIỆP',
+        line2: uppercase.replace('HỢP TÁC XÃ NÔNG NGHIỆP', '').trim() || 'XANH PHÚ THỊNH',
+      };
+    }
+    if (uppercase.startsWith('HỢP TÁC XÃ')) {
+      return {
+        line1: 'HỢP TÁC XÃ',
+        line2: uppercase.replace('HỢP TÁC XÃ', '').trim() || 'NÔNG NGHIỆP',
+      };
+    }
+    if (uppercase.startsWith('HTX')) {
+      return {
+        line1: 'HTX',
+        line2: uppercase.replace('HTX', '').trim() || 'NÔNG NGHIỆP',
+      };
+    }
+    const words = uppercase.split(' ');
+    if (words.length > 2) {
+      return {
+        line1: words.slice(0, 2).join(' '),
+        line2: words.slice(2).join(' '),
+      };
+    }
+    return { line1: 'HTX NÔNG NGHIỆP', line2: uppercase };
+  };
+
+  const brand = formatBrandHeader(rawName);
+
   return (
     <aside className="w-64 bg-[#053725] text-slate-100 flex flex-col h-[calc(100vh-3.5rem)] sticky top-14 shrink-0 border-r border-emerald-950 overflow-y-auto z-20 shadow-md">
       <div className="p-3.5 flex flex-col gap-4">
-        {/* Brand Header (Matching Image 1 & Image 2) */}
+        {/* Dynamic Brand Header */}
         <div className="flex items-center gap-3 px-2 py-2 pb-3 border-b border-emerald-800/60">
           <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 shadow-xs border border-emerald-400/30">
             <Sprout className="w-5 h-5 text-emerald-400" />
           </div>
-          <div>
-            <div className="font-extrabold text-[12.5px] text-white leading-tight tracking-tight uppercase">
-              HTX NÔNG NGHIỆP
+          <div className="overflow-hidden">
+            <div className="font-extrabold text-[12.5px] text-white leading-tight tracking-tight uppercase truncate" title={brand.line1}>
+              {brand.line1}
             </div>
-            <div className="font-black text-[12px] text-emerald-300 leading-tight uppercase">
-              XANH PHÚ THỊNH
+            <div className="font-black text-[12px] text-emerald-300 leading-tight uppercase truncate" title={brand.line2}>
+              {brand.line2}
             </div>
           </div>
         </div>
