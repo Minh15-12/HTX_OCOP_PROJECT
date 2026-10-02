@@ -1,14 +1,35 @@
 # KẾ HOẠCH CHI TIẾT XÂY DỰNG HỆ THỐNG ĐÁNH GIÁ, PHÂN HẠNG SẢN PHẨM OCOP
 
 > **Dự án:** Hệ thống Quản trị HTX Nông nghiệp & Số hóa Hồ sơ Đánh giá Phân hạng OCOP
+> **Đề tài chuẩn:** Tong_hop_DACN_2026
 > **Căn cứ pháp lý:** Quyết định số 148/QĐ-TTg ngày 24/02/2023 của Thủ tướng Chính phủ
 > **Đối tượng áp dụng:** HTX Dịch vụ Nông nghiệp Tổng hợp Tân Tiến
 > **Sản phẩm mục tiêu:** Ớt chuông Sweet Palermo Đỏ Đà Lạt (mục tiêu 4-5 sao)
 
 ---
 
+## 0. MỤC TIÊU ĐỀ TÀI DỰ ÁN (Tong_hop_DACN_2026)
+
+### 🎯 7 Nhiệm vụ Kỹ thuật Cốt lõi:
+1. **Khảo sát quy trình HTX & Bộ tiêu chí OCOP**: Khảo sát nghiệp vụ HTX Nông nghiệp và Bộ tiêu chí 26 Bộ sản phẩm theo Quyết định 148/QĐ-TTg.
+2. **Thiết kế CSDL quản trị HTX**: Dữ liệu Xã viên, Vùng trồng, Mùa vụ, Vật tư - Nông cụ, Thu–chi tài chính và Phân chia lợi nhuận HTX.
+3. **Phát triển Phân hệ Quản trị HTX**: Xây dựng chức năng quản lý Xã viên, Vùng trồng, Kho/Vật tư và Nhật ký nghiệp vụ sản xuất.
+4. **Phát triển Phân hệ Số hóa & Tự đánh giá OCOP**: Số hóa biểu mẫu tự chấm điểm OCOP 100 điểm, danh mục tiêu chí, đính kèm minh chứng số (mã băm SHA-256), quản lý phiên bản và theo dõi trạng thái hoàn thiện (%).
+5. **Quy trình duyệt, Nhắc việc & Kiểm toán**: Xây dựng luồng phê duyệt, thông báo nhắc việc tự động, phân quyền RBAC và nhật ký kiểm toán hệ thống.
+6. **Kết xuất Bộ hồ sơ PDF/Word & Báo cáo**: Kết xuất trọn bộ hồ sơ PDF/Word (Biểu mẫu 01, Biểu mẫu 02, Biểu mẫu 03 QĐ 148) và báo cáo thống kê phục vụ quản lý HTX.
+7. **Kiểm thử, Bảo mật & Triển khai**: Kiểm thử tính đúng dữ liệu, bảo mật tệp minh chứng, chiến lược sao lưu & phục hồi, hướng dẫn vận hành.
+
+### 📦 Dự kiến Kết quả Đầu ra:
+- **Hệ thống web** quản lý xã viên, vùng trồng, vật tư và nghiệp vụ HTX.
+- **Quy trình chấm điểm OCOP**, lưu minh chứng, theo dõi mức độ hoàn thiện.
+- **Chức năng kết xuất hồ sơ PDF/Word** và báo cáo quản trị.
+- **Mã nguồn, dữ liệu mẫu, tài liệu vận hành và báo cáo kiểm thử**.
+
+---
+
 ## MỤC LỤC
 
+0. [Mục tiêu đề tài dự án (Tong_hop_DACN_2026)](#0-mục-tiêu-đề-tài-dự-án-tong_hop_dacn_2026)
 1. [Tổng quan Chương trình OCOP](#1-tổng-quan-chương-trình-ocop)
 2. [Quy trình OCOP hoạt động ra sao](#2-quy-trình-ocop-hoạt-động-ra-sao)
 3. [Cần phải chuẩn bị những gì](#3-cần-phải-chuẩn-bị-những-gì)
