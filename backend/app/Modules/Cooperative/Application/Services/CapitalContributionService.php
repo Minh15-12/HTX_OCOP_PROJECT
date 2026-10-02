@@ -4,6 +4,7 @@ namespace Modules\Cooperative\Application\Services;
 
 use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\DTOs\CreateCapitalContributionDTO;
@@ -18,6 +19,81 @@ class CapitalContributionService
         private readonly TenantContext $tenantContext,
         private readonly AuditService $auditService
     ) {}
+
+    public function listAllContributions(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        $query = CapitalContributionModel::with(['member', 'landContribution']);
+
+        if ($this->tenantContext->hasTenant()) {
+            $coopId = $this->tenantContext->getCooperativeId();
+            $query->whereHas('member', function ($q) use ($coopId) {
+                $q->where('cooperative_id', $coopId);
+            });
+        }
+
+        if (!empty($filters['contribution_type'])) {
+            $query->where('contribution_type', $filters['contribution_type']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['member_id'])) {
+            $query->where('member_id', $filters['member_id']);
+        }
+
+        if (!empty($filters['search'])) {
+            $search = '%' . trim($filters['search']) . '%';
+            $driver = DB::connection()->getDriverName();
+            $likeOp = $driver === 'pgsql' ? 'ILIKE' : 'LIKE';
+
+            $query->where(function ($q) use ($search, $likeOp, $driver) {
+                $q->where('certificate_code', $likeOp, $search)
+                  ->orWhere('value_description', $likeOp, $search)
+                  ->orWhereHas('member', function ($mq) use ($search, $likeOp, $driver) {
+                      $mq->where('member_code', $likeOp, $search);
+                      if ($driver === 'pgsql') {
+                          $mq->orWhereRaw("identity_information->>'full_name' ILIKE ?", [$search])
+                             ->orWhereRaw("identity_information->>'citizen_id' ILIKE ?", [$search]);
+                      } else {
+                          $mq->orWhere('identity_information', 'LIKE', $search);
+                      }
+                  });
+            });
+        }
+
+        return $query->orderBy('transaction_date', 'desc')->paginate(min(max($perPage, 1), 100));
+    }
+
+    public function getCapitalSummary(): array
+    {
+        $coopId = $this->tenantContext->hasTenant() ? $this->tenantContext->getCooperativeId() : null;
+
+        $memberQuery = MemberModel::query();
+        $contribQuery = CapitalContributionModel::query();
+
+        if ($coopId) {
+            $memberQuery->where('cooperative_id', $coopId);
+            $contribQuery->whereHas('member', fn($q) => $q->where('cooperative_id', $coopId));
+        }
+
+        $totalCommittedCapital = (float) $memberQuery->sum('committed_capital');
+        $totalPaidCapital = (float) (clone $contribQuery)->where('status', 'PAID')->sum('amount');
+        $totalMembers = $memberQuery->count();
+        $contributedMemberCount = (clone $contribQuery)->where('status', 'PAID')->distinct('member_id')->count('member_id');
+        $completionRate = $totalCommittedCapital > 0 ? round(($totalPaidCapital / $totalCommittedCapital) * 100, 2) : 0;
+        $remainingCapital = max(0, $totalCommittedCapital - $totalPaidCapital);
+
+        return [
+            'total_committed_capital' => $totalCommittedCapital,
+            'total_paid_capital' => $totalPaidCapital,
+            'remaining_capital' => $remainingCapital,
+            'completion_rate' => $completionRate,
+            'total_members' => $totalMembers,
+            'contributed_member_count' => $contributedMemberCount,
+        ];
+    }
 
     public function listMemberContributions(string $memberId, int $perPage = 15): array
     {

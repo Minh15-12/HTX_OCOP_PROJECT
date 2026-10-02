@@ -43,6 +43,11 @@ class SystemSettingController extends BaseController
             'limit_failed_login' => true,
             'auto_logout_idle' => true,
             'idle_timeout_minutes' => 30,
+            // Cài đặt nghiệp vụ
+            'min_capital_contribution' => 10000000,
+            'service_fee_rate' => 5,
+            'profit_share_member_rate' => 70,
+            'profit_share_coop_rate' => 30,
         ];
 
         return ApiResponse::success(
@@ -66,6 +71,10 @@ class SystemSettingController extends BaseController
             'limit_failed_login' => 'nullable|boolean',
             'auto_logout_idle' => 'nullable|boolean',
             'idle_timeout_minutes' => 'nullable|integer|min:5|max:480',
+            'min_capital_contribution' => 'nullable|numeric|min:0',
+            'service_fee_rate' => 'nullable|numeric|min:0|max:100',
+            'profit_share_member_rate' => 'nullable|numeric|min:0|max:100',
+            'profit_share_coop_rate' => 'nullable|numeric|min:0|max:100',
         ]);
 
         if ($this->tenantContext->hasTenant()) {

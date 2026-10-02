@@ -13,6 +13,7 @@ class CreateMemberDTO extends BaseDTO
         public readonly ?string $userId = null,
         public readonly ?string $admissionDate = null,
         public readonly ?string $cooperativeId = null,
-        public readonly float $creditLimit = 0.0
+        public readonly float $creditLimit = 0.0,
+        public readonly float $committedCapital = 0.0
     ) {}
 }

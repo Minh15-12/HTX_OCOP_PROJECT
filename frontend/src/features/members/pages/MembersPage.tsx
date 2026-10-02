@@ -54,8 +54,11 @@ import {
   mockSurplusItems,
   getMembersFromApi,
   createMemberApi,
+  updateMemberApi,
+  deleteMemberApi,
   approveMemberApi,
 } from '@/services/memberService';
+import { exportMembersToExcel } from '@/utils/excelExporter';
 import {
   getStoredMembers,
   saveMembersToStorage,
@@ -662,6 +665,15 @@ export const MembersPage: React.FC = () => {
     if (selectedMember?.id === updated.id) setSelectedMember(updated);
     if (selectedCapitalMember?.id === updated.id) setSelectedCapitalMember(updated);
     setShowEditModal(false);
+
+    updateMemberApi(updated.id, updated)
+      .then((saved) => {
+        setMembers((prev) => prev.map((m) => (m.id === saved.id ? saved : m)));
+        if (selectedMember?.id === saved.id) setSelectedMember(saved);
+        if (selectedCapitalMember?.id === saved.id) setSelectedCapitalMember(saved);
+      })
+      .catch((err) => console.warn('Update member API notice:', err));
+
     triggerToast(`Cập nhật thành công hồ sơ xã viên ${updated.full_name} (${updated.member_code})!`);
   };
 
@@ -682,6 +694,13 @@ export const MembersPage: React.FC = () => {
     if (selectedMember?.id === deletingMember.id) setSelectedMember(updatedMember);
     if (selectedCapitalMember?.id === deletingMember.id) setSelectedCapitalMember(updatedMember);
     setShowDeleteModal(false);
+
+    deleteMemberApi(deletingMember.id)
+      .then(() => {
+        setMembers((prev) => prev.filter((m) => m.id !== deletingMember.id));
+      })
+      .catch((err) => console.warn('Delete member API notice:', err));
+
     triggerToast(`Đã chuyển xã viên ${deletingMember.full_name} sang trạng thái "Đã ngưng hoạt động / Đã rút khỏi HTX".`, 'info');
   };
 
@@ -1236,9 +1255,18 @@ export const MembersPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={openAddMemberModal}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[12.8px] rounded-lg shadow-sm inline-flex items-center gap-1.5 transition-all"
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[12.8px] rounded-lg shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Thêm xã viên mới
+          </button>
+          <button
+            onClick={() => {
+              exportMembersToExcel(members);
+              triggerToast('Đã xuất thành công file Excel Danh sách xã viên!');
+            }}
+            className="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-[12.8px] rounded-lg inline-flex items-center gap-1.5 bg-white shadow-xs cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Xuất Excel
           </button>
         </div>
       </div>

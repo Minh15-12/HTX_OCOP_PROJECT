@@ -209,4 +209,41 @@ class CapitalContributionTest extends TestCase
         $response->assertStatus(403);
         $response->assertJsonPath('error.code', 'UNAUTHORIZED_TENANT_ACCESS');
     }
+
+    public function test_list_all_capital_contributions_and_summary(): void
+    {
+        $coop = $this->createCooperative('HTX_CAP_ALL');
+        $user = $this->createUserWithPermissions($coop, ['MEMBER.READ', 'CAPITAL.READ']);
+
+        $member = MemberModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'member_code' => 'XV_ALL_1',
+            'identity_information' => ['full_name' => 'Nguyễn Tất Cả'],
+            'committed_capital' => 50000000.00,
+            'status' => 'ACTIVE',
+        ]);
+
+        CapitalContributionModel::create([
+            'id' => (string) Str::uuid(),
+            'member_id' => $member->id,
+            'contribution_type' => 'TIEN_MAT',
+            'amount' => 30000000.00,
+            'transaction_date' => '2026-03-01',
+            'status' => 'PAID',
+            'certificate_code' => 'GCN-TEST-001',
+        ]);
+
+        $resList = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/capital-contributions');
+        $resList->assertStatus(200);
+        $resList->assertJsonPath('meta.total', 1);
+
+        $resSummary = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/capital-contributions/summary');
+        $resSummary->assertStatus(200);
+        $resSummary->assertJsonPath('data.total_committed_capital', 50000000);
+        $resSummary->assertJsonPath('data.total_paid_capital', 30000000);
+        $resSummary->assertJsonPath('data.completion_rate', 60);
+    }
 }

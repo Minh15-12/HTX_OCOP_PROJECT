@@ -1,6 +1,14 @@
 import { Member, CapitalTransaction, SurplusDistributionPlan, SurplusDistributionItem } from '@/types/memberTypes';
 import { apiClient } from './apiClient';
-import { getStoredMembers, saveMembersToStorage, addMemberToStorage, updateMemberInStorage, deduplicateMembers } from './dbStorage';
+import {
+  getStoredMembers,
+  saveMembersToStorage,
+  addMemberToStorage,
+  updateMemberInStorage,
+  deduplicateMembers,
+  getStoredCapitalTransactions,
+  saveCapitalTransactionsToStorage,
+} from './dbStorage';
 import { numberToVietnameseWords } from '@/utils/formatters';
 
 export const mockMembersList: Member[] = [
@@ -946,6 +954,69 @@ export const createMemberApi = async (memberData: Partial<Member>): Promise<Memb
   return createdMember;
 };
 
+export const updateMemberApi = async (id: string, memberData: Partial<Member>): Promise<Member> => {
+  let updatedMember: Member | null = null;
+  try {
+    const payload = {
+      member_type: memberData.member_type,
+      admission_date: memberData.join_date,
+      committed_capital: memberData.committed_capital,
+      credit_limit: (memberData as any).credit_limit,
+      identity_information: {
+        full_name: memberData.full_name,
+        gender: memberData.gender,
+        dob: memberData.dob,
+        citizen_id: memberData.cccd,
+        cccd_issue_date: memberData.cccd_issue_date,
+        cccd_issue_place: memberData.cccd_issue_place,
+        phone_number: memberData.phone,
+        email: memberData.email,
+        province: memberData.province,
+        district: memberData.district,
+        ward: memberData.ward,
+        detail_address: memberData.detail_address,
+        address: memberData.address,
+        bank_name: memberData.bank_name,
+        bank_account: memberData.bank_account,
+        account_holder: memberData.account_holder,
+      },
+    };
+    const res: any = await apiClient.patch(`/members/${id}`, payload);
+    if (res && res.data) {
+      updatedMember = mapApiMemberToFrontend(res.data);
+    }
+  } catch (error) {
+    console.warn('API update member notice:', error);
+  }
+
+  const stored = getStoredMembers();
+  if (stored) {
+    const nextList = stored.map((m) =>
+      m.id === id ? { ...m, ...memberData, ...(updatedMember || {}) } : m
+    );
+    saveMembersToStorage(nextList);
+    const target = nextList.find((m) => m.id === id);
+    if (target) return target;
+  }
+
+  return updatedMember || (memberData as Member);
+};
+
+export const deleteMemberApi = async (id: string): Promise<boolean> => {
+  try {
+    await apiClient.delete(`/members/${id}`);
+  } catch (error) {
+    console.warn('API delete member notice:', error);
+  }
+
+  const stored = getStoredMembers();
+  if (stored) {
+    const nextList = stored.filter((m) => m.id !== id);
+    saveMembersToStorage(nextList);
+  }
+  return true;
+};
+
 export const approveMemberApi = async (id: string): Promise<boolean> => {
   try {
     await apiClient.post(`/members/${id}/approve`);
@@ -959,5 +1030,162 @@ export const approveMemberApi = async (id: string): Promise<boolean> => {
     saveMembersToStorage(updated);
   }
   return true;
+};
+
+export const getCapitalSummaryApi = async (): Promise<any> => {
+  try {
+    const res: any = await apiClient.get('/capital-contributions/summary');
+    return res.data || res;
+  } catch (error) {
+    console.warn('API capital summary notice:', error);
+    return null;
+  }
+};
+
+export const getCapitalContributionsApi = async (filters?: any): Promise<CapitalTransaction[]> => {
+  try {
+    const res: any = await apiClient.get('/capital-contributions', { params: filters });
+    const items = res?.data || [];
+    if (Array.isArray(items) && items.length > 0) {
+      return items.map((item: any) => {
+        const methodMap: Record<string, 'CASH' | 'BANK_TRANSFER' | 'LAND' | 'ASSET'> = {
+          TIEN_MAT: 'CASH',
+          CHUYEN_KHOAN: 'BANK_TRANSFER',
+          LAND: 'LAND',
+          QUYEN_SU_DUNG_DAT: 'LAND',
+          HIEN_VAT: 'ASSET',
+          ASSET: 'ASSET',
+        };
+
+        const paymentMethod = methodMap[item.contribution_type] || 'CASH';
+        const statusMap: Record<string, 'APPROVED' | 'PENDING' | 'REJECTED'> = {
+          PAID: 'APPROVED',
+          APPROVED: 'APPROVED',
+          COMPLETED: 'APPROVED',
+          PENDING: 'PENDING',
+          REJECTED: 'REJECTED',
+        };
+        const status = statusMap[item.status] || 'APPROVED';
+
+        return {
+          id: item.id,
+          member_id: item.member_id,
+          member_code: item.member?.member_code || '',
+          member_name: item.member?.full_name || '',
+          transaction_code: item.certificate_code || `PT${item.id?.substring(0, 6) || '000001'}`,
+          amount: Number(item.amount || 0),
+          share_quantity: Math.floor(Number(item.amount || 0) / 100000),
+          contribution_date: item.transaction_date || item.created_at?.split('T')[0] || '',
+          payment_method: paymentMethod,
+          receipt_number: item.certificate_code || `PT${item.id?.substring(0, 6) || '000001'}`,
+          content: item.value_description || 'Góp vốn điều lệ HTX',
+          notes: item.value_description || '',
+          status,
+          recorded_by: 'Kế toán HTX',
+          recorded_date: item.transaction_date || item.created_at?.split('T')[0] || '',
+          certificate_code: item.certificate_code,
+          land_details: item.land_contribution ? {
+            id: item.land_contribution.id,
+            land_certificate_no: item.land_contribution.land_certificate_no,
+            plot_number: String(item.land_contribution.plot_number || ''),
+            map_sheet_number: String(item.land_contribution.map_sheet_number || ''),
+            land_area_sqm: Number(item.land_contribution.land_area_sqm || 0),
+            land_use_type: item.land_contribution.land_use_type || 'Đất nông nghiệp',
+            appraised_unit_price: Number(item.land_contribution.appraised_unit_price || 0),
+            total_land_value: Number(item.land_contribution.total_land_value || 0),
+            cadastral_status: item.land_contribution.cadastral_status || 'REGISTERED_CHANGE',
+          } : undefined,
+        };
+      });
+    }
+  } catch (error) {
+    console.warn('API capital contributions notice:', error);
+  }
+
+  const stored = getStoredCapitalTransactions();
+  return stored && stored.length > 0 ? stored : mockCapitalTransactions;
+};
+
+export const createCapitalContributionApi = async (memberId: string, data: any): Promise<CapitalTransaction | null> => {
+  try {
+    const payload = {
+      contribution_type: data.form || data.contribution_type || 'TIEN_MAT',
+      amount: Number(data.amount),
+      transaction_date: data.date || data.contribution_date || new Date().toISOString().split('T')[0],
+      value_description: data.notes || data.content || '',
+      land_certificate_no: data.land_certificate_no,
+      plot_number: data.plot_number,
+      map_sheet_number: data.map_sheet_number,
+      land_area_sqm: data.land_area_sqm,
+      land_use_type: data.land_use_type,
+      appraised_unit_price: data.appraised_unit_price,
+    };
+    const res: any = await apiClient.post(`/members/${memberId}/capital-contributions`, payload);
+    const item = res?.data;
+    if (item) {
+      const methodMap: Record<string, 'CASH' | 'BANK_TRANSFER' | 'LAND' | 'ASSET'> = {
+        TIEN_MAT: 'CASH',
+        CHUYEN_KHOAN: 'BANK_TRANSFER',
+        LAND: 'LAND',
+        QUYEN_SU_DUNG_DAT: 'LAND',
+        HIEN_VAT: 'ASSET',
+        ASSET: 'ASSET',
+      };
+      const createdTx: CapitalTransaction = {
+        id: item.id,
+        member_id: item.member_id,
+        member_code: item.member?.member_code || data.member_code || '',
+        member_name: item.member?.full_name || data.member_name || '',
+        transaction_code: item.certificate_code || `PT${item.id?.substring(0, 6) || '000001'}`,
+        amount: Number(item.amount),
+        share_quantity: Math.floor(Number(item.amount) / 100000),
+        contribution_date: item.transaction_date || payload.transaction_date,
+        payment_method: methodMap[item.contribution_type] || 'CASH',
+        receipt_number: item.certificate_code || `PT${item.id?.substring(0, 6) || '000001'}`,
+        content: item.value_description || 'Góp vốn điều lệ',
+        notes: item.value_description || '',
+        status: item.status === 'PENDING' ? 'PENDING' : 'APPROVED',
+        certificate_code: item.certificate_code,
+        land_details: item.land_contribution ? {
+          id: item.land_contribution.id,
+          land_certificate_no: item.land_contribution.land_certificate_no,
+          plot_number: String(item.land_contribution.plot_number || ''),
+          map_sheet_number: String(item.land_contribution.map_sheet_number || ''),
+          land_area_sqm: Number(item.land_contribution.land_area_sqm || 0),
+          land_use_type: item.land_contribution.land_use_type || 'Đất nông nghiệp',
+          appraised_unit_price: Number(item.land_contribution.appraised_unit_price || 0),
+          total_land_value: Number(item.land_contribution.total_land_value || 0),
+          cadastral_status: item.land_contribution.cadastral_status || 'REGISTERED_CHANGE',
+        } : undefined,
+      };
+
+      const stored = getStoredCapitalTransactions() || [];
+      saveCapitalTransactionsToStorage([createdTx, ...stored]);
+      return createdTx;
+    }
+  } catch (error) {
+    console.warn('API create capital contribution notice:', error);
+  }
+
+  // Fallback to local storage if API unreachable
+  const fallbackTx: CapitalTransaction = {
+    id: `TX-${Date.now()}`,
+    member_id: memberId,
+    member_code: data.member_code || 'TV001',
+    member_name: data.member_name || 'Xã viên',
+    transaction_code: data.receipt_number || `PT${Date.now().toString().slice(-6)}`,
+    amount: Number(data.amount || 0),
+    share_quantity: Math.floor(Number(data.amount || 0) / 100000),
+    contribution_date: data.date || data.contribution_date || new Date().toISOString().split('T')[0],
+    payment_method: data.payment_method || 'CASH',
+    receipt_number: data.receipt_number || `PT${Date.now().toString().slice(-6)}`,
+    content: data.content || 'Góp vốn HTX',
+    notes: data.notes || '',
+    status: 'APPROVED',
+    certificate_code: `GCN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+  };
+  const stored = getStoredCapitalTransactions() || [];
+  saveCapitalTransactionsToStorage([fallbackTx, ...stored]);
+  return fallbackTx;
 };
 

@@ -98,6 +98,8 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/members/{id}/status-transitions', [MemberController::class, 'transitionStatus'])->name('api.members.status-transition');
 
     // Capital Contribution Routes (Section 11 of 12_API_SPECIFICATION.md)
+    Route::get('/capital-contributions/summary', [CapitalContributionController::class, 'summary'])->name('api.contributions.summary');
+    Route::get('/capital-contributions', [CapitalContributionController::class, 'indexAll'])->name('api.contributions.index-all');
     Route::get('/members/{member_id}/capital-contributions', [CapitalContributionController::class, 'index'])->name('api.members.contributions.index');
     Route::post('/members/{member_id}/capital-contributions', [CapitalContributionController::class, 'store'])->name('api.members.contributions.store');
     Route::get('/capital-contributions/{id}', [CapitalContributionController::class, 'show'])->name('api.contributions.show');

@@ -16,6 +16,43 @@ class CapitalContributionController extends BaseController
 {
     public function __construct(private readonly CapitalContributionService $contributionService) {}
 
+    public function indexAll(Request $request): JsonResponse
+    {
+        if (!Gate::allows('MEMBER.READ') && !Gate::allows('CAPITAL.READ')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem thông tin góp vốn', status: 403);
+        }
+
+        $filters = $request->only(['search', 'contribution_type', 'status', 'member_id']);
+        $perPage = (int) $request->input('per_page', 20);
+
+        $paginator = $this->contributionService->listAllContributions($filters, $perPage);
+
+        return ApiResponse::success(
+            data: CapitalContributionResource::collection($paginator->items()),
+            message: 'Lấy danh sách các khoản góp vốn thành công',
+            meta: [
+                'page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ]
+        );
+    }
+
+    public function summary(Request $request): JsonResponse
+    {
+        if (!Gate::allows('MEMBER.READ') && !Gate::allows('CAPITAL.READ')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem thống kê vốn góp', status: 403);
+        }
+
+        $summary = $this->contributionService->getCapitalSummary();
+
+        return ApiResponse::success(
+            data: $summary,
+            message: 'Lấy tổng hợp vốn góp thành công'
+        );
+    }
+
     public function index(string $memberId, Request $request): JsonResponse
     {
         if (!Gate::allows('MEMBER.READ')) {

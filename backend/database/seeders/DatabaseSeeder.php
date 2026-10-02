@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             SystemReferenceSeeder::class,
             CouncilLevelSeeder::class,
             UserSeeder::class,
+            MemberSeeder::class,
         ]);
     }
 }

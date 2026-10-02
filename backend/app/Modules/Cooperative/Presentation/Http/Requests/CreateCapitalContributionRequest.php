@@ -14,11 +14,17 @@ class CreateCapitalContributionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'contribution_type' => ['required', 'string', 'in:INITIAL,ADDITIONAL,LAND,ASSET'],
+            'contribution_type' => ['required', 'string', 'in:INITIAL,ADDITIONAL,LAND,ASSET,TIEN_MAT,CHUYEN_KHOAN,QUYEN_SU_DUNG_DAT,HIEN_VAT,MAY_MOC_THIET_BI'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'transaction_date' => ['required', 'date'],
             'value_description' => ['nullable', 'string', 'max:1000'],
-            'evidence_reference' => ['nullable', 'array'],
+            'evidence_reference' => ['nullable'],
+            'land_certificate_no' => ['nullable', 'string', 'max:100'],
+            'plot_number' => ['nullable', 'string', 'max:50'],
+            'map_sheet_number' => ['nullable', 'string', 'max:50'],
+            'land_area_sqm' => ['nullable', 'numeric', 'min:0'],
+            'land_use_type' => ['nullable', 'string', 'max:100'],
+            'appraised_unit_price' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

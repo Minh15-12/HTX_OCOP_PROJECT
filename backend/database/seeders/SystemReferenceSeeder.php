@@ -49,6 +49,9 @@ class SystemReferenceSeeder extends Seeder
             ['code' => 'MEMBER.READ', 'name' => 'Xem danh sách xã viên', 'module' => 'Member'],
             ['code' => 'MEMBER.CREATE', 'name' => 'Thêm mới xã viên', 'module' => 'Member'],
             ['code' => 'MEMBER.UPDATE', 'name' => 'Cập nhật thông tin xã viên', 'module' => 'Member'],
+            ['code' => 'MEMBER.DELETE', 'name' => 'Xóa xã viên', 'module' => 'Member'],
+            ['code' => 'CAPITAL.READ', 'name' => 'Xem thông tin vốn góp', 'module' => 'Capital'],
+            ['code' => 'CAPITAL.MANAGE', 'name' => 'Ghi nhận và quản lý vốn góp', 'module' => 'Capital'],
 
             ['code' => 'AGRICULTURE.READ', 'name' => 'Xem dữ liệu nông nghiệp (vùng trồng, mùa vụ)', 'module' => 'Agriculture'],
             ['code' => 'AGRICULTURE.CREATE', 'name' => 'Tạo vùng trồng, nhật ký canh tác', 'module' => 'Agriculture'],
@@ -105,7 +108,7 @@ class SystemReferenceSeeder extends Seeder
         // Mapping role -> permissions strictly per Authorization Matrix Specification 15
         $rolePermissionMap = [
             'SYSTEM_ADMIN' => ['USER.READ', 'USER.CREATE', 'USER.UPDATE', 'USER.LOCK', 'ROLE.MANAGE', 'COOPERATIVE.READ', 'COOPERATIVE.CREATE', 'COOPERATIVE.UPDATE', 'SYSTEM.HEALTH.VIEW', 'AUDIT.READ'],
-            'HTX_OWNER' => ['COOPERATIVE.READ', 'COOPERATIVE.UPDATE', 'MEMBER.READ', 'MEMBER.CREATE', 'MEMBER.UPDATE', 'AGRICULTURE.READ', 'AGRICULTURE.CREATE', 'AGRICULTURE.UPDATE', 'INVENTORY.READ', 'FINANCE.READ', 'OCOP_APPLICATION.READ', 'OCOP_APPLICATION.CREATE', 'OCOP_APPLICATION.UPDATE', 'OCOP_APPLICATION.SUBMIT', 'OCOP_EVIDENCE.READ', 'OCOP_EVIDENCE.UPLOAD', 'REPORT.READ'],
+            'HTX_OWNER' => ['COOPERATIVE.READ', 'COOPERATIVE.UPDATE', 'MEMBER.READ', 'MEMBER.CREATE', 'MEMBER.UPDATE', 'MEMBER.DELETE', 'CAPITAL.READ', 'CAPITAL.MANAGE', 'USER.READ', 'USER.CREATE', 'USER.UPDATE', 'USER.LOCK', 'ROLE.MANAGE', 'AGRICULTURE.READ', 'AGRICULTURE.CREATE', 'AGRICULTURE.UPDATE', 'INVENTORY.READ', 'FINANCE.READ', 'OCOP_APPLICATION.READ', 'OCOP_APPLICATION.CREATE', 'OCOP_APPLICATION.UPDATE', 'OCOP_APPLICATION.SUBMIT', 'OCOP_EVIDENCE.READ', 'OCOP_EVIDENCE.UPLOAD', 'REPORT.READ'],
             'HTX_STAFF' => ['COOPERATIVE.READ', 'MEMBER.READ', 'MEMBER.CREATE', 'MEMBER.UPDATE', 'AGRICULTURE.READ', 'AGRICULTURE.CREATE', 'AGRICULTURE.UPDATE', 'INVENTORY.READ', 'INVENTORY.RECEIPT.CREATE', 'INVENTORY.ISSUE.CREATE', 'REPORT.READ'],
             'OCOP_PREPARER' => ['COOPERATIVE.READ', 'AGRICULTURE.READ', 'OCOP_APPLICATION.READ', 'OCOP_APPLICATION.CREATE', 'OCOP_APPLICATION.UPDATE', 'OCOP_APPLICATION.SUBMIT', 'OCOP_EVIDENCE.READ', 'OCOP_EVIDENCE.UPLOAD', 'OCOP_EVIDENCE.REPLACE'],
             'RECEIVING_REVIEWER' => ['OCOP_APPLICATION.READ', 'OCOP_APPLICATION.REVIEW', 'OCOP_APPLICATION.RETURN', 'OCOP_EVIDENCE.READ', 'OCOP_EVIDENCE.VERIFY'],

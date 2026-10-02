@@ -120,6 +120,7 @@ class MemberService
             'status' => 'DRAFT',
             'user_id' => $dto->userId,
             'admission_date' => $dto->admissionDate ?: now()->toDateString(),
+            'committed_capital' => $dto->committedCapital ?? 0,
             'credit_limit' => $dto->creditLimit ?? 0,
         ]);
 
@@ -154,6 +155,9 @@ class MemberService
         }
         if ($dto->creditLimit !== null) {
             $updates['credit_limit'] = $dto->creditLimit;
+        }
+        if ($dto->committedCapital !== null) {
+            $updates['committed_capital'] = $dto->committedCapital;
         }
 
         if (!empty($updates)) {

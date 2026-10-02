@@ -63,14 +63,22 @@ class MemberController extends BaseController
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền thêm mới xã viên', status: 403);
         }
 
+        $rawType = $request->input('member_type', 'OFFICIAL');
+        $normalizedType = match ($rawType) {
+            'CHINH_THUC', 'OFFICIAL' => 'OFFICIAL',
+            'LIEN_KET', 'ASSOCIATED', 'CAPITAL_ASSOCIATE' => 'ASSOCIATED',
+            default => 'OFFICIAL',
+        };
+
         $dto = new CreateMemberDTO(
             memberCode: $request->input('member_code'),
             identityInformation: $request->input('identity_information'),
-            memberType: $request->input('member_type', 'OFFICIAL'),
+            memberType: $normalizedType,
             userId: $request->input('user_id'),
             admissionDate: $request->input('admission_date'),
             cooperativeId: $request->input('cooperative_id'),
-            creditLimit: (float) $request->input('credit_limit', 0)
+            creditLimit: (float) $request->input('credit_limit', 0),
+            committedCapital: (float) $request->input('committed_capital', 0)
         );
 
         $member = $this->memberService->createMember($dto);
@@ -88,12 +96,20 @@ class MemberController extends BaseController
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền cập nhật thông tin xã viên', status: 403);
         }
 
+        $rawType = $request->input('member_type');
+        $normalizedType = $rawType ? match ($rawType) {
+            'CHINH_THUC', 'OFFICIAL' => 'OFFICIAL',
+            'LIEN_KET', 'ASSOCIATED', 'CAPITAL_ASSOCIATE' => 'ASSOCIATED',
+            default => 'OFFICIAL',
+        } : null;
+
         $dto = new UpdateMemberDTO(
             identityInformation: $request->input('identity_information'),
-            memberType: $request->input('member_type'),
+            memberType: $normalizedType,
             userId: $request->input('user_id'),
             admissionDate: $request->input('admission_date'),
-            creditLimit: $request->has('credit_limit') ? (float) $request->input('credit_limit') : null
+            creditLimit: $request->has('credit_limit') ? (float) $request->input('credit_limit') : null,
+            committedCapital: $request->has('committed_capital') ? (float) $request->input('committed_capital') : null
         );
 
         $member = $this->memberService->updateMember($id, $dto);

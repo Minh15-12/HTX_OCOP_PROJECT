@@ -11,6 +11,7 @@ class UpdateMemberDTO extends BaseDTO
         public readonly ?string $memberType = null,
         public readonly ?string $userId = null,
         public readonly ?string $admissionDate = null,
-        public readonly ?float $creditLimit = null
+        public readonly ?float $creditLimit = null,
+        public readonly ?float $committedCapital = null
     ) {}
 }
