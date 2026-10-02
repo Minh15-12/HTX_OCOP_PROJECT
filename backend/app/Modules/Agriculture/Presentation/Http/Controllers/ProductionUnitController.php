@@ -11,6 +11,7 @@ use Modules\Agriculture\Application\DTOs\CreateProductionUnitDTO;
 use Modules\Agriculture\Application\DTOs\UpdateProductionUnitDTO;
 use Modules\Agriculture\Application\Services\ProductionUnitService;
 use Modules\Agriculture\Presentation\Http\Requests\CreateProductionUnitRequest;
+use Modules\Agriculture\Presentation\Http\Requests\UpdateProductionUnitRequest;
 use Modules\Agriculture\Presentation\Http\Resources\ProductionUnitResource;
 
 class ProductionUnitController extends BaseController
@@ -80,7 +81,7 @@ class ProductionUnitController extends BaseController
         );
     }
 
-    public function update(string $id, Request $request): JsonResponse
+    public function update(string $id, UpdateProductionUnitRequest $request): JsonResponse
     {
         if (!Gate::allows('AGRICULTURE.UPDATE')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền cập nhật vùng sản xuất', status: 403);

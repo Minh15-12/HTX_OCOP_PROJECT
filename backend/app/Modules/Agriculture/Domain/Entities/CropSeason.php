@@ -17,7 +17,7 @@ class CropSeason
         public string $status = 'PLANNED',
         public readonly ?array $planInformation = null
     ) {
-        if ($this->expectedEndDate < $this->startDate) {
+        if ($this->expectedEndDate <= $this->startDate) {
             throw new DomainException('Ngày dự kiến kết thúc không thể trước ngày bắt đầu mùa vụ', 'INVALID_SEASON_DATES');
         }
         if ($this->actualEndDate !== null && $this->actualEndDate < $this->startDate) {
