@@ -1,9 +1,43 @@
 # 01. THÔNG TIN TỔNG QUAN DỰ ÁN
 
-## 1.1. Thông tin cơ bản
+## 1.1. Thông tin cơ bản & Cam kết đề tài
 
 **Tên đề tài:**  
 **Xây dựng Hệ thống quản lý hoạt động Hợp tác xã nông nghiệp và số hóa hồ sơ đánh giá phân hạng OCOP**
+
+**Mục tiêu dự án:**  
+- Số hóa hoạt động quản lý hợp tác xã nông nghiệp và quy trình chuẩn bị hồ sơ đánh giá, phân hạng OCOP.
+- Quản lý minh bạch xã viên, vùng trồng, vật tư, phân chia lợi nhuận; hỗ trợ chấm điểm, lưu minh chứng và kết xuất hồ sơ chuẩn hóa.
+
+**Nội dung đề tài:**  
+- Số hóa hoạt động quản lý hợp tác xã nông nghiệp và quy trình chuẩn bị hồ sơ đánh giá, phân hạng OCOP.
+- Quản lý minh bạch xã viên, vùng trồng, vật tư, phân chia lợi nhuận; hỗ trợ chấm điểm, lưu minh chứng và kết xuất hồ sơ chuẩn hóa.
+
+**Dự kiến kết quả đạt được:**  
+- • Hệ thống web quản lý xã viên, vùng trồng, vật tư và nghiệp vụ HTX.
+- • Quy trình chấm điểm OCOP, lưu minh chứng, theo dõi mức độ hoàn thiện.
+- • Chức năng kết xuất hồ sơ PDF/Word và báo cáo quản trị.
+- • Mã nguồn, dữ liệu mẫu, tài liệu vận hành và báo cáo kiểm thử.
+
+**Phần mềm và công cụ sử dụng:**  
+- **Frontend / UI:** React/Vue (Hiện thực: **React + TypeScript + Vite + TailwindCSS**)
+- **Backend / API:** Laravel/FastAPI (Hiện thực: **Laravel 11 + Sanctum**)
+- **Cơ sở dữ liệu:** PostgreSQL 16
+- **Lưu trữ tệp & Minh chứng:** MinIO hoặc lưu trữ tệp tương đương (S3-compatible Object Storage)
+- **Công cụ tạo văn bản:** Công cụ tạo PDF/DOCX theo mẫu quy chuẩn OCOP (Quyết định 148/QĐ-TTg)
+- **Môi trường & Vận hành:** Docker; Nginx; Git/GitHub.
+
+**Kế hoạch triển khai (14 tuần):**  
+- **Tuần 1–2:** Khảo sát quy trình HTX, biểu mẫu và tiêu chí OCOP.
+- **Tuần 3:** Mô hình hóa nghiệp vụ, phân quyền, CSDL và kiến trúc.
+- **Tuần 4–5:** Phát triển xã viên, vùng trồng và danh mục nền.
+- **Tuần 6–7:** Phát triển vật tư, nhật ký giao dịch và phân chia lợi nhuận.
+- **Tuần 8–9:** Số hóa tiêu chí OCOP, chấm điểm và quản lý minh chứng.
+- **Tuần 10:** Xây dựng luồng duyệt, nhắc việc và nhật ký kiểm toán.
+- **Tuần 11:** Kết xuất PDF/Word, báo cáo và thống kê.
+- **Tuần 12:** Kiểm thử dữ liệu, bảo mật, sao lưu và phục hồi.
+- **Tuần 13:** Triển khai thử nghiệm, hướng dẫn sử dụng.
+- **Tuần 14:** Nghiệm thu, trình diễn và hoàn thiện báo cáo.
 
 **Tên viết tắt đề xuất:**  
 **HTX-OCOP Management System**
@@ -456,7 +490,13 @@ Kiến trúc cần cho phép mở rộng thêm:
 
 ## 1.11. Kết quả đầu ra dự kiến
 
-Sau khi hoàn thành, dự án dự kiến cung cấp:
+Dự kiến kết quả đạt được của đề tài:
+- • **Hệ thống web quản lý xã viên, vùng trồng, vật tư và nghiệp vụ HTX.**
+- • **Quy trình chấm điểm OCOP, lưu minh chứng, theo dõi mức độ hoàn thiện.**
+- • **Chức năng kết xuất hồ sơ PDF/Word và báo cáo quản trị.**
+- • **Mã nguồn, dữ liệu mẫu, tài liệu vận hành và báo cáo kiểm thử.**
+
+Chi tiết bàn giao bao gồm:
 
 ### Phần mềm
 

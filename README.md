@@ -11,38 +11,43 @@
 
 ---
 
-## 📋 Giới thiệu
+## 📋 Giới thiệu & Nội dung Đề tài
 
-**HTX-OCOP Management System** là hệ thống web quản lý toàn diện hoạt động của Hợp tác xã (HTX) nông nghiệp Việt Nam, đồng thời số hóa trọn vẹn quy trình chuẩn bị hồ sơ, đánh giá và phân hạng sản phẩm OCOP (Chương trình Mỗi xã Một sản phẩm) theo Quyết định 148/QĐ-TTg.
+### 📖 Nội dung đề tài
+> **Số hóa hoạt động quản lý hợp tác xã nông nghiệp và quy trình chuẩn bị hồ sơ đánh giá, phân hạng OCOP.**  
+> **Quản lý minh bạch xã viên, vùng trồng, vật tư, phân chia lợi nhuận; hỗ trợ chấm điểm, lưu minh chứng và kết xuất hồ sơ chuẩn hóa.**
 
-### Bối cảnh
+### 🎯 Mục tiêu dự án
+1. **Số hóa hoạt động quản lý hợp tác xã nông nghiệp và quy trình chuẩn bị hồ sơ đánh giá, phân hạng OCOP.**
+2. **Quản lý minh bạch xã viên, vùng trồng, vật tư, phân chia lợi nhuận; hỗ trợ chấm điểm, lưu minh chứng và kết xuất hồ sơ chuẩn hóa.**
 
-Các HTX nông nghiệp hiện nay phần lớn vẫn quản lý bằng sổ sách giấy và bảng tính rời rạc, gây khó khăn trong:
-- Theo dõi xã viên, vốn góp, mùa vụ, sản lượng
-- Truy xuất nguồn gốc nông sản
-- Chuẩn bị hồ sơ đánh giá phân hạng OCOP (thường mất 3–6 tháng thủ công)
-- Đảm bảo tính minh bạch trong tài chính và phân chia lợi nhuận
+### 🏆 Dự kiến kết quả đạt được
+- • Hệ thống web quản lý xã viên, vùng trồng, vật tư và nghiệp vụ HTX.
+- • Quy trình chấm điểm OCOP, lưu minh chứng, theo dõi mức độ hoàn thiện.
+- • Chức năng kết xuất hồ sơ PDF/Word và báo cáo quản trị.
+- • Mã nguồn, dữ liệu mẫu, tài liệu vận hành và báo cáo kiểm thử.
 
-Hệ thống này giải quyết toàn bộ các vấn đề trên bằng một nền tảng số tập trung.
+### 🛠️ Phần mềm và công cụ sử dụng
+- **Frontend / UI:** React/Vue (Hiện thực: **React 18 + TypeScript + Vite + TailwindCSS 3.4**)
+- **Backend / API:** Laravel/FastAPI (Hiện thực: **Laravel 11 + Sanctum + Modular Monolith**)
+- **Cơ sở dữ liệu:** PostgreSQL 16
+- **Lưu trữ tệp & Minh chứng:** MinIO hoặc lưu trữ tệp tương đương (S3-compatible Object Storage)
+- **Công cụ tạo tài liệu:** Công cụ tạo PDF/DOCX theo mẫu quy chuẩn OCOP QĐ 148
+- **Môi trường & Triển khai:** Docker, Nginx, Git/GitHub
 
----
-
-## 🎯 Mục tiêu
-
-### 1. Số hóa Quản lý HTX
-Cơ sở dữ liệu tập trung quản lý: hồ sơ pháp lý HTX, xã viên, vốn góp (tiền mặt, chuyển khoản, quyền sử dụng đất), vùng trồng, mùa vụ, vật tư nông nghiệp, kho, thu chi tài chính, phân chia thặng dư/lợi nhuận.
-
-### 2. Số hóa Hoạt động Sản xuất
-Khép kín chuỗi truy vết sản xuất nông nghiệp:
-
-```
-Xã viên → Vùng trồng → Mùa vụ → Nhật ký canh tác → Vật tư sử dụng → Thu hoạch → Lô sản phẩm
-```
-
-Hỗ trợ quét mã QR để truy xuất nguồn gốc nông sản từ ruộng đến bàn ăn.
-
-### 3. Số hóa Hồ sơ OCOP
-Chuẩn hóa bộ tiêu chí đánh giá, quản lý hồ sơ tự đánh giá, kho minh chứng số, hội đồng chấm điểm, tổng hợp kết quả, ra quyết định phân hạng và xuất giấy chứng nhận sản phẩm OCOP tự động.
+### 📅 Kế hoạch triển khai (14 tuần)
+| Giai đoạn | Nội dung công việc |
+| :--- | :--- |
+| **Tuần 1–2** | Khảo sát quy trình HTX, biểu mẫu và tiêu chí OCOP |
+| **Tuần 3** | Mô hình hóa nghiệp vụ, phân quyền, CSDL và kiến trúc |
+| **Tuần 4–5** | Phát triển xã viên, vùng trồng và danh mục nền |
+| **Tuần 6–7** | Phát triển vật tư, nhật ký giao dịch và phân chia lợi nhuận |
+| **Tuần 8–9** | Số hóa tiêu chí OCOP, chấm điểm và quản lý minh chứng |
+| **Tuần 10** | Xây dựng luồng duyệt, nhắc việc và nhật ký kiểm toán |
+| **Tuần 11** | Kết xuất PDF/Word, báo cáo và thống kê |
+| **Tuần 12** | Kiểm thử dữ liệu, bảo mật, sao lưu và phục hồi |
+| **Tuần 13** | Triển khai thử nghiệm, hướng dẫn sử dụng |
+| **Tuần 14** | Nghiệm thu, trình diễn và hoàn thiện báo cáo |
 
 ---
 

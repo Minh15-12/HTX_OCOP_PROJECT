@@ -6,18 +6,42 @@
 
 ---
 
-## 1. Tổng quan Dự án
+## 1. Mục tiêu & Nội dung Đề tài Chính thức (Kim chỉ nam dự án)
 
-Hệ thống web quản lý toàn diện hoạt động Hợp tác xã (HTX) nông nghiệp, đồng thời số hóa quy trình chuẩn bị, đánh giá, phân hạng sản phẩm OCOP theo Quyết định 148/QĐ-TTg. Hệ thống thay thế sổ sách/bảng tính rời rạc bằng nền tảng tập trung, hỗ trợ truy xuất nguồn gốc nông sản và kiểm toán lịch sử thay đổi.
+### 1.1. Mục tiêu dự án
+- Số hóa hoạt động quản lý hợp tác xã nông nghiệp và quy trình chuẩn bị hồ sơ đánh giá, phân hạng OCOP.
+- Quản lý minh bạch xã viên, vùng trồng, vật tư, phân chia lợi nhuận; hỗ trợ chấm điểm, lưu minh chứng và kết xuất hồ sơ chuẩn hóa.
 
-### 3 Mục tiêu cốt lõi
+### 1.2. Nội dung đề tài
+- Số hóa hoạt động quản lý hợp tác xã nông nghiệp và quy trình chuẩn bị hồ sơ đánh giá, phân hạng OCOP.
+- Quản lý minh bạch xã viên, vùng trồng, vật tư, phân chia lợi nhuận; hỗ trợ chấm điểm, lưu minh chứng và kết xuất hồ sơ chuẩn hóa.
 
-1. **Số hóa quản lý HTX:** Quản lý xã viên, vốn góp, vùng trồng, mùa vụ, vật tư, kho, tài chính, phân chia lợi nhuận.
-2. **Số hóa sản xuất:** Khép kín chuỗi truy vết `Xã viên → Vùng trồng → Mùa vụ → Hoạt động sản xuất → Vật tư → Sản lượng → Sản phẩm`.
-3. **Số hóa hồ sơ OCOP:** Bộ tiêu chí, tự đánh giá, minh chứng, hội đồng chấm điểm, quyết định phân hạng, xuất giấy chứng nhận.
+### 1.3. Dự kiến kết quả đạt được
+- **Hệ thống web quản lý:** Quản lý xã viên, vùng trồng, vật tư và nghiệp vụ HTX.
+- **Quy trình OCOP số hóa:** Quy trình chấm điểm OCOP, lưu minh chứng, theo dõi mức độ hoàn thiện.
+- **Kết xuất hồ sơ chuẩn hóa:** Chức năng kết xuất hồ sơ PDF/Word và báo cáo quản trị.
+- **Bàn giao toàn diện:** Mã nguồn, dữ liệu mẫu, tài liệu vận hành và báo cáo kiểm thử.
 
-### Phạm vi triển khai & Giới hạn
+### 1.4. Phần mềm và công cụ sử dụng
+- **Framework & Công nghệ chính:** React/Vue (Dự án sử dụng: **React + TypeScript + Vite + TailwindCSS**); Laravel/FastAPI (Dự án sử dụng: **Laravel 11 + Sanctum**).
+- **Cơ sở dữ liệu:** PostgreSQL 16.
+- **Lưu trữ tệp & Minh chứng:** MinIO hoặc lưu trữ tệp tương đương (S3-compatible Object Storage).
+- **Công cụ tài liệu:** Công cụ tạo PDF/DOCX theo mẫu quy chuẩn OCOP (QĐ 148/QĐ-TTg).
+- **Môi trường & Vận hành:** Docker, Nginx, Git/GitHub.
 
+### 1.5. Kế hoạch triển khai (14 tuần)
+- **Tuần 1–2:** Khảo sát quy trình HTX, biểu mẫu và tiêu chí OCOP.
+- **Tuần 3:** Mô hình hóa nghiệp vụ, phân quyền, CSDL và kiến trúc.
+- **Tuần 4–5:** Phát triển xã viên, vùng trồng và danh mục nền.
+- **Tuần 6–7:** Phát triển vật tư, nhật ký giao dịch và phân chia lợi nhuận.
+- **Tuần 8–9:** Số hóa tiêu chí OCOP, chấm điểm và quản lý minh chứng.
+- **Tuần 10:** Xây dựng luồng duyệt, nhắc việc và nhật ký kiểm toán.
+- **Tuần 11:** Kết xuất PDF/Word, báo cáo và thống kê.
+- **Tuần 12:** Kiểm thử dữ liệu, bảo mật, sao lưu và phục hồi.
+- **Tuần 13:** Triển khai thử nghiệm, hướng dẫn sử dụng.
+- **Tuần 14:** Nghiệm thu, trình diễn và hoàn thiện báo cáo.
+
+### 1.6. Phạm vi triển khai & Giới hạn
 - **Phạm vi hiện tại:** Quản lý tập trung **1 Hợp tác xã** (Single-Cooperative Scope — lấy mô hình thực tế HTX Nông nghiệp Tân Tiến, Đà Lạt làm mẫu chuẩn với sản phẩm Ớt chuông Sweet Palermo).
 - **Khả năng mở rộng:** Database và Backend duy trì thiết kế Multi-tenant (`cooperative_id`), sẵn sàng mở rộng đa HTX khi cần mà không phải tái cấu trúc CSDL.
 
