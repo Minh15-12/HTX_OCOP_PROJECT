@@ -100,6 +100,37 @@ services:
     networks:
       - htx-network
 
+  minio:
+    image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+    container_name: htx-ocop-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - htx-network
+
+  createbuckets:
+    image: minio/mc:RELEASE.2024-01-16T16-06-34Z
+    container_name: htx-ocop-createbuckets
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb myminio/htx-ocop-evidence;
+      /usr/bin/mc anonymous set download myminio/htx-ocop-evidence;
+      exit 0;
+      "
+    networks:
+      - htx-network
+
 networks:
   htx-network:
     driver: bridge
@@ -107,3 +138,5 @@ networks:
 volumes:
   db-data:
   redis-data:
+  minio-data:
+
