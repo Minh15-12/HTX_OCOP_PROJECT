@@ -115,33 +115,23 @@ export const navigationConfig: NavGroup[] = [
     ],
   },
   {
-    groupTitle: 'HỒ SƠ & ĐÁNH GIÁ OCOP',
+    groupTitle: 'HỒ SƠ & ĐÁNH GIÁ OCOP (QĐ 148)',
     items: [
       {
-        title: 'Bộ tiêu chí OCOP',
-        path: '/ocop/criteria',
-        icon: ShieldCheck,
-      },
-      {
-        title: 'Hồ sơ OCOP',
+        title: 'Hồ sơ & Chấm điểm OCOP',
         path: '/ocop/dossiers',
         icon: Award,
-        badge: { text: '4', color: 'green' }, // 4 hồ sơ active
+        badge: { text: '4 hồ sơ', color: 'green' },
       },
       {
-        title: 'Minh chứng số',
+        title: 'Kho Minh chứng số',
         path: '/ocop/evidences',
         icon: FileCheck,
       },
       {
-        title: 'Đánh giá Hội đồng',
-        path: '/ocop/evaluation',
-        icon: ClipboardCheck,
-      },
-      {
-        title: 'Quyết định & Giấy chứng nhận',
-        path: '/ocop/decisions',
-        icon: Award,
+        title: 'Báo cáo & Thống kê OCOP',
+        path: '/ocop/reports',
+        icon: BarChart3,
       },
     ],
   },

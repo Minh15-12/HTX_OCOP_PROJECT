@@ -1,601 +1,648 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Star, FileText, CheckSquare, Upload, Award, FileCheck, Save, Send, CheckCircle2, 
-  AlertTriangle, ShieldCheck, Printer, Clock, Info, Check, RefreshCw, Link as LinkIcon, AlertCircle 
+  Printer, Clock, Eye, Link as LinkIcon, ShieldCheck, ChevronRight, Download, Plus, X 
 } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ocopService, OcopDossier, OcopCriterion, OcopEvidence, EvaluatorScoreItem } from '../../../services/ocopService';
+import { 
+  MOCK_OCOP_DOSSIERS_FULL, MOCK_CRITERIA_GROUPS_SUMMARY, MOCK_CRITERIA_DETAILS, 
+  MOCK_EVIDENCES_FULL, OcopCriterionDetail, EvidenceItem 
+} from '../../../services/ocopService';
 import { Qd148DocumentModal } from '../components/Qd148DocumentModal';
 
 export const DossierDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   
-  const [dossier, setDossier] = useState<OcopDossier | null>(null);
-  const [criteria, setCriteria] = useState<OcopCriterion[]>([]);
-  const [evidences, setEvidences] = useState<OcopEvidence[]>([]);
-  const [evaluators, setEvaluators] = useState<EvaluatorScoreItem[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'scoring' | 'evidences' | 'council' | 'certificate'>('scoring');
+  const dossier = MOCK_OCOP_DOSSIERS_FULL.find((d) => d.id === id || d.code === id) || MOCK_OCOP_DOSSIERS_FULL[0];
   
-  // Interactive Self-Assessment Scores state (18 criteria QĐ 148)
-  const [scores, setScores] = useState<Record<string, number>>({
-    'TC-A.1.1': 7,
-    'TC-A.1.2': 3,
-    'TC-A.2.1': 5,
-    'TC-A.3.1': 5,
-    'TC-A.4.1': 5,
-    'TC-A.5.1': 5,
-    'TC-A.6.1': 5,
-    'TC-A.7.1': 5,
-    'TC-B.8.1': 5,
-    'TC-B.9.1': 3,
-    'TC-B.10.1': 4,
-    'TC-B.11.1': 3,
-    'TC-B.12.1': 5,
-    'TC-B.12.2': 5,
-    'TC-C.13.1': 5,
-    'TC-C.14.1': 5,
-    'TC-C.15.1': 5,
-    'TC-C.16.1': 10,
-    'TC-C.17.1': 3,
-    'TC-C.18.1': 3,
-  });
-
-  // Modal States
+  const [activeTab, setActiveTab] = useState<'overview' | 'self_eval' | 'council' | 'evidences' | 'dossier_package' | 'workflow'>('overview');
+  const [activeGroupIndex, setActiveGroupIndex] = useState<number>(1);
+  const [evidenceCategoryFilter, setEvidenceCategoryFilter] = useState<string>('ALL');
+  
+  // Modals
   const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
-  const [submitAlertModal, setSubmitAlertModal] = useState<{ open: boolean; missing: OcopCriterion[]; canSubmit: boolean }>({
-    open: false,
-    missing: [],
-    canSubmit: false,
+  const [isAddEvidenceModalOpen, setIsAddEvidenceModalOpen] = useState<boolean>(false);
+
+  const [criteriaScores, setCriteriaScores] = useState<Record<string, number>>({
+    '1.1': 4.5,
+    '1.2': 4.0,
+    '1.3': 4.5,
+    '1.4': 4.5,
+    '2.1': 4.0,
+    '2.2': 4.0,
+    '2.3': 4.0,
+    '2.4': 4.0,
+    '3.1': 4.5,
+    '3.2': 5.0,
+    '3.3': 4.5,
+    '3.4': 4.5,
+    '4.1': 4.5,
+    '4.2': 4.5,
+    '4.3': 4.5,
+    '5.1': 4.5,
+    '5.2': 4.0,
+    '6.1': 4.5,
   });
-  const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
 
-  useEffect(() => {
-    const loadData = async () => {
-      const currentDossier = await ocopService.getDossierById(id || 'DOS-2026-001');
-      if (currentDossier) setDossier(currentDossier);
+  const totalScore = Object.values(criteriaScores).reduce((a, b) => a + b, 0);
 
-      const critList = await ocopService.getCriteria();
-      setCriteria(critList);
+  const activeGroupCriteria = MOCK_CRITERIA_DETAILS.filter((c) => c.groupId === activeGroupIndex);
 
-      const evList = await ocopService.getEvidences(id || 'DOS-2026-001');
-      setEvidences(evList);
-
-      const evalList = await ocopService.getEvaluatorScores(id || 'DOS-2026-001');
-      setEvaluators(evalList);
-    };
-    loadData();
-  }, [id]);
-
-  if (!dossier) {
-    return <div className="p-12 text-center text-slate-500">Đang tải chi tiết hồ sơ OCOP...</div>;
-  }
-
-  const totalSelfScore = Object.values(scores).reduce((a, b) => a + b, 0);
-  const starResult = ocopService.calculateScoreStar(totalSelfScore, dossier.mandatoryPassed);
-
-  // Check completeness rate for submission
-  const completeness = ocopService.calculateCompleteness(evidences, criteria);
-
-  const handleOpenSubmitCheck = () => {
-    if (completeness.missing.length > 0) {
-      setSubmitAlertModal({
-        open: true,
-        missing: completeness.missing,
-        canSubmit: false,
-      });
-    } else {
-      setSubmitAlertModal({
-        open: true,
-        missing: [],
-        canSubmit: true,
-      });
-    }
-  };
-
-  const handleConfirmSubmit = () => {
-    setSubmitAlertModal({ open: false, missing: [], canSubmit: false });
-    setSubmitSuccess(true);
-    setDossier({
-      ...dossier,
-      status: 'HTX_SUBMITTED',
-      statusLabel: 'Đã nộp UBND Xã (Đang chờ xác nhận Biểu 03)',
-      progressPercent: 100,
-    });
-  };
-
-  const handleImportEvidenceFromFarmingLog = () => {
-    const newEvidence: OcopEvidence = {
-      id: `EVID-${Date.now()}`,
-      applicationId: dossier.id,
-      criterionCode: 'TC-C.14.1',
-      title: 'Nhật ký phun thuốc & Kiểm định thời gian cách ly (PHI) từ Trại ớt Palermo Tân Tiến',
-      fileName: 'Nhat_Ky_Canh_Tac_PHI_Palermo_2026.pdf',
-      fileSize: '2.1 MB',
-      fileHashSha256: '7b98d12345e6789a0123456789abcdef7b98d12345e6789a0123456789abcdef',
-      mimeType: 'application/pdf',
-      version: 'v1.0',
-      uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      status: 'VERIFIED',
-      sourceModule: 'NhatKy',
-    };
-    setEvidences([newEvidence, ...evidences]);
-  };
+  const filteredEvidences = MOCK_EVIDENCES_FULL.filter((ev) => {
+    if (evidenceCategoryFilter === 'ALL') return true;
+    return ev.category === evidenceCategoryFilter;
+  });
 
   return (
-    <div className="space-y-5 pb-20 animate-fade-in">
-      {/* Top Navigation & Status Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[#e7e9ec] shadow-subtle">
+    <div className="space-y-6 pb-20 animate-fade-in text-slate-800">
+      {/* Top Bar Header */}
+      <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/ocop/dossiers')}
             className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 transition-all shadow-xs"
-            title="Quay lại danh sách"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono font-bold text-xs text-slate-500 px-2 py-0.5 bg-slate-100 rounded-md">
-                {dossier.code}
-              </span>
-              <span className="pill-badge pill-amber">{dossier.statusLabel}</span>
-              <span className="pill-badge pill-green">Bộ tiêu chí QĐ 148/QĐ-TTg</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11.5px] font-mono font-bold text-slate-400">OCOP / Hồ sơ sản phẩm / {dossier.productName}</span>
+              <span className="pill-badge pill-blue">{dossier.statusLabel}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
-              {dossier.productName}
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+              Thông tin sản phẩm OCOP
             </h1>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Chủ thể: <strong>{dossier.submittedBy}</strong> &bull; Địa chỉ: {dossier.address}
-            </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setIsFormModalOpen(true)}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[12.8px] transition-all flex items-center gap-1.5 border border-slate-200"
+            className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
           >
-            <Printer className="w-4 h-4 text-emerald-700" /> Biểu mẫu QĐ 148
-          </button>
-
-          <button
-            onClick={handleOpenSubmitCheck}
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[13px] shadow-sm transition-all flex items-center gap-2 active:scale-98"
-          >
-            <Send className="w-4 h-4" /> Nộp Hồ Sơ Chính Thức
+            <Printer className="w-4 h-4" /> Xuất Biểu mẫu QĐ 148
           </button>
         </div>
       </div>
 
-      {/* Submission Success Alert */}
-      {submitSuccess && (
-        <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 flex items-center gap-3 animate-fade-in shadow-sm">
-          <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-          <div className="text-[13px]">
-            <p className="font-extrabold text-emerald-950">Nộp hồ sơ OCOP thành công lên UBND Xã!</p>
-            <p className="text-emerald-800">
-              Hồ sơ <strong>{dossier.productName}</strong> đã được gửi chính thức. UBND Xã Tân Tiến đang thẩm định và lập <strong>Biểu số 03</strong> để chuyển Hội đồng Tỉnh.
-            </p>
+      {/* Product Banner & Score Meter Card (Image 1 Top Right & Image 3 Screen 2) */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          <div className="w-32 h-28 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+            <img
+              src={dossier.productImage || 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?auto=format&fit=crop&w=600&q=80'}
+              alt={dossier.productName}
+              className="w-full h-full object-cover"
+            />
           </div>
-        </div>
-      )}
 
-      {/* Farmer Stepper Guide Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-4 rounded-2xl shadow-subtle grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-        <div className="p-2.5 bg-white/10 rounded-xl border border-white/10 flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-emerald-500 text-slate-950 font-black flex items-center justify-center shrink-0 text-xs">1</div>
-          <div>
-            <p className="font-bold text-emerald-300">Thông tin chủ thể</p>
-            <p className="text-[10.5px] text-slate-300">HTX Tân Tiến (Đã xác minh)</p>
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">{dossier.productName}</h2>
+              <span className="pill-badge pill-blue text-[10.5px]">Đang thẩm định</span>
+            </div>
+            <p><strong>Mã hồ sơ:</strong> <span className="font-mono font-bold text-slate-700">{dossier.code}</span></p>
+            <p><strong>Chủ thể:</strong> {dossier.subjectName}</p>
+            <p><strong>Nhóm sản phẩm:</strong> {dossier.productCategory}</p>
+            <p><strong>Cấp đánh giá:</strong> <span className="font-bold text-amber-900">{dossier.evalLevel}</span></p>
+            <p><strong>Ngày nộp hồ sơ:</strong> {dossier.submissionDate}</p>
           </div>
         </div>
-        <div className="p-2.5 bg-white/10 rounded-xl border border-white/10 flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-emerald-500 text-slate-950 font-black flex items-center justify-center shrink-0 text-xs">2</div>
-          <div>
-            <p className="font-bold text-emerald-300">Tự chấm điểm QĐ 148</p>
-            <p className="text-[10.5px] text-slate-300">{totalSelfScore} / 100 điểm</p>
+
+        {/* Circular Gauge Score Meter (Image 1 Top Right) */}
+        <div className="flex flex-col items-center justify-center p-4 bg-emerald-50/60 rounded-2xl border border-emerald-100 shrink-0">
+          <div className="relative w-24 h-24 flex items-center justify-center">
+            <svg className="w-full h-full transform -rotate-90">
+              <circle cx="48" cy="48" r="38" stroke="#e2e8f0" strokeWidth="8" fill="transparent" />
+              <circle
+                cx="48"
+                cy="48"
+                r="38"
+                stroke="#059669"
+                strokeWidth="8"
+                strokeDasharray={238}
+                strokeDashoffset={238 - (238 * dossier.totalScore) / 100}
+                strokeLinecap="round"
+                fill="transparent"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-black text-emerald-950">{dossier.totalScore.toString().replace('.', ',')}</span>
+              <span className="text-[10px] font-bold text-slate-400">/ 100</span>
+            </div>
           </div>
-        </div>
-        <div className="p-2.5 bg-white/10 rounded-xl border border-white/10 flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-emerald-500 text-slate-950 font-black flex items-center justify-center shrink-0 text-xs">3</div>
-          <div>
-            <p className="font-bold text-emerald-300">Minh chứng số VietGAP</p>
-            <p className="text-[10.5px] text-slate-300">{evidences.length} tài liệu số</p>
+
+          <div className="flex items-center gap-1 mt-2">
+            {[1, 2, 3, 4].map((s) => (
+              <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
+            ))}
           </div>
-        </div>
-        <div className="p-2.5 bg-white/10 rounded-xl border border-white/10 flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shrink-0 text-xs">4</div>
-          <div>
-            <p className="font-bold text-amber-300">Hội đồng thẩm định</p>
-            <p className="text-[10.5px] text-slate-300">Blind Scoring 4-5 sao</p>
-          </div>
+          <span className="text-xs font-black text-emerald-900 mt-0.5">Đạt yêu cầu 4 sao</span>
         </div>
       </div>
 
-      {/* Dynamic Tabs Navigation Header */}
-      <div className="flex flex-wrap border-b border-[#e7e9ec] bg-white rounded-t-2xl px-4 pt-2 gap-1 text-[13px] font-bold">
+      {/* Navigation Sub-Tabs Bar */}
+      <div className="flex flex-wrap border-b border-slate-200 bg-white rounded-t-2xl px-4 pt-2 gap-1 text-xs font-bold">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'overview'
-              ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-1.5 ${
+            activeTab === 'overview' ? 'border-emerald-700 text-emerald-900 font-extrabold bg-emerald-50/50 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
-          <FileText className="w-4 h-4" /> 1. Tổng quan & Biểu mẫu
+          1. Tổng quan
         </button>
         <button
-          onClick={() => setActiveTab('scoring')}
-          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'scoring'
-              ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+          onClick={() => setActiveTab('self_eval')}
+          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-1.5 ${
+            activeTab === 'self_eval' ? 'border-emerald-700 text-emerald-900 font-extrabold bg-emerald-50/50 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
-          <CheckSquare className="w-4 h-4" /> 2. Chấm điểm Tiêu chí ({totalSelfScore}/100đ)
-        </button>
-        <button
-          onClick={() => setActiveTab('evidences')}
-          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'evidences'
-              ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          <Upload className="w-4 h-4" /> 3. Kho Minh chứng số ({evidences.length})
+          2. Tự đánh giá
         </button>
         <button
           onClick={() => setActiveTab('council')}
-          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'council'
-              ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-1.5 ${
+            activeTab === 'council' ? 'border-emerald-700 text-emerald-900 font-extrabold bg-emerald-50/50 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
-          <Award className="w-4 h-4" /> 4. Đánh giá Hội đồng (Blind)
+          3. Hội đồng đánh giá
         </button>
         <button
-          onClick={() => setActiveTab('certificate')}
-          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'certificate'
-              ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+          onClick={() => setActiveTab('evidences')}
+          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-1.5 ${
+            activeTab === 'evidences' ? 'border-emerald-700 text-emerald-900 font-extrabold bg-emerald-50/50 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
-          <FileCheck className="w-4 h-4" /> 5. Quyết định & Chứng nhận
+          4. Minh chứng
+        </button>
+        <button
+          onClick={() => setActiveTab('dossier_package')}
+          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-1.5 ${
+            activeTab === 'dossier_package' ? 'border-emerald-700 text-emerald-900 font-extrabold bg-emerald-50/50 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          5. Bộ hồ sơ OCOP
+        </button>
+        <button
+          onClick={() => setActiveTab('workflow')}
+          className={`py-3 px-4 border-b-2 transition-all flex items-center gap-1.5 ${
+            activeTab === 'workflow' ? 'border-emerald-700 text-emerald-900 font-extrabold bg-emerald-50/50 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          6. Workflow & Lịch sử
         </button>
       </div>
 
-      {/* TAB 1: OVERVIEW & FORM SUMMARY */}
+      {/* TAB 1: TỔNG QUAN KẾT QUẢ THEO 6 NHÓM TIÊU CHÍ (Image 1 Top Right Table) */}
       {activeTab === 'overview' && (
-        <div className="bg-white border border-[#e7e9ec] rounded-b-2xl p-6 shadow-subtle space-y-6">
-          <div className="flex items-center justify-between border-b pb-4">
-            <div>
-              <h3 className="font-black text-slate-900 text-base">Thông tin chung Hồ sơ OCOP Tân Tiến</h3>
-              <p className="text-xs text-slate-500">Đối tượng áp dụng: HTX Dịch vụ Nông nghiệp Tổng hợp Tân Tiến &bull; Căn cứ QĐ 148/QĐ-TTg</p>
-            </div>
+        <div className="bg-white border border-slate-200 rounded-b-2xl p-6 shadow-xs space-y-4">
+          <div className="flex justify-between items-center border-b pb-3">
+            <h3 className="font-black text-slate-900 text-sm">
+              Kết quả tự đánh giá theo bộ tiêu chí (100 điểm)
+            </h3>
             <button
-              onClick={() => setIsFormModalOpen(true)}
-              className="px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all inline-flex items-center gap-1.5"
+              onClick={() => setActiveTab('self_eval')}
+              className="text-xs text-emerald-700 font-bold hover:underline"
             >
-              <Printer className="w-4 h-4" /> Xem & Xuất Biểu số 01, 02, 03
+              Xem chi tiết tiêu chí &rsaquo;
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px]">
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-              <h4 className="font-extrabold text-slate-900 border-b pb-1">1. Thông tin Chủ thể sản xuất</h4>
-              <p><strong>Tên chủ thể:</strong> {dossier.submittedBy}</p>
-              <p><strong>Mã HTX:</strong> {dossier.cooperativeCode}</p>
-              <p><strong>Đại diện pháp luật:</strong> Nguyễn Văn Tân - Giám đốc HTX</p>
-              <p><strong>Địa chỉ:</strong> {dossier.address}</p>
-              <p><strong>Quy mô xã viên:</strong> 165 hộ gia đình canh tác rau hoa công nghệ cao</p>
-            </div>
-
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-              <h4 className="font-extrabold text-slate-900 border-b pb-1">2. Thông tin Sản phẩm Đăng ký</h4>
-              <p><strong>Tên sản phẩm:</strong> <span className="font-black text-emerald-900">{dossier.productName}</span></p>
-              <p><strong>Phân nhóm sản phẩm:</strong> {dossier.productCategory}</p>
-              <p><strong>Hạng sao đăng ký:</strong> <span className="font-black text-amber-700">{dossier.targetStar} SAO OCOP</span></p>
-              <p><strong>Mã số vùng trồng:</strong> MSVT-LĐ-2026-08 (Chi cục Trồng trọt Lâm Đồng)</p>
-              <p><strong>Chứng nhận chất lượng:</strong> VietGAP còn hiệu lực đến năm 2028</p>
-            </div>
+          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                  <th className="py-3 px-4">Nhóm tiêu chí</th>
+                  <th className="py-3 px-4 text-center">Tỉ trọng</th>
+                  <th className="py-3 px-4 text-center">Điểm tối đa</th>
+                  <th className="py-3 px-4 text-center">Điểm đạt</th>
+                  <th className="py-3 px-4 text-center">Tỉ lệ (%)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium">
+                {MOCK_CRITERIA_GROUPS_SUMMARY.map((g) => (
+                  <tr key={g.id} className="hover:bg-slate-50">
+                    <td className="py-3 px-4 font-bold text-slate-800">{g.name}</td>
+                    <td className="py-3 px-4 text-center font-semibold text-slate-600">{g.weight}%</td>
+                    <td className="py-3 px-4 text-center font-bold text-slate-700">{g.maxScore}</td>
+                    <td className="py-3 px-4 text-center font-black text-emerald-800">{g.achievedScore.toString().replace('.', ',')}</td>
+                    <td className="py-3 px-4 text-center font-bold text-slate-700">{g.percent.toString().replace('.', ',')}%</td>
+                  </tr>
+                ))}
+                <tr className="bg-emerald-50/60 font-black text-slate-900 border-t-2 border-emerald-200">
+                  <td className="py-3 px-4">Tổng cộng</td>
+                  <td className="py-3 px-4 text-center">100%</td>
+                  <td className="py-3 px-4 text-center">100</td>
+                  <td className="py-3 px-4 text-center text-emerald-950 text-sm">{dossier.totalScore.toString().replace('.', ',')}</td>
+                  <td className="py-3 px-4 text-center text-emerald-950 text-sm">78,5%</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* TAB 2: CRITERIA SCORING MATRIX */}
-      {activeTab === 'scoring' && (
-        <div className="space-y-5">
-          {/* Live Score Summary Banner */}
-          <div className="p-5 bg-gradient-to-r from-emerald-900 to-teal-900 text-white rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="text-[11.5px] text-emerald-300 font-extrabold uppercase tracking-wider">
-                Tổng điểm tự đánh giá OCOP (QĐ 148)
-              </div>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-4xl font-black tracking-tight">{totalSelfScore.toFixed(1)}</span>
-                <span className="text-emerald-200 text-sm font-bold">/ 100.0 điểm</span>
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-xs border border-white/20 rounded-xl px-5 py-3 flex items-center gap-3">
-              <Star className="w-8 h-8 fill-amber-400 text-amber-400 shrink-0" />
-              <div>
-                <div className="text-[11px] text-emerald-200 font-bold uppercase">Phân hạng dự kiến:</div>
-                <div className={`text-base font-black ${starResult.color}`}>{starResult.label}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
+      {/* TAB 2: TỰ ĐÁNH GIÁ THEO BỘ TIÊU CHÍ (Image 1 Bottom Left 1 & Image 3 Screen 4) */}
+      {activeTab === 'self_eval' && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Vertical 6-Group Navigation Sidebar */}
+          <div className="lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-2 text-xs font-bold">
+            <h4 className="text-[11px] text-slate-400 uppercase tracking-wider mb-2">Nhóm tiêu chí đánh giá</h4>
+            {MOCK_CRITERIA_GROUPS_SUMMARY.map((g) => (
               <button
-                onClick={() => alert('Đã lưu bảng điểm tự đánh giá!')}
-                className="px-4 py-2.5 bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-[12.8px] rounded-xl transition-all inline-flex items-center gap-1.5"
+                key={g.id}
+                onClick={() => setActiveGroupIndex(g.id)}
+                className={`w-full text-left p-3 rounded-xl transition-all flex items-center gap-2.5 ${
+                  activeGroupIndex === g.id
+                    ? 'bg-emerald-700 text-white shadow-xs font-extrabold'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
+                }`}
               >
-                <Save className="w-4 h-4" /> Lưu Bản Nháp
-              </button>
-            </div>
-          </div>
-
-          {/* Criteria Groups Accordion & Scoring Cards */}
-          <div className="bg-white border border-[#e7e9ec] rounded-2xl shadow-subtle overflow-hidden divide-y divide-slate-100">
-            {criteria.map((c) => (
-              <div key={c.id} className="p-4 sm:p-5 hover:bg-slate-50/70 transition-colors space-y-2">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-slate-100 font-mono font-bold text-xs text-slate-700 rounded-md">
-                        {c.code}
-                      </span>
-                      {c.isMandatory && (
-                        <span className="px-2 py-0.5 bg-rose-50 text-rose-700 font-bold text-[11px] rounded-md border border-rose-200">
-                          Bắt buộc (Điều kiện khống chế)
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="font-extrabold text-slate-900 text-sm">{c.name}</h4>
-                    <p className="text-xs text-slate-500">{c.description}</p>
-                    <p className="text-[11.5px] text-emerald-800 font-medium italic bg-emerald-50/80 p-2 rounded-lg border border-emerald-100">
-                      💡 <strong>Hướng dẫn cho nông dân:</strong> {c.farmerInstruction}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
-                    <div className="text-right">
-                      <div className="text-[11px] text-slate-400 font-bold uppercase">Điểm tối đa</div>
-                      <div className="text-xs font-black text-slate-700">{c.maxScore}đ</div>
-                    </div>
-
-                    <select
-                      value={scores[c.code] ?? c.maxScore}
-                      onChange={(e) => setScores({ ...scores, [c.code]: Number(e.target.value) })}
-                      className="px-3 py-2 border border-slate-300 rounded-xl text-sm font-black bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer shadow-xs"
-                    >
-                      <option value={c.maxScore}>{c.maxScore} điểm (Tối đa)</option>
-                      <option value={Math.round(c.maxScore * 0.8)}>{Math.round(c.maxScore * 0.8)} điểm (Tốt)</option>
-                      <option value={Math.round(c.maxScore * 0.5)}>{Math.round(c.maxScore * 0.5)} điểm (Trung bình)</option>
-                      <option value={0}>0 điểm (Chưa đạt)</option>
-                    </select>
-                  </div>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] ${
+                  activeGroupIndex === g.id ? 'bg-white text-emerald-800' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {g.id}
                 </div>
-              </div>
+                <span className="line-clamp-2">{g.name.split('. ')[1]}</span>
+              </button>
             ))}
           </div>
-        </div>
-      )}
 
-      {/* TAB 3: DIGITAL EVIDENCES VAULT */}
-      {activeTab === 'evidences' && (
-        <div className="bg-white border border-[#e7e9ec] rounded-2xl p-6 shadow-subtle space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
-            <div>
-              <h3 className="font-black text-slate-900 text-base">Kho Minh chứng Số OCOP (SHA-256 Validated)</h3>
-              <p className="text-xs text-slate-500">Tải lên hoặc trích xuất tự động từ Nhật ký canh tác HTX Tân Tiến &bull; Bảo mật SHA-256</p>
+          {/* Right Main Scoring Table */}
+          <div className="lg:col-span-3 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+            <h3 className="font-extrabold text-slate-900 text-sm border-b pb-2">
+              {MOCK_CRITERIA_GROUPS_SUMMARY[activeGroupIndex - 1]?.name} ({MOCK_CRITERIA_GROUPS_SUMMARY[activeGroupIndex - 1]?.maxScore} điểm)
+            </h3>
+
+            <div className="overflow-x-auto border border-slate-200 rounded-xl">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                    <th className="py-3 px-3">Tiêu chí</th>
+                    <th className="py-3 px-3 text-center">Điểm tối đa</th>
+                    <th className="py-3 px-3 text-center">Điểm tự đánh giá *</th>
+                    <th className="py-3 px-3">Nhận xét</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium">
+                  {activeGroupCriteria.map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-50">
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-slate-900">{c.code} {c.name}</div>
+                      </td>
+                      <td className="py-3 px-3 text-center font-bold text-slate-700">{c.maxScore}</td>
+                      <td className="py-3 px-3 text-center">
+                        <select
+                          value={criteriaScores[c.code] ?? c.selfScore}
+                          onChange={(e) => setCriteriaScores({ ...criteriaScores, [c.code]: Number(e.target.value) })}
+                          className="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-emerald-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs"
+                        >
+                          <option value={5}>5,0</option>
+                          <option value={4.5}>4,5</option>
+                          <option value={4.0}>4,0</option>
+                          <option value={3.5}>3,5</option>
+                        </select>
+                      </td>
+                      <td className="py-3 px-3 text-slate-600">{c.note}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex justify-end gap-2 pt-3">
               <button
-                onClick={handleImportEvidenceFromFarmingLog}
-                className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-xs rounded-xl border border-emerald-200 transition-all inline-flex items-center gap-1.5"
+                onClick={() => alert('Đã lưu nháp kết quả tự đánh giá!')}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
               >
-                <LinkIcon className="w-3.5 h-3.5 text-emerald-700" /> Tải từ Nhật ký canh tác HTX
+                Lưu nháp
               </button>
-
               <button
-                onClick={() => alert('Vui lòng chọn file PDF/Hình ảnh minh chứng!')}
-                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all"
+                onClick={() => {
+                  if (activeGroupIndex < 6) setActiveGroupIndex(activeGroupIndex + 1);
+                }}
+                className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-xl shadow-xs"
               >
-                + Tải file lên
+                Tiếp theo &rsaquo;
               </button>
             </div>
-          </div>
-
-          <div className="space-y-3">
-            {evidences.map((ev) => (
-              <div
-                key={ev.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 gap-3 text-[12.8px] hover:border-emerald-300 transition-all"
-              >
-                <div className="flex items-start gap-3">
-                  <FileCheck className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-extrabold text-slate-900">{ev.title}</span>
-                      <span className="px-2 py-0.5 bg-slate-200 font-mono font-bold text-[10.5px] text-slate-700 rounded-md">
-                        {ev.criterionCode}
-                      </span>
-                      {ev.sourceModule && (
-                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 font-bold text-[10.5px] rounded-md">
-                          Module {ev.sourceModule}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs font-mono text-slate-500 mt-1">File: {ev.fileName} ({ev.fileSize}) &bull; Version {ev.version}</p>
-                    <p className="text-[10.5px] font-mono text-slate-400 mt-0.5 truncate max-w-md">
-                      SHA-256: {ev.fileHashSha256}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
-                  <span className="pill-badge pill-green">Đã xác minh</span>
-                  <button
-                    onClick={() => alert(`Đang xem trước file: ${ev.fileName}`)}
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                  >
-                    Xem file
-                  </button>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       )}
 
-      {/* TAB 4: COUNCIL EVALUATION (BLIND SCORING) */}
+      {/* TAB 3: HỘI ĐỒNG ĐÁNH GIÁ (Image 1 Bottom Right 1 & Image 3 Screen 6) */}
       {activeTab === 'council' && (
-        <div className="bg-white border border-[#e7e9ec] rounded-2xl p-6 shadow-subtle space-y-5">
-          <div className="border-b pb-4">
-            <h3 className="font-black text-slate-900 text-base">Kết quả Chấm điểm Hội đồng (Blind Scoring)</h3>
-            <p className="text-xs text-slate-500">Hội đồng 4 thành viên chấm điểm độc lập &bull; Tự động tính trung bình cộng & kiểm tra chênh lệch điểm</p>
-          </div>
-
-          <div className="p-4 bg-emerald-900 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+          <div className="flex justify-between items-center border-b pb-3">
             <div>
-              <div className="text-xs text-emerald-300 font-bold uppercase">Điểm trung bình chính thức Hội đồng:</div>
-              <div className="text-3xl font-black text-white mt-0.5">86.6 / 100 điểm</div>
+              <h3 className="font-extrabold text-slate-900 text-sm">Phiếu đánh giá hội đồng</h3>
+              <p className="text-xs text-slate-500">Chủ thể: HTX Tân Tiến &bull; Sản phẩm: Ớt chuông Sweet Palermo Đỏ Đà Lạt</p>
             </div>
-            <div className="bg-emerald-800 border border-emerald-700 rounded-xl px-4 py-2 text-right">
-              <div className="text-[11px] text-emerald-200">Kết quả Xếp hạng:</div>
-              <div className="text-base font-black text-amber-300">⭐⭐⭐⭐ OCOP 4 SAO</div>
+            <div className="pill-badge pill-green text-xs font-extrabold">
+              &bull; Đề xuất công nhận 4 sao
             </div>
           </div>
 
-          <div className="space-y-3">
-            {evaluators.map((ev, idx) => (
-              <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
-                <div className="flex justify-between items-center font-bold">
-                  <span className="text-slate-900 text-sm font-extrabold">{ev.evaluatorName} ({ev.role})</span>
-                  <span className="text-emerald-800 font-black text-sm">{ev.score} / 100 điểm</span>
-                </div>
-                <p className="text-slate-600 italic">"{ev.comments}"</p>
-                <div className="text-[10.5px] text-slate-400 text-right">Thời gian chấm: {ev.submittedAt}</div>
-              </div>
-            ))}
+          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                  <th className="py-3 px-4">Nhóm tiêu chí</th>
+                  <th className="py-3 px-4 text-center">Điểm tối đa</th>
+                  <th className="py-3 px-4 text-center">Điểm đạt</th>
+                  <th className="py-3 px-4 text-center">Tỉ lệ (%)</th>
+                  <th className="py-3 px-4 text-center">Nhận xét</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium">
+                {MOCK_CRITERIA_GROUPS_SUMMARY.map((g) => (
+                  <tr key={g.id} className="hover:bg-slate-50">
+                    <td className="py-3 px-4 font-bold text-slate-800">{g.name}</td>
+                    <td className="py-3 px-4 text-center font-bold text-slate-700">{g.maxScore}</td>
+                    <td className="py-3 px-4 text-center font-black text-emerald-800">{g.achievedScore.toString().replace('.', ',')}</td>
+                    <td className="py-3 px-4 text-center font-bold text-slate-700">{g.percent.toString().replace('.', ',')}%</td>
+                    <td className="py-3 px-4 text-center font-bold text-emerald-700">Đạt yêu cầu</td>
+                  </tr>
+                ))}
+                <tr className="bg-emerald-50/60 font-black text-slate-900 border-t-2 border-emerald-200">
+                  <td className="py-3 px-4">Tổng cộng</td>
+                  <td className="py-3 px-4 text-center">100</td>
+                  <td className="py-3 px-4 text-center text-emerald-950 text-sm">78,5</td>
+                  <td className="py-3 px-4 text-center text-emerald-950 text-sm">78,5%</td>
+                  <td className="py-3 px-4 text-center text-emerald-950 text-xs uppercase font-extrabold">Đề xuất 4 sao</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="pt-4 grid grid-cols-2 text-center text-xs gap-4 font-bold text-slate-700">
+            <div>
+              <p>Chủ tịch hội đồng</p>
+              <p className="italic font-normal text-slate-400 mt-8">(Đã ký tên)</p>
+            </div>
+            <div>
+              <p>Thư ký hội đồng</p>
+              <p className="italic font-normal text-slate-400 mt-8">(Đã ký tên)</p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* TAB 5: CERTIFICATE & DECISION PREVIEW */}
-      {activeTab === 'certificate' && (
-        <div className="bg-white border border-[#e7e9ec] rounded-2xl p-6 shadow-subtle space-y-6">
-          <div className="flex items-center justify-between border-b pb-4">
-            <div>
-              <h3 className="font-black text-slate-900 text-base">Xem trước Quyết định & Chứng nhận OCOP</h3>
-              <p className="text-xs text-slate-500">Giấy chứng nhận sản phẩm OCOP có hiệu lực 36 tháng kể từ ngày cấp</p>
-            </div>
+      {/* TAB 4: QUẢN LÝ MINH CHỨNG (Image 1 Bottom Middle 1 & Image 3 Screen 5) */}
+      {activeTab === 'evidences' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex justify-between items-center border-b pb-3">
+            <h3 className="font-extrabold text-slate-900 text-sm">Quản lý minh chứng</h3>
             <button
-              onClick={() => setIsFormModalOpen(true)}
-              className="px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all"
+              onClick={() => setIsAddEvidenceModalOpen(true)}
+              className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-xl shadow-xs inline-flex items-center gap-1.5"
             >
-              In Giấy Chứng Nhận
+              <Plus className="w-4 h-4" /> Thêm minh chứng
             </button>
           </div>
 
-          <div className="p-8 border-4 border-double border-amber-300 rounded-3xl bg-gradient-to-b from-amber-50/40 to-amber-100/20 text-center space-y-4 shadow-sm max-w-2xl mx-auto">
-            <Award className="w-16 h-16 text-amber-500 mx-auto" />
-            <h2 className="text-2xl font-black text-amber-950 uppercase tracking-wide">GIẤY CHỨNG NHẬN SẢN PHẨM OCOP</h2>
-            <p className="text-base font-black text-slate-900">{dossier.productName}</p>
-            <p className="text-xs text-slate-600">Thuộc chủ thể: {dossier.submittedBy}</p>
-            <div className="inline-block px-4 py-1 bg-amber-400 text-slate-950 font-black text-sm rounded-full shadow-xs">
-              ĐẠT CHỨNG NHẬN OCOP 4 SAO CẤP TỈNH
-            </div>
-            <p className="text-[11px] text-slate-500 pt-4">Thời hạn chứng nhận: 36 tháng (Hiệu lực 2026 - 2029)</p>
+          {/* Evidence Category Filter Tabs */}
+          <div className="flex gap-2 border-b pb-2 text-xs font-bold">
+            <button
+              onClick={() => setEvidenceCategoryFilter('ALL')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${
+                evidenceCategoryFilter === 'ALL' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Tất cả
+            </button>
+            <button
+              onClick={() => setEvidenceCategoryFilter('LEGAL')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${
+                evidenceCategoryFilter === 'LEGAL' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Hồ sơ pháp lý
+            </button>
+            <button
+              onClick={() => setEvidenceCategoryFilter('QUALITY')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${
+                evidenceCategoryFilter === 'QUALITY' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Chất lượng sản phẩm
+            </button>
+            <button
+              onClick={() => setEvidenceCategoryFilter('PROCESS')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${
+                evidenceCategoryFilter === 'PROCESS' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Quy trình sản xuất
+            </button>
+          </div>
+
+          {/* Evidence Table */}
+          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                  <th className="py-3 px-3 w-10 text-center">STT</th>
+                  <th className="py-3 px-3">Tên minh chứng</th>
+                  <th className="py-3 px-3">Loại</th>
+                  <th className="py-3 px-3 text-center">Liên kết tiêu chí</th>
+                  <th className="py-3 px-3 text-center">Ngày tải lên</th>
+                  <th className="py-3 px-3 text-center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium">
+                {filteredEvidences.map((ev, idx) => (
+                  <tr key={ev.id} className="hover:bg-slate-50">
+                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-500">{idx + 1}</td>
+                    <td className="py-3 px-3 font-bold text-slate-900">{ev.title}</td>
+                    <td className="py-3 px-3"><span className="pill-badge pill-blue">{ev.categoryLabel}</span></td>
+                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">{ev.criterionCode}</td>
+                    <td className="py-3 px-3 text-center text-slate-500">{ev.uploadedAt}</td>
+                    <td className="py-3 px-3 text-center">
+                      <button
+                        onClick={() => alert(`Đang tải xuống file ${ev.fileName}`)}
+                        className="p-1.5 hover:bg-emerald-100 text-emerald-800 rounded-lg transition-colors"
+                        title="Tải xuống"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* QĐ 148 Document Export Modal */}
+      {/* TAB 5: BỘ HỒ SƠ OCOP (Image 1 Bottom Left 2 Grid) */}
+      {activeTab === 'dossier_package' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex justify-between items-center border-b pb-3">
+            <h3 className="font-extrabold text-slate-900 text-sm">Bộ hồ sơ OCOP - Ớt chuông Sweet Palermo Đỏ Đà Lạt</h3>
+            <button
+              onClick={() => setIsFormModalOpen(true)}
+              className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-xl shadow-xs inline-flex items-center gap-1.5"
+            >
+              <Download className="w-4 h-4" /> Xuất hồ sơ
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
+              <FileText className="w-8 h-8 text-emerald-700" />
+              <h4 className="font-bold text-slate-900">Phiếu đăng ký</h4>
+              <p className="text-[11px] text-slate-500">Mẫu số 01</p>
+              <span className="pill-badge pill-green">&bull; Đã nộp</span>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
+              <FileText className="w-8 h-8 text-emerald-700" />
+              <h4 className="font-bold text-slate-900">Báo cáo tự đánh giá</h4>
+              <p className="text-[11px] text-slate-500">Mẫu số 02</p>
+              <span className="pill-badge pill-green">&bull; Đã nộp</span>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
+              <FileText className="w-8 h-8 text-amber-600" />
+              <h4 className="font-bold text-slate-900">Biểu số 03 (UBND xã)</h4>
+              <p className="text-[11px] text-slate-500">Xác nhận</p>
+              <span className="pill-badge pill-amber">&bull; Đang chờ</span>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
+              <FileText className="w-8 h-8 text-emerald-700" />
+              <h4 className="font-bold text-slate-900">Minh chứng số</h4>
+              <p className="text-[11px] text-slate-500">12 tài liệu</p>
+              <span className="pill-badge pill-green">&bull; Đã nộp</span>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs opacity-60">
+              <FileText className="w-8 h-8 text-slate-400" />
+              <h4 className="font-bold text-slate-900">Biểu số 04 (Cấp huyện)</h4>
+              <p className="text-[11px] text-slate-500">Báo cáo huyện</p>
+              <span className="pill-badge pill-gray">&bull; Chưa nộp</span>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs opacity-60">
+              <FileText className="w-8 h-8 text-slate-400" />
+              <h4 className="font-bold text-slate-900">Kết quả đánh giá</h4>
+              <p className="text-[11px] text-slate-500">Quyết định cấp tỉnh</p>
+              <span className="pill-badge pill-gray">&bull; Chưa có</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 6: WORKFLOW đánh giá OCOP (Image 1 Middle Bottom & Image 3 Bottom Pipeline) */}
+      {activeTab === 'workflow' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+          <h3 className="font-extrabold text-slate-900 text-sm border-b pb-2">
+            Workflow đánh giá OCOP (Theo QĐ 148/QĐ-TTg và Kế hoạch dự án)
+          </h3>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+            <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl space-y-1">
+              <div className="font-black text-emerald-900">1. Khởi tạo hồ sơ</div>
+              <p className="text-[11px] text-emerald-800">Tạo hồ sơ mới & nhập thông tin sản phẩm</p>
+            </div>
+            <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl space-y-1">
+              <div className="font-black text-emerald-900">2. Tự đánh giá</div>
+              <p className="text-[11.5px] text-emerald-800">Đánh giá 18 tiêu chí QĐ 148</p>
+            </div>
+            <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl space-y-1">
+              <div className="font-black text-emerald-900">3. Nộp hồ sơ</div>
+              <p className="text-[11.5px] text-emerald-800">Gửi UBND xã kèm tài liệu</p>
+            </div>
+            <div className="p-3 bg-blue-50 border border-blue-300 rounded-xl space-y-1">
+              <div className="font-black text-blue-900">4. Rà soát (UBND xã)</div>
+              <p className="text-[11.5px] text-blue-800">Xác nhận Biểu số 03</p>
+            </div>
+            <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl space-y-1">
+              <div className="font-black text-amber-900">5. Tiếp nhận (Cấp tỉnh)</div>
+              <p className="text-[11.5px] text-amber-800">Thẩm định chuyển Hội đồng</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Add Evidence (Image 1 Bottom Middle 1) */}
+      {isAddEvidenceModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg p-6 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="font-black text-slate-900 text-sm">Thêm minh chứng mới</h3>
+              <button onClick={() => setIsAddEvidenceModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Tiêu chí liên quan *</label>
+                <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold">
+                  <option>1.2 Đặc điểm, chất lượng sản phẩm</option>
+                  <option>2.1 Nhãn hiệu & tem QR</option>
+                  <option>3.1 VietGAP còn hiệu lực</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Loại minh chứng *</label>
+                <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold">
+                  <option>Giấy chứng nhận chất lượng</option>
+                  <option>Hồ sơ pháp lý</option>
+                  <option>Nhật ký sản xuất</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Mô tả *</label>
+                <textarea
+                  rows={2}
+                  placeholder="Kết quả kiểm nghiệm chất lượng sản phẩm..."
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Tệp đính kèm *</label>
+                <div className="p-6 border-2 border-dashed border-slate-300 rounded-xl text-center hover:border-emerald-500 cursor-pointer transition-colors bg-slate-50">
+                  <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <p className="font-bold text-slate-700">Kéo thả file hoặc chọn file</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">PDF, JPG, PNG (Tối đa 10MB)</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <button
+                onClick={() => setIsAddEvidenceModalOpen(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  setIsAddEvidenceModalOpen(false);
+                  alert('Đã tải lên minh chứng thành công!');
+                }}
+                className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-xl shadow-xs"
+              >
+                Lưu minh chứng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QĐ 148 Export Modal */}
       <Qd148DocumentModal
         isOpen={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}
         dossier={dossier}
       />
-
-      {/* Submission Safeguard Alert Modal (BR-OCOP-01) */}
-      {submitAlertModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 space-y-4">
-            {submitAlertModal.canSubmit ? (
-              <>
-                <div className="flex items-center gap-3 text-emerald-800">
-                  <ShieldCheck className="w-8 h-8 text-emerald-600 shrink-0" />
-                  <div>
-                    <h3 className="font-extrabold text-base text-slate-900">Xác nhận Nộp Hồ Sơ OCOP</h3>
-                    <p className="text-xs text-slate-500">Hồ sơ đã đạt 100% minh chứng bắt buộc theo QĐ 148.</p>
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Bà con có chắc chắn muốn chuyển hồ sơ <strong>{dossier.productName}</strong> lên UBND Xã Tân Tiến để tiến hành thẩm định và ký Biểu số 03 không?
-                </p>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    onClick={() => setSubmitAlertModal({ open: false, missing: [], canSubmit: false })}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
-                  >
-                    Hủy bỏ
-                  </button>
-
-                  <button
-                    onClick={handleConfirmSubmit}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs"
-                  >
-                    Xác nhận Nộp Ngay
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-3 text-rose-800">
-                  <AlertTriangle className="w-8 h-8 text-rose-600 shrink-0" />
-                  <div>
-                    <h3 className="font-extrabold text-base text-slate-900">Chưa thể nộp hồ sơ!</h3>
-                    <p className="text-xs text-rose-600 font-bold">Thiếu minh chứng bắt buộc theo BR-OCOP-01</p>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-1.5 text-xs text-rose-950">
-                  <p className="font-bold">Danh sách tiêu chí bắt buộc còn thiếu minh chứng:</p>
-                  <ul className="list-disc pl-4 space-y-1 text-[11.5px]">
-                    {submitAlertModal.missing.map((m) => (
-                      <li key={m.id}>
-                        <strong>{m.code}:</strong> {m.name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <p className="text-xs text-slate-500">
-                  Vui lòng tải bổ sung minh chứng cho các tiêu chí bắt buộc trên trước khi nộp chính thức.
-                </p>
-
-                <div className="flex items-center justify-end pt-2">
-                  <button
-                    onClick={() => setSubmitAlertModal({ open: false, missing: [], canSubmit: false })}
-                    className="px-4 py-2 bg-slate-800 text-white font-bold text-xs rounded-xl"
-                  >
-                    Đóng & Tải bổ sung
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

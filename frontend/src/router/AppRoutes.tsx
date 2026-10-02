@@ -20,9 +20,11 @@ import { MaterialsPage } from '@/features/inventory/pages/MaterialsPage';
 import { CriteriaPage } from '@/features/ocop/pages/CriteriaPage';
 import { DossiersPage } from '@/features/ocop/pages/DossiersPage';
 import { DossierDetailPage } from '@/features/ocop/pages/DossierDetailPage';
+import { CreateDossierWizardPage } from '@/features/ocop/pages/CreateDossierWizardPage';
 import { EvidencesPage } from '@/features/ocop/pages/EvidencesPage';
 import { EvaluationsPage } from '@/features/ocop/pages/EvaluationsPage';
 import { DecisionsPage } from '@/features/ocop/pages/DecisionsPage';
+import { OcopReportsPage } from '@/features/ocop/pages/OcopReportsPage';
 import { FinancePage } from '@/features/finance/pages/FinancePage';
 import { ReportsPage } from '@/features/system/pages/ReportsPage';
 import { AuditPage } from '@/features/system/pages/AuditPage';
@@ -63,10 +65,12 @@ export const AppRoutes: React.FC = () => {
           {/* OCOP Digital Suite Module */}
           <Route path="/ocop/criteria" element={<CriteriaPage />} />
           <Route path="/ocop/dossiers" element={<DossiersPage />} />
+          <Route path="/ocop/dossiers/new" element={<CreateDossierWizardPage />} />
           <Route path="/ocop/dossiers/:id" element={<DossierDetailPage />} />
           <Route path="/ocop/evidences" element={<EvidencesPage />} />
           <Route path="/ocop/evaluation" element={<EvaluationsPage />} />
           <Route path="/ocop/decisions" element={<DecisionsPage />} />
+          <Route path="/ocop/reports" element={<OcopReportsPage />} />
 
           {/* Finance & System modules */}
           <Route path="/finance" element={<FinancePage />} />
