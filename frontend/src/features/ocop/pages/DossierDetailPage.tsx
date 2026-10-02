@@ -2,13 +2,24 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Star, FileText, CheckSquare, Upload, Award, FileCheck, Save, Send, CheckCircle2, 
-  Printer, Clock, Eye, Link as LinkIcon, ShieldCheck, ChevronRight, Download, Plus, X 
+  Printer, Clock, Eye, Link as LinkIcon, ShieldCheck, ChevronRight, Download, Plus, X,
+  FileSpreadsheet
 } from 'lucide-react';
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+} from 'recharts';
 import { 
   MOCK_OCOP_DOSSIERS_FULL, MOCK_CRITERIA_GROUPS_SUMMARY, MOCK_CRITERIA_DETAILS, 
   MOCK_EVIDENCES_FULL, OcopCriterionDetail, EvidenceItem 
 } from '../../../services/ocopService';
 import { Qd148DocumentModal } from '../components/Qd148DocumentModal';
+import { exportToExcel } from '@/utils/exportUtils';
 
 export const DossierDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +30,7 @@ export const DossierDetailPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'self_eval' | 'council' | 'evidences' | 'dossier_package' | 'workflow'>('overview');
   const [activeGroupIndex, setActiveGroupIndex] = useState<number>(1);
   const [evidenceCategoryFilter, setEvidenceCategoryFilter] = useState<string>('ALL');
+  const [highlightedCode, setHighlightedCode] = useState<string | null>(null);
   
   // Modals
   const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
@@ -53,6 +65,43 @@ export const DossierDetailPage: React.FC = () => {
     if (evidenceCategoryFilter === 'ALL') return true;
     return ev.category === evidenceCategoryFilter;
   });
+
+  // Radar Chart Data preparation
+  const radarData = MOCK_CRITERIA_GROUPS_SUMMARY.map((g) => ({
+    subject: `Nhóm ${g.id}`,
+    fullName: g.name,
+    'Điểm tối đa': g.maxScore,
+    'Điểm đạt được': g.achievedScore,
+  }));
+
+  // Smooth scroll deep linking helper
+  const scrollToCriterion = (code: string) => {
+    const criterion = MOCK_CRITERIA_DETAILS.find((c) => c.code === code);
+    if (criterion) {
+      setActiveGroupIndex(criterion.groupId);
+    }
+    setActiveTab('self_eval');
+    setHighlightedCode(code);
+    setTimeout(() => {
+      const el = document.getElementById(`criterion-row-${code}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 150);
+    setTimeout(() => setHighlightedCode(null), 3000);
+  };
+
+  const handleExportCriteriaExcel = () => {
+    const exportData = MOCK_CRITERIA_DETAILS.map((c) => ({
+      'Mã chỉ tiêu': c.code,
+      'Tên tiêu chí': c.name,
+      'Nhóm tiêu chí': MOCK_CRITERIA_GROUPS_SUMMARY.find((g) => g.id === c.groupId)?.name || '',
+      'Điểm tối đa': c.maxScore,
+      'Điểm tự đánh giá': criteriaScores[c.code] ?? c.selfScore,
+      'Ghi chú minh chứng': c.note,
+    }));
+    exportToExcel(exportData, `Bang_Diem_Tu_Danh_Gia_OCOP_${dossier.code}`, 'Diem_OCOP');
+  };
 
   return (
     <div className="space-y-6 pb-20 animate-fade-in text-slate-800">
@@ -194,9 +243,9 @@ export const DossierDetailPage: React.FC = () => {
         </button>
       </div>
 
-      {/* TAB 1: TỔNG QUAN KẾT QUẢ THEO 6 NHÓM TIÊU CHÍ (Image 1 Top Right Table) */}
+      {/* TAB 1: TỔNG QUAN KẾT QUẢ THEO 6 NHÓM TIÊU CHÍ & BIỂU ĐỒ RA-ĐA */}
       {activeTab === 'overview' && (
-        <div className="bg-white border border-slate-200 rounded-b-2xl p-6 shadow-xs space-y-4">
+        <div className="bg-white border border-slate-200 rounded-b-2xl p-6 shadow-xs space-y-6">
           <div className="flex justify-between items-center border-b pb-3">
             <h3 className="font-black text-slate-900 text-sm">
               Kết quả tự đánh giá theo bộ tiêu chí (100 điểm)
@@ -209,41 +258,70 @@ export const DossierDetailPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
-                  <th className="py-3 px-4">Nhóm tiêu chí</th>
-                  <th className="py-3 px-4 text-center">Tỉ trọng</th>
-                  <th className="py-3 px-4 text-center">Điểm tối đa</th>
-                  <th className="py-3 px-4 text-center">Điểm đạt</th>
-                  <th className="py-3 px-4 text-center">Tỉ lệ (%)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
-                {MOCK_CRITERIA_GROUPS_SUMMARY.map((g) => (
-                  <tr key={g.id} className="hover:bg-slate-50">
-                    <td className="py-3 px-4 font-bold text-slate-800">{g.name}</td>
-                    <td className="py-3 px-4 text-center font-semibold text-slate-600">{g.weight}%</td>
-                    <td className="py-3 px-4 text-center font-bold text-slate-700">{g.maxScore}</td>
-                    <td className="py-3 px-4 text-center font-black text-emerald-800">{g.achievedScore.toString().replace('.', ',')}</td>
-                    <td className="py-3 px-4 text-center font-bold text-slate-700">{g.percent.toString().replace('.', ',')}%</td>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* Left 3 cols: Table */}
+            <div className="lg:col-span-3 overflow-x-auto border border-slate-200 rounded-xl">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                    <th className="py-3 px-4">Nhóm tiêu chí</th>
+                    <th className="py-3 px-4 text-center">Tỉ trọng</th>
+                    <th className="py-3 px-4 text-center">Tối đa</th>
+                    <th className="py-3 px-4 text-center">Đạt được</th>
+                    <th className="py-3 px-4 text-center">Tỉ lệ (%)</th>
                   </tr>
-                ))}
-                <tr className="bg-emerald-50/60 font-black text-slate-900 border-t-2 border-emerald-200">
-                  <td className="py-3 px-4">Tổng cộng</td>
-                  <td className="py-3 px-4 text-center">100%</td>
-                  <td className="py-3 px-4 text-center">100</td>
-                  <td className="py-3 px-4 text-center text-emerald-950 text-sm">{dossier.totalScore.toString().replace('.', ',')}</td>
-                  <td className="py-3 px-4 text-center text-emerald-950 text-sm">78,5%</td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium">
+                  {MOCK_CRITERIA_GROUPS_SUMMARY.map((g) => (
+                    <tr key={g.id} className="hover:bg-slate-50">
+                      <td className="py-3 px-4 font-bold text-slate-800">{g.name}</td>
+                      <td className="py-3 px-4 text-center font-semibold text-slate-600">{g.weight}%</td>
+                      <td className="py-3 px-4 text-center font-bold text-slate-700">{g.maxScore}</td>
+                      <td className="py-3 px-4 text-center font-black text-emerald-800">{g.achievedScore.toString().replace('.', ',')}</td>
+                      <td className="py-3 px-4 text-center font-bold text-slate-700">{g.percent.toString().replace('.', ',')}%</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-emerald-50/60 font-black text-slate-900 border-t-2 border-emerald-200">
+                    <td className="py-3 px-4">Tổng cộng</td>
+                    <td className="py-3 px-4 text-center">100%</td>
+                    <td className="py-3 px-4 text-center">100</td>
+                    <td className="py-3 px-4 text-center text-emerald-950 text-sm">{dossier.totalScore.toString().replace('.', ',')}</td>
+                    <td className="py-3 px-4 text-center text-emerald-950 text-sm">78,5%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Right 2 cols: Radar Chart (Biểu đồ Ra-đa Đánh giá OCOP) */}
+            <div className="lg:col-span-2 border border-slate-200 rounded-xl p-4 bg-gradient-to-br from-slate-50 to-emerald-50/40 flex flex-col justify-between">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                <h4 className="font-extrabold text-slate-900 text-xs">Biểu đồ Ra-đa Tiêu chí OCOP</h4>
+                <span className="pill-badge pill-green text-[10px]">Phân hạng: 4 Sao</span>
+              </div>
+              
+              <div className="h-60 w-full my-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                    <PolarGrid stroke="#cbd5e1" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#334155', fontWeight: 700 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 30]} tick={{ fontSize: 9 }} />
+                    <Radar name="Điểm tối đa" dataKey="Điểm tối đa" stroke="#94a3b8" fill="#cbd5e1" fillOpacity={0.3} />
+                    <Radar name="Điểm đạt được" dataKey="Điểm đạt được" stroke="#059669" fill="#10b981" fillOpacity={0.65} />
+                    <RechartsTooltip formatter={(val: any) => [`${val} điểm`]} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="flex justify-center gap-4 text-[11px] font-bold border-t border-slate-200/80 pt-2 text-slate-600">
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-slate-300 rounded-full"></span> Điểm tối đa</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span> Thực đạt</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* TAB 2: TỰ ĐÁNH GIÁ THEO BỘ TIÊU CHÍ (Image 1 Bottom Left 1 & Image 3 Screen 4) */}
+      {/* TAB 2: TỰ ĐÁNH GIÁ THEO BỘ TIÊU CHÍ */}
       {activeTab === 'self_eval' && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Vertical 6-Group Navigation Sidebar */}
@@ -271,9 +349,17 @@ export const DossierDetailPage: React.FC = () => {
 
           {/* Right Main Scoring Table */}
           <div className="lg:col-span-3 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-            <h3 className="font-extrabold text-slate-900 text-sm border-b pb-2">
-              {MOCK_CRITERIA_GROUPS_SUMMARY[activeGroupIndex - 1]?.name} ({MOCK_CRITERIA_GROUPS_SUMMARY[activeGroupIndex - 1]?.maxScore} điểm)
-            </h3>
+            <div className="flex justify-between items-center border-b pb-2">
+              <h3 className="font-extrabold text-slate-900 text-sm">
+                {MOCK_CRITERIA_GROUPS_SUMMARY[activeGroupIndex - 1]?.name} ({MOCK_CRITERIA_GROUPS_SUMMARY[activeGroupIndex - 1]?.maxScore} điểm)
+              </h3>
+              <button
+                onClick={handleExportCriteriaExcel}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-bold text-xs rounded-xl border border-slate-200 transition-colors inline-flex items-center gap-1.5"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Xuất Excel
+              </button>
+            </div>
 
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
               <table className="w-full text-left border-collapse text-xs">
@@ -287,7 +373,13 @@ export const DossierDetailPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {activeGroupCriteria.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50">
+                    <tr
+                      id={`criterion-row-${c.code}`}
+                      key={c.id}
+                      className={`transition-colors duration-500 ${
+                        highlightedCode === c.code ? 'bg-amber-100/90 border-l-4 border-amber-500 font-bold' : 'hover:bg-slate-50'
+                      }`}
+                    >
                       <td className="py-3 px-3">
                         <div className="font-bold text-slate-900">{c.code} {c.name}</div>
                       </td>
@@ -457,7 +549,15 @@ export const DossierDetailPage: React.FC = () => {
                     <td className="py-3 px-3 text-center font-mono font-bold text-slate-500">{idx + 1}</td>
                     <td className="py-3 px-3 font-bold text-slate-900">{ev.title}</td>
                     <td className="py-3 px-3"><span className="pill-badge pill-blue">{ev.categoryLabel}</span></td>
-                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">{ev.criterionCode}</td>
+                    <td className="py-3 px-3 text-center">
+                      <button
+                        onClick={() => scrollToCriterion(ev.criterionCode)}
+                        className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-mono font-bold transition-all inline-flex items-center gap-1 cursor-pointer shadow-2xs"
+                        title="Bấm để cuộn mượt xem vị trí tiêu chí này"
+                      >
+                        <LinkIcon className="w-3 h-3 text-amber-600" /> {ev.criterionCode}
+                      </button>
+                    </td>
                     <td className="py-3 px-3 text-center text-slate-500">{ev.uploadedAt}</td>
                     <td className="py-3 px-3 text-center">
                       <button

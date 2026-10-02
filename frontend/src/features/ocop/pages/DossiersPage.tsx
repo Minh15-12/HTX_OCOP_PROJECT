@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Award, Plus, Search, Star, Eye, Edit, Trash2, Calendar, Clock, 
   FileText, CheckCircle2, AlertCircle, Filter, Layers, RefreshCw, 
-  Download, Printer, ChevronRight, X, MoreVertical, FileCheck, Building2, MapPin, Phone, Mail, User
+  Download, Printer, ChevronRight, X, MoreVertical, FileCheck, Building2, MapPin, Phone, Mail, User,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
@@ -11,6 +12,7 @@ import {
 } from 'recharts';
 import { ocopServiceFull, OcopDossierItem } from '../../../services/ocopService';
 import { Qd148DocumentModal } from '../components/Qd148DocumentModal';
+import { exportToExcel } from '@/utils/exportUtils';
 
 export const DossiersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -97,8 +99,26 @@ export const DossiersPage: React.FC = () => {
           </div>
 
           <button
+            onClick={() => {
+              const exportData = filteredDossiers.map((d) => ({
+                'Mã hồ sơ': d.code,
+                'Sản phẩm': d.productName,
+                'Chủ thể': d.subjectName,
+                'Nhóm sản phẩm': d.productCategory,
+                'Điểm tự đánh giá': d.totalScore,
+                'Trạng thái': d.statusLabel,
+                'Ngày nộp': d.submissionDate,
+              }));
+              exportToExcel(exportData, 'Danh_Sach_Ho_So_OCOP', 'HoSoOCOP');
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs shadow-2xs transition-all shrink-0 cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Xuất Excel
+          </button>
+
+          <button
             onClick={() => navigate('/ocop/dossiers/new')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs shadow-sm transition-all shrink-0 active:scale-98"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs shadow-sm transition-all shrink-0 active:scale-98 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[3]" /> Thêm hồ sơ OCOP
           </button>
