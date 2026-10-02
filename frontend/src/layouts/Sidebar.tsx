@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { navigationConfig } from '@/router/navigation';
 import { useTenantContextStore } from '@/stores/tenantContextStore';
@@ -8,32 +8,72 @@ import { Sprout, Settings } from 'lucide-react';
 export const Sidebar: React.FC = () => {
   const { activeCooperative } = useTenantContextStore();
 
-  const rawName = activeCooperative?.legal_name || 'HTX NÔNG NGHIỆP XANH PHÚ THỊNH';
+  const getSavedName = () => {
+    try {
+      const raw = localStorage.getItem('htx_ocop_system_settings');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.system_name && parsed.system_name.trim()) return parsed.system_name.trim();
+        if (parsed?.managing_unit && parsed.managing_unit.trim()) return parsed.managing_unit.trim();
+      }
+    } catch {}
+    return activeCooperative?.legal_name || 'HTX NÔNG NGHIỆP XANH PHÚ THỊNH';
+  };
+
+  const [currentName, setCurrentName] = useState<string>(getSavedName);
+
+  useEffect(() => {
+    setCurrentName(getSavedName());
+  }, [activeCooperative?.legal_name]);
+
+  useEffect(() => {
+    const handleSettingsUpdated = (e: any) => {
+      const detail = e?.detail;
+      if (detail?.system_name) {
+        setCurrentName(detail.system_name);
+      } else if (detail?.managing_unit) {
+        setCurrentName(detail.managing_unit);
+      } else {
+        setCurrentName(getSavedName());
+      }
+    };
+
+    window.addEventListener('system-settings-updated', handleSettingsUpdated);
+    window.addEventListener('storage', handleSettingsUpdated);
+    return () => {
+      window.removeEventListener('system-settings-updated', handleSettingsUpdated);
+      window.removeEventListener('storage', handleSettingsUpdated);
+    };
+  }, []);
 
   const formatBrandHeader = (name: string) => {
-    const uppercase = name.toUpperCase().trim();
+    const uppercase = (name || '').toUpperCase().trim();
     if (uppercase.startsWith('HTX NÔNG NGHIỆP')) {
+      const rest = uppercase.replace('HTX NÔNG NGHIỆP', '').trim();
       return {
         line1: 'HTX NÔNG NGHIỆP',
-        line2: uppercase.replace('HTX NÔNG NGHIỆP', '').trim() || 'XANH PHÚ THỊNH',
+        line2: rest || 'XANH PHÚ THỊNH',
       };
     }
     if (uppercase.startsWith('HỢP TÁC XÃ NÔNG NGHIỆP')) {
+      const rest = uppercase.replace('HỢP TÁC XÃ NÔNG NGHIỆP', '').trim();
       return {
         line1: 'HTX NÔNG NGHIỆP',
-        line2: uppercase.replace('HỢP TÁC XÃ NÔNG NGHIỆP', '').trim() || 'XANH PHÚ THỊNH',
+        line2: rest || 'XANH PHÚ THỊNH',
       };
     }
     if (uppercase.startsWith('HỢP TÁC XÃ')) {
+      const rest = uppercase.replace('HỢP TÁC XÃ', '').trim();
       return {
         line1: 'HỢP TÁC XÃ',
-        line2: uppercase.replace('HỢP TÁC XÃ', '').trim() || 'NÔNG NGHIỆP',
+        line2: rest || 'NÔNG NGHIỆP',
       };
     }
     if (uppercase.startsWith('HTX')) {
+      const rest = uppercase.replace('HTX', '').trim();
       return {
         line1: 'HTX',
-        line2: uppercase.replace('HTX', '').trim() || 'NÔNG NGHIỆP',
+        line2: rest || 'NÔNG NGHIỆP',
       };
     }
     const words = uppercase.split(' ');
@@ -43,10 +83,10 @@ export const Sidebar: React.FC = () => {
         line2: words.slice(2).join(' '),
       };
     }
-    return { line1: 'HTX NÔNG NGHIỆP', line2: uppercase };
+    return { line1: 'HTX NÔNG NGHIỆP', line2: uppercase || 'XANH PHÚ THỊNH' };
   };
 
-  const brand = formatBrandHeader(rawName);
+  const brand = formatBrandHeader(currentName);
 
   return (
     <aside className="w-64 bg-[#053725] text-slate-100 flex flex-col h-[calc(100vh-3.5rem)] sticky top-14 shrink-0 border-r border-emerald-950 overflow-y-auto z-20 shadow-md">

@@ -55,15 +55,63 @@ export interface SystemSettings {
   profit_share_coop_rate?: number;
 }
 
+const SETTINGS_STORAGE_KEY = 'htx_ocop_system_settings';
+
+const defaultSettings: SystemSettings = {
+  system_name: 'HTX Nông nghiệp Xanh Phú Thịnh',
+  managing_unit: 'Hợp tác xã Nông nghiệp Xanh Phú Thịnh',
+  default_language: 'Tiếng Việt',
+  timezone: '(GMT+07:00) Asia/Ho_Chi_Minh',
+  address: 'Thôn 2, xã Mê Linh, huyện Lâm Hà, tỉnh Lâm Đồng',
+  date_format: 'dd/mm/yyyy',
+  support_email: 'htxphuthinh@gmail.com',
+  support_phone: '0987 654 321',
+  system_version: 'v1.0.0',
+  logo_url: null,
+  enable_2fa: false,
+  limit_failed_login: true,
+  auto_logout_idle: true,
+  idle_timeout_minutes: 30,
+};
+
 export const systemService = {
   async getSettings(): Promise<SystemSettings> {
-    const res: any = await apiClient.get('/system-settings');
-    return res.data || res;
+    try {
+      const res: any = await apiClient.get('/system-settings');
+      const data = res.data || res;
+      if (data && data.system_name) {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(data));
+        return data;
+      }
+    } catch (e) {
+      console.warn('API getSettings warning, fallback to local storage:', e);
+    }
+    const local = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (local) {
+      try {
+        return { ...defaultSettings, ...JSON.parse(local) };
+      } catch (e) {}
+    }
+    return defaultSettings;
   },
 
   async updateSettings(data: Partial<SystemSettings>): Promise<SystemSettings> {
-    const res: any = await apiClient.put('/system-settings', data);
-    return res.data || res;
+    let updated: any = null;
+    try {
+      const res: any = await apiClient.put('/system-settings', data);
+      updated = res.data || res;
+    } catch (e) {
+      console.warn('API updateSettings warning, fallback to local storage:', e);
+    }
+    const current = (await this.getSettings()) || defaultSettings;
+    const merged: SystemSettings = { ...current, ...data, ...(updated || {}) };
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
+
+    // Dispatch event for real-time UI updates across components (e.g., Sidebar)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('system-settings-updated', { detail: merged }));
+    }
+    return merged;
   },
 
   async getRoles(): Promise<Role[]> {

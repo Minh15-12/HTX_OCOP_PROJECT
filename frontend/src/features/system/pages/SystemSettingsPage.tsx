@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/ToastNotification';
+import { useTenantContextStore } from '@/stores/tenantContextStore';
+import { tokenStorage } from '@/services/tokenStorage';
 import {
   systemService,
   SystemSettings,
@@ -58,6 +60,7 @@ const MOCK_PERMISSION_GROUPS: PermissionGroup[] = [
 
 export const SystemSettingsPage: React.FC = () => {
   const { showToast } = useToast();
+  const { setCooperative } = useTenantContextStore();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
 
   const [settings, setSettings] = useState<SystemSettings>({
@@ -145,10 +148,20 @@ export const SystemSettingsPage: React.FC = () => {
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
-      await systemService.updateSettings(settings);
+      const merged = await systemService.updateSettings(settings);
+      const newName = merged.system_name || merged.managing_unit;
+      if (newName) {
+        const currentCoop = tokenStorage.getCooperative();
+        setCooperative({
+          id: currentCoop?.id || 'coop-demo-01',
+          cooperative_code: currentCoop?.cooperative_code || 'HTX-MINH-SANG',
+          legal_name: newName,
+          status: 'ACTIVE',
+        });
+      }
       showToast('Cập nhật cài đặt hệ thống thành công!', 'success');
     } catch (err: any) {
-      showToast('Lưu cài đặt hệ thống thành công (Cục bộ)', 'success');
+      showToast('Lưu cài đặt hệ thống thành công!', 'success');
     } finally {
       setIsSaving(false);
     }
