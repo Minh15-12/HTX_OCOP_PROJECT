@@ -276,5 +276,6 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::get('/documents/{id}/download', [DocumentController::class, 'download'])->name('api.documents.download');
 
     // Notifications
-    require base_path('app/Modules/Notification/Presentation/Http/routes.php');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
+    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('api.notifications.mark-as-read');
 });

@@ -24,9 +24,16 @@ export const SystemInfoCard: React.FC<Props> = ({ settings, onChange, onSave, is
             <p className="text-xs text-slate-500">Cấu hình thông tin cơ bản của hệ thống và tổ chức HTX</p>
           </div>
         </div>
-        <Button variant="primary" size="sm" onClick={onSave} isLoading={isSaving}>
-          Lưu thay đổi
-        </Button>
+        <div className="flex items-center gap-2">
+          <a href="http://localhost:8000/docs/api" target="_blank" rel="noopener noreferrer">
+            <Button variant="secondary" size="sm" type="button">
+              Test API (Swagger / Scalar)
+            </Button>
+          </a>
+          <Button variant="primary" size="sm" onClick={onSave} isLoading={isSaving}>
+            Lưu thay đổi
+          </Button>
+        </div>
       </div>
 
       <div className="p-5">
