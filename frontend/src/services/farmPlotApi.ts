@@ -37,37 +37,37 @@ const PLOTS_STORAGE_KEY = 'htx_ocop_farm_plots_db';
 const initialProductionUnits: ProductionUnit[] = [
   {
     id: 'pu-01',
-    unit_code: 'VT-LUA-01',
-    name: 'Cánh Đồng Lúa ST25 - Vùng 1',
-    crop: 'Lúa ST25',
+    unit_code: 'VT-LAMHA-01',
+    name: 'Vùng trồng Cà phê Arabica Cầu Đất',
+    crop: 'Cà phê Arabica',
     area: 12.5,
     status: 'ACTIVE',
   },
   {
     id: 'pu-02',
-    unit_code: 'VT-BUOI-02',
-    name: 'Vùng Bưởi Da Xanh Xuất Khẩu',
-    crop: 'Bưởi Da Xanh',
+    unit_code: 'VT-DALAT-02',
+    name: 'Vùng trồng Ớt Chuông Sweet Palermo',
+    crop: 'Ớt chuông Sweet Palermo',
     area: 8.0,
     status: 'ACTIVE',
   },
   {
     id: 'pu-03',
-    unit_code: 'VT-XOAI-03',
-    name: 'Vùng Xoài Cát Hòa Lộc',
-    crop: 'Xoài Cát Hòa Lộc',
+    unit_code: 'VT-TEAML-03',
+    name: 'Vùng Chè Shan Tuyết Cổ Thụ',
+    crop: 'Chè Shan Tuyết',
     area: 5.5,
     status: 'PREPARING',
   },
 ];
 
 const initialPlots: FarmPlot[] = [
-  { id: 'plot-101', production_unit_id: 'pu-01', plot_code: 'TD-01-ST25', area: 4.5, status: 'ACTIVE' },
-  { id: 'plot-102', production_unit_id: 'pu-01', plot_code: 'TD-02-ST25', area: 4.0, status: 'ACTIVE' },
-  { id: 'plot-103', production_unit_id: 'pu-01', plot_code: 'TD-03-ST25', area: 4.0, status: 'ACTIVE' },
-  { id: 'plot-201', production_unit_id: 'pu-02', plot_code: 'TD-01-BUOI', area: 5.0, status: 'ACTIVE' },
-  { id: 'plot-202', production_unit_id: 'pu-02', plot_code: 'TD-02-BUOI', area: 3.0, status: 'ACTIVE' },
-  { id: 'plot-301', production_unit_id: 'pu-03', plot_code: 'TD-01-XOAI', area: 5.5, status: 'PREPARING' },
+  { id: 'plot-101', production_unit_id: 'pu-01', plot_code: 'TD-01-CAPHE', area: 4.5, status: 'ACTIVE' },
+  { id: 'plot-102', production_unit_id: 'pu-01', plot_code: 'TD-02-CAPHE', area: 4.0, status: 'ACTIVE' },
+  { id: 'plot-103', production_unit_id: 'pu-01', plot_code: 'TD-03-CAPHE', area: 4.0, status: 'ACTIVE' },
+  { id: 'plot-201', production_unit_id: 'pu-02', plot_code: 'TD-01-OTCHUONG', area: 5.0, status: 'ACTIVE' },
+  { id: 'plot-202', production_unit_id: 'pu-02', plot_code: 'TD-02-OTCHUONG', area: 3.0, status: 'ACTIVE' },
+  { id: 'plot-301', production_unit_id: 'pu-03', plot_code: 'TD-01-CHE', area: 5.5, status: 'PREPARING' },
 ];
 
 export function getStoredProductionUnits(): ProductionUnit[] {
@@ -127,7 +127,7 @@ export async function fetchProductionUnits(params: { search?: string; status?: s
       return res;
     }
   } catch (err) {
-    console.warn('API fetchProductionUnits warning, using local fallback:', err);
+    console.warn('API fetchProductionUnits notice, using local fallback:', err);
   }
   return { data: getStoredProductionUnits() };
 }
@@ -144,7 +144,7 @@ export async function createProductionUnit(payload: {
   try {
     return await apiClient.post('/production-units', payload);
   } catch (err) {
-    console.warn('API createProductionUnit warning, using local fallback:', err);
+    console.warn('API createProductionUnit notice, using local fallback:', err);
     const list = getStoredProductionUnits();
     const newUnit: ProductionUnit = {
       id: `pu-${Date.now()}`,
@@ -167,7 +167,7 @@ export async function updateProductionUnit(
   try {
     return await apiClient.patch(`/production-units/${id}`, payload);
   } catch (err) {
-    console.warn('API updateProductionUnit warning, using local fallback:', err);
+    console.warn('API updateProductionUnit notice, using local fallback:', err);
     const list = getStoredProductionUnits();
     const updated = list.map((u) => (u.id === id ? { ...u, ...payload } : u));
     saveProductionUnitsToStorage(updated);
@@ -183,7 +183,7 @@ export async function fetchPlotsByUnit(unitId: string) {
       return res;
     }
   } catch (err) {
-    console.warn(`API fetchPlotsByUnit(${unitId}) warning, using local fallback:`, err);
+    console.warn(`API fetchPlotsByUnit(${unitId}) notice, using local fallback:`, err);
   }
   return { data: getStoredPlotsByUnit(unitId) };
 }
@@ -202,7 +202,7 @@ export async function createPlot(unitId: string, payload: FarmPlotFormData) {
   try {
     return await apiClient.post(`/production-units/${unitId}/plots`, payload);
   } catch (err) {
-    console.warn('API createPlot warning, using local fallback:', err);
+    console.warn('API createPlot notice, using local fallback:', err);
     const allPlots = getAllStoredPlots();
     const newPlot: FarmPlot = {
       id: `plot-${Date.now()}`,

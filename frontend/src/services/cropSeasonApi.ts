@@ -35,47 +35,47 @@ export interface CropSeasonFilters {
   per_page?: number;
 }
 
-const CROP_SEASONS_STORAGE_KEY = 'htx_ocop_crop_seasons_db';
+const SEASONS_STORAGE_KEY = 'htx_ocop_crop_seasons_db';
 
-const initialCropSeasons: CropSeason[] = [
+const initialSeasons: CropSeason[] = [
   {
     id: 'cs-01',
     production_unit_id: 'pu-01',
-    unit_code: 'VT-LUA-01',
-    unit_name: 'Cánh Đồng Lúa ST25 - Vùng 1',
-    name: 'Đông Xuân 2025-2026 - Lúa ST25',
-    crop: 'Lúa ST25',
-    start_date: '2025-11-15',
-    expected_end_date: '2026-03-20',
+    unit_code: 'VT-LAMHA-01',
+    unit_name: 'Vùng trồng Cà phê Arabica Cầu Đất',
+    name: 'Mùa Vụ Thu Hoạch Cà Phê 2025–2026',
+    crop: 'Cà phê Arabica',
+    start_date: '2025-10-01',
+    expected_end_date: '2026-03-31',
     status: 'ACTIVE',
   },
   {
     id: 'cs-02',
     production_unit_id: 'pu-02',
-    unit_code: 'VT-BUOI-02',
-    unit_name: 'Vùng Bưởi Da Xanh Xuất Khẩu',
-    name: 'Mùa Vụ Bưởi Tết 2026',
-    crop: 'Bưởi Da Xanh',
-    start_date: '2025-06-01',
-    expected_end_date: '2026-02-10',
-    status: 'HARVESTING',
+    unit_code: 'VT-DALAT-02',
+    unit_name: 'Vùng trồng Ớt Chuông Sweet Palermo',
+    name: 'Vụ Đông Xuân Ớt Chuông Sweet Palermo 2026',
+    crop: 'Ớt chuông Sweet Palermo',
+    start_date: '2025-11-15',
+    expected_end_date: '2026-04-30',
+    status: 'ACTIVE',
   },
   {
     id: 'cs-03',
     production_unit_id: 'pu-03',
-    unit_code: 'VT-XOAI-03',
-    unit_name: 'Vùng Xoài Cát Hòa Lộc',
-    name: 'Hè Thu 2026 - Chuẩn bị đất',
-    crop: 'Xoài Cát Hòa Lộc',
-    start_date: '2026-04-01',
-    expected_end_date: '2026-08-30',
+    unit_code: 'VT-TEAML-03',
+    unit_name: 'Vùng Chè Shan Tuyết Cổ Thụ',
+    name: 'Vụ Chè Xuân 2026',
+    crop: 'Chè Shan Tuyết',
+    start_date: '2026-01-01',
+    expected_end_date: '2026-06-30',
     status: 'PLANNED',
   },
 ];
 
-export function getStoredCropSeasons(): CropSeason[] {
+export function getStoredSeasons(): CropSeason[] {
   try {
-    const raw = localStorage.getItem(CROP_SEASONS_STORAGE_KEY);
+    const raw = localStorage.getItem(SEASONS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -83,38 +83,37 @@ export function getStoredCropSeasons(): CropSeason[] {
   } catch (e) {
     console.error('Error reading crop seasons from localStorage', e);
   }
-  return initialCropSeasons;
+  return initialSeasons;
 }
 
-export function saveCropSeasonsToStorage(seasons: CropSeason[]): void {
+export function saveSeasonsToStorage(seasons: CropSeason[]): void {
   try {
-    localStorage.setItem(CROP_SEASONS_STORAGE_KEY, JSON.stringify(seasons));
+    localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(seasons));
   } catch (e) {
     console.error('Error saving crop seasons to localStorage', e);
   }
 }
 
-// APIs with Hybrid Fallback
 export async function fetchCropSeasons(filters: CropSeasonFilters = {}) {
   try {
     const res: any = await apiClient.get('/crop-seasons', { params: filters });
     const list = res?.data ?? res ?? [];
     if (Array.isArray(list) && list.length > 0) {
-      saveCropSeasonsToStorage(list);
+      saveSeasonsToStorage(list);
       return res;
     }
   } catch (err) {
-    console.warn('API fetchCropSeasons warning, using local fallback:', err);
+    console.warn('API fetchCropSeasons notice, using local fallback:', err);
   }
-  return { data: getStoredCropSeasons() };
+  return { data: getStoredSeasons() };
 }
 
 export async function fetchCropSeason(id: string) {
   try {
     return await apiClient.get(`/crop-seasons/${id}`);
   } catch (err) {
-    const seasons = getStoredCropSeasons();
-    const found = seasons.find((s) => s.id === id);
+    const list = getStoredSeasons();
+    const found = list.find((s) => s.id === id);
     return { data: found || null };
   }
 }
@@ -123,15 +122,19 @@ export async function createCropSeason(payload: CropSeasonFormData) {
   try {
     return await apiClient.post('/crop-seasons', payload);
   } catch (err) {
-    console.warn('API createCropSeason warning, using local fallback:', err);
-    const list = getStoredCropSeasons();
+    console.warn('API createCropSeason notice, using local fallback:', err);
+    const list = getStoredSeasons();
     const newSeason: CropSeason = {
       id: `cs-${Date.now()}`,
-      ...payload,
-      status: 'PLANNED',
-      created_at: new Date().toISOString(),
+      production_unit_id: payload.production_unit_id,
+      name: payload.name,
+      crop: payload.crop,
+      start_date: payload.start_date,
+      expected_end_date: payload.expected_end_date,
+      status: 'ACTIVE',
     };
-    saveCropSeasonsToStorage([newSeason, ...list]);
+    const updated = [newSeason, ...list];
+    saveSeasonsToStorage(updated);
     return { data: newSeason };
   }
 }
@@ -140,10 +143,10 @@ export async function updateCropSeason(id: string, payload: Partial<CropSeasonFo
   try {
     return await apiClient.patch(`/crop-seasons/${id}`, payload);
   } catch (err) {
-    console.warn('API updateCropSeason warning, using local fallback:', err);
-    const list = getStoredCropSeasons();
+    console.warn('API updateCropSeason notice, using local fallback:', err);
+    const list = getStoredSeasons();
     const updated = list.map((s) => (s.id === id ? { ...s, ...payload } : s));
-    saveCropSeasonsToStorage(updated);
+    saveSeasonsToStorage(updated);
     return { data: updated.find((s) => s.id === id) };
   }
 }
@@ -152,18 +155,9 @@ export async function closeCropSeason(id: string) {
   try {
     return await apiClient.post(`/crop-seasons/${id}/close`);
   } catch (err) {
-    console.warn('API closeCropSeason warning, using local fallback:', err);
-    const list = getStoredCropSeasons();
-    const updated = list.map((s) =>
-      s.id === id
-        ? {
-            ...s,
-            status: 'COMPLETED' as const,
-            actual_end_date: new Date().toISOString().slice(0, 10),
-          }
-        : s
-    );
-    saveCropSeasonsToStorage(updated);
+    const list = getStoredSeasons();
+    const updated = list.map((s) => (s.id === id ? { ...s, status: 'COMPLETED' as CropSeasonStatus } : s));
+    saveSeasonsToStorage(updated);
     return { data: updated.find((s) => s.id === id) };
   }
 }
