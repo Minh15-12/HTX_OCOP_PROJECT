@@ -2,6 +2,7 @@
 
 namespace Modules\Product\Application\Services;
 
+use Illuminate\Support\Facades\DB;
 use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;

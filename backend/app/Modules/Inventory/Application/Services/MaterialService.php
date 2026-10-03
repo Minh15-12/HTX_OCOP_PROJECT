@@ -2,6 +2,7 @@
 
 namespace Modules\Inventory\Application\Services;
 
+use Illuminate\Support\Facades\DB;
 use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;

@@ -279,3 +279,4 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
     Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('api.notifications.mark-as-read');
 });
+
