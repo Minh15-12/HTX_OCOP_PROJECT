@@ -253,3 +253,4 @@ Route::middleware(['tenant.scope'])->group(function () {
     Route::post('/documents/generate/certificate/{applicationId}', [DocumentController::class, 'generateCertificate'])->name('api.documents.generate.certificate');
     Route::get('/documents/{id}/download', [DocumentController::class, 'download'])->name('api.documents.download');
 });
+

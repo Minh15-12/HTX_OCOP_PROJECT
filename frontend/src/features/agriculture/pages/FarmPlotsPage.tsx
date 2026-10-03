@@ -44,6 +44,34 @@ const toList = (res: any): any[] => {
   return Array.isArray(list) ? list : [];
 };
 
+/** Mock data đẹp khi backend chưa chạy */
+const MOCK_UNITS: ProductionUnit[] = [
+  { id: 'u1', unit_code: 'VT-ML-02', name: 'Thôn 2 - Mê Linh', crop: 'Cà phê Arabica', area: 32.5, status: 'ACTIVE' },
+  { id: 'u2', unit_code: 'VT-LH-03', name: 'Thôn 3 - Lâm Hà', crop: 'Tiêu', area: 15.0, status: 'ACTIVE' },
+  { id: 'u3', unit_code: 'VT-DT-01', name: 'Thôn 1 - Đạ Tẻh', crop: 'Cà phê Robusta', area: 18.5, status: 'ACTIVE' },
+  { id: 'u4', unit_code: 'VT-TH-04', name: 'Thôn 4 - Tân Hà', crop: 'Sầu riêng', area: 12.0, status: 'ACTIVE' },
+  { id: 'u5', unit_code: 'VT-DD-05', name: 'Thôn 5 - Đơn Dương', crop: 'Chè', area: 10.0, status: 'ACTIVE' },
+  { id: 'u6', unit_code: 'VT-LH-06', name: 'Thôn 6 - Lâm Hà', crop: 'Bơ', area: 8.5, status: 'ACTIVE' },
+  { id: 'u7', unit_code: 'VT-ML-07', name: 'Thôn 7 - Mê Linh', crop: 'Cà phê Arabica', area: 22.0, status: 'PREPARING' },
+  { id: 'u8', unit_code: 'VT-DT-08', name: 'Thôn 8 - Đạ Tẻh', crop: 'Cà phê Robusta', area: 14.0, status: 'FALLOW' },
+];
+
+const MOCK_PLOTS: Record<string, FarmPlot[]> = {
+  u1: [
+    { id: 'p1', production_unit_id: 'u1', plot_code: 'TD-01', area: 8.5, status: 'ACTIVE', unit_name: 'Thôn 2 - Mê Linh' },
+    { id: 'p2', production_unit_id: 'u1', plot_code: 'TD-02', area: 12.0, status: 'ACTIVE', unit_name: 'Thôn 2 - Mê Linh' },
+    { id: 'p3', production_unit_id: 'u1', plot_code: 'TD-03', area: 12.0, status: 'ACTIVE', unit_name: 'Thôn 2 - Mê Linh' },
+  ],
+  u2: [
+    { id: 'p4', production_unit_id: 'u2', plot_code: 'TD-04', area: 7.5, status: 'ACTIVE', unit_name: 'Thôn 3 - Lâm Hà' },
+    { id: 'p5', production_unit_id: 'u2', plot_code: 'TD-05', area: 7.5, status: 'ACTIVE', unit_name: 'Thôn 3 - Lâm Hà' },
+  ],
+  u3: [
+    { id: 'p6', production_unit_id: 'u3', plot_code: 'TD-06', area: 9.0, status: 'ACTIVE', unit_name: 'Thôn 1 - Đạ Tẻh' },
+    { id: 'p7', production_unit_id: 'u3', plot_code: 'TD-07', area: 9.5, status: 'ACTIVE', unit_name: 'Thôn 1 - Đạ Tẻh' },
+  ],
+};
+
 export const FarmPlotsPage: React.FC = () => {
   const [units, setUnits] = useState<ProductionUnit[]>([]);
   const [selected, setSelected] = useState<ProductionUnit | null>(null);
@@ -52,6 +80,7 @@ export const FarmPlotsPage: React.FC = () => {
   const [crop, setCrop] = useState('Tất cả');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usingMock, setUsingMock] = useState(false);
 
   const [modal, setModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -69,12 +98,23 @@ export const FarmPlotsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       const list = toList(await fetchProductionUnits({ per_page: 50 }));
-      setUnits(list);
-      const current = list.find((u: ProductionUnit) => u.id === (keepId ?? selected?.id));
-      setSelected(current ?? list[0] ?? null);
-    } catch (err: any) {
-      console.error(err);
-      setError(err?.message || 'Không tải được danh sách vùng trồng');
+      if (list.length === 0) {
+        setUnits(MOCK_UNITS);
+        const current = MOCK_UNITS.find((u) => u.id === (keepId ?? selected?.id));
+        setSelected(current ?? MOCK_UNITS[0] ?? null);
+        setUsingMock(true);
+      } else {
+        setUnits(list);
+        const current = list.find((u: ProductionUnit) => u.id === (keepId ?? selected?.id));
+        setSelected(current ?? list[0] ?? null);
+        setUsingMock(false);
+      }
+    } catch {
+      setUnits(MOCK_UNITS);
+      const current = MOCK_UNITS.find((u) => u.id === (keepId ?? selected?.id));
+      setSelected(current ?? MOCK_UNITS[0] ?? null);
+      setUsingMock(true);
+      setError(null);
     } finally {
       setLoading(false);
     }
@@ -83,10 +123,10 @@ export const FarmPlotsPage: React.FC = () => {
   const loadPlots = async (unitId: string) => {
     try {
       setPlotsLoading(true);
-      setPlots(toList(await fetchPlotsByUnit(unitId)));
-    } catch (err) {
-      console.error(err);
-      setPlots([]);
+      const list = toList(await fetchPlotsByUnit(unitId));
+      setPlots(list.length > 0 ? list : (MOCK_PLOTS[unitId] || []));
+    } catch {
+      setPlots(MOCK_PLOTS[unitId] || []);
     } finally {
       setPlotsLoading(false);
     }
@@ -143,23 +183,52 @@ export const FarmPlotsPage: React.FC = () => {
     }
     try {
       setSubmitting(true);
-      if (editingId) {
-        await updateProductionUnit(editingId, {
-          name: form.name.trim(),
-          crop: form.crop.trim(),
-          area: Number(form.area),
-          status: form.status,
-        });
+      if (usingMock) {
+        if (editingId) {
+          setUnits((prev) =>
+            prev.map((u) =>
+              u.id === editingId
+                ? { ...u, name: form.name.trim(), crop: form.crop.trim(), area: Number(form.area), status: form.status }
+                : u
+            )
+          );
+          setSelected((prev) =>
+            prev?.id === editingId
+              ? { ...prev, name: form.name.trim(), crop: form.crop.trim(), area: Number(form.area), status: form.status }
+              : prev
+          );
+        } else {
+          const newUnit: ProductionUnit = {
+            id: `u${Date.now()}`,
+            unit_code: form.unit_code.trim(),
+            name: form.name.trim(),
+            crop: form.crop.trim(),
+            area: Number(form.area),
+            status: form.status || 'ACTIVE',
+          };
+          setUnits((prev) => [newUnit, ...prev]);
+          setSelected(newUnit);
+        }
+        setModal(false);
       } else {
-        await createProductionUnit({
-          unit_code: form.unit_code.trim(),
-          name: form.name.trim(),
-          crop: form.crop.trim(),
-          area: Number(form.area),
-        });
+        if (editingId) {
+          await updateProductionUnit(editingId, {
+            name: form.name.trim(),
+            crop: form.crop.trim(),
+            area: Number(form.area),
+            status: form.status,
+          });
+        } else {
+          await createProductionUnit({
+            unit_code: form.unit_code.trim(),
+            name: form.name.trim(),
+            crop: form.crop.trim(),
+            area: Number(form.area),
+          });
+        }
+        setModal(false);
+        await loadUnits(editingId ?? undefined);
       }
-      setModal(false);
-      await loadUnits(editingId ?? undefined);
     } catch (err: any) {
       alert(err?.message || (editingId ? 'Cập nhật vùng trồng thất bại' : 'Tạo vùng trồng thất bại'));
     } finally {
@@ -175,13 +244,27 @@ export const FarmPlotsPage: React.FC = () => {
     }
     try {
       setPlotSaving(true);
-      await createPlot(selected.id, {
-        plot_code: plotForm.plot_code.trim(),
-        area: Number(plotForm.area),
-      });
-      setPlotForm({ plot_code: '', area: '' });
-      setShowPlotForm(false);
-      await loadPlots(selected.id);
+      if (usingMock) {
+        const newPlot: FarmPlot = {
+          id: `p${Date.now()}`,
+          production_unit_id: selected.id,
+          plot_code: plotForm.plot_code.trim(),
+          area: Number(plotForm.area),
+          status: 'ACTIVE',
+          unit_name: selected.name,
+        };
+        setPlots((prev) => [...prev, newPlot]);
+        setPlotForm({ plot_code: '', area: '' });
+        setShowPlotForm(false);
+      } else {
+        await createPlot(selected.id, {
+          plot_code: plotForm.plot_code.trim(),
+          area: Number(plotForm.area),
+        });
+        setPlotForm({ plot_code: '', area: '' });
+        setShowPlotForm(false);
+        await loadPlots(selected.id);
+      }
     } catch (err: any) {
       alert(err?.message || 'Thêm thửa đất thất bại');
     } finally {

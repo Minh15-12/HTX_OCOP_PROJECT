@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand: #16a34a;
+    --brand-dark: #15803d;
+    --brand-light: #eafaf0;
+    --brand-soft: #f0fdf4;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --border: #e7e9ec;
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+  }
+
+  body {
+    @apply bg-[#f5f6f8] text-[#1f2937] antialiased font-sans text-[13.6px] leading-relaxed;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Status Pill Helpers */
+.pill-badge {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-bold whitespace-nowrap;
+}
+
+.pill-green {
+  @apply bg-emerald-100 text-emerald-700;
+}
+
+.pill-blue {
+  @apply bg-blue-100 text-blue-700;
+}
+
+.pill-amber {
+  @apply bg-amber-100 text-amber-800;
+}
+
+.pill-red {
+  @apply bg-rose-100 text-rose-700;
+}
+
+.pill-purple {
+  @apply bg-purple-100 text-purple-700;
+}
+
+.pill-gray {
+  @apply bg-slate-100 text-slate-600;
+}
+
+/* Timeline component */
+.timeline-item {
+  @apply relative pl-5 pb-4 border-l-2 border-slate-200 text-[12.4px] last:border-transparent last:pb-0;
+}
+
+.timeline-item::before {
+  content: "";
+  @apply absolute -left-[5px] top-[2px] w-2 h-2 rounded-full bg-brand;
+}
