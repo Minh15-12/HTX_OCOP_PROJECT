@@ -1189,3 +1189,47 @@ export const createCapitalContributionApi = async (memberId: string, data: any):
   return fallbackTx;
 };
 
+/** API Client methods for Surplus Distribution Plans (Modules\Finance) */
+export const fetchSurplusPlansApi = async (params?: any) => {
+  try {
+    const response = await apiClient.get('/surplus-distribution-plans', { params });
+    return response.data;
+  } catch (error) {
+    console.warn('API fetchSurplusPlans failed:', error);
+    return { data: [mockSurplusPlan] };
+  }
+};
+
+export const fetchSurplusPlanByIdApi = async (id: string) => {
+  try {
+    const response = await apiClient.get(`/surplus-distribution-plans/${id}`);
+    return response.data;
+  } catch (error) {
+    console.warn(`API fetchSurplusPlanById failed for ${id}:`, error);
+    return { data: mockSurplusPlan };
+  }
+};
+
+export const createSurplusPlanApi = async (payload: {
+  financial_year: number;
+  total_surplus: number;
+  distributable_surplus: number;
+  capital_weight?: number;
+  service_usage_weight?: number;
+  custom_plan_code?: string;
+}) => {
+  const response = await apiClient.post('/surplus-distribution-plans', payload);
+  return response.data;
+};
+
+export const submitSurplusPlanApi = async (id: string) => {
+  const response = await apiClient.post(`/surplus-distribution-plans/${id}/submit`);
+  return response.data;
+};
+
+export const approveSurplusPlanApi = async (id: string) => {
+  const response = await apiClient.post(`/surplus-distribution-plans/${id}/approve`);
+  return response.data;
+};
+
+
