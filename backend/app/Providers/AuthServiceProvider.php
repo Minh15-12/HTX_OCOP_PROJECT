@@ -8,7 +8,12 @@ use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 
 class AuthServiceProvider extends ServiceProvider
 {
-    protected $policies = [];
+    protected $policies = [
+        \Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::class => \App\Policies\MemberPolicy::class,
+        \Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel::class => \App\Policies\OcopApplicationPolicy::class,
+        \Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel::class => \App\Policies\InventoryPolicy::class,
+        \Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel::class => \App\Policies\CashTransactionPolicy::class,
+    ];
 
     public function boot(): void
     {

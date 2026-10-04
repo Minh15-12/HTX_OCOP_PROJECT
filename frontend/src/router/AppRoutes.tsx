@@ -1,89 +1,102 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { GuestRoute } from './GuestRoute';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { AppLayout } from '@/layouts/AppLayout';
-import { LoginPage } from '@/features/auth/pages/LoginPage';
-import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
-import { MembersPage } from '@/features/members/pages/MembersPage';
-import { CapitalPage } from '@/features/members/pages/CapitalPage';
-import { ProfitPage } from '@/features/members/pages/ProfitPage';
-import { CoopProfilePage } from '@/features/members/pages/CoopProfilePage';
-import { FarmPlotsPage } from '@/features/agriculture/pages/FarmPlotsPage';
-import { CropSeasonsPage } from '@/features/agriculture/pages/CropSeasonsPage';
-import { FarmingLogsPage } from '@/features/agriculture/pages/FarmingLogsPage';
-import { HarvestsPage } from '@/features/agriculture/pages/HarvestsPage';
-import { LotTraceabilityPage } from '@/features/agriculture/pages/LotTraceabilityPage';
-import { ProductsPage } from '@/features/inventory/pages/ProductsPage';
-import { MaterialsPage } from '@/features/inventory/pages/MaterialsPage';
-import { CriteriaPage } from '@/features/ocop/pages/CriteriaPage';
-import { DossiersPage } from '@/features/ocop/pages/DossiersPage';
-import { DossierDetailPage } from '@/features/ocop/pages/DossierDetailPage';
-import { CreateDossierWizardPage } from '@/features/ocop/pages/CreateDossierWizardPage';
-import { EvidencesPage } from '@/features/ocop/pages/EvidencesPage';
-import { EvaluationsPage } from '@/features/ocop/pages/EvaluationsPage';
-import { DecisionsPage } from '@/features/ocop/pages/DecisionsPage';
-import { OcopReportsPage } from '@/features/ocop/pages/OcopReportsPage';
-import { FinancePage } from '@/features/finance/pages/FinancePage';
-import { ReportsPage } from '@/features/system/pages/ReportsPage';
-import { AuditPage } from '@/features/system/pages/AuditPage';
-import { SystemSettingsPage } from '@/features/system/pages/SystemSettingsPage';
+
+// Lazy loading pages for optimized bundle size & code splitting
+const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const MembersPage = lazy(() => import('@/features/members/pages/MembersPage').then(m => ({ default: m.MembersPage })));
+const CapitalPage = lazy(() => import('@/features/members/pages/CapitalPage').then(m => ({ default: m.CapitalPage })));
+const ProfitPage = lazy(() => import('@/features/members/pages/ProfitPage').then(m => ({ default: m.ProfitPage })));
+const CoopProfilePage = lazy(() => import('@/features/members/pages/CoopProfilePage').then(m => ({ default: m.CoopProfilePage })));
+const FarmPlotsPage = lazy(() => import('@/features/agriculture/pages/FarmPlotsPage').then(m => ({ default: m.FarmPlotsPage })));
+const CropSeasonsPage = lazy(() => import('@/features/agriculture/pages/CropSeasonsPage').then(m => ({ default: m.CropSeasonsPage })));
+const FarmingLogsPage = lazy(() => import('@/features/agriculture/pages/FarmingLogsPage').then(m => ({ default: m.FarmingLogsPage })));
+const HarvestsPage = lazy(() => import('@/features/agriculture/pages/HarvestsPage').then(m => ({ default: m.HarvestsPage })));
+const LotTraceabilityPage = lazy(() => import('@/features/agriculture/pages/LotTraceabilityPage').then(m => ({ default: m.LotTraceabilityPage })));
+const ProductsPage = lazy(() => import('@/features/inventory/pages/ProductsPage').then(m => ({ default: m.ProductsPage })));
+const MaterialsPage = lazy(() => import('@/features/inventory/pages/MaterialsPage').then(m => ({ default: m.MaterialsPage })));
+const CriteriaPage = lazy(() => import('@/features/ocop/pages/CriteriaPage').then(m => ({ default: m.CriteriaPage })));
+const DossiersPage = lazy(() => import('@/features/ocop/pages/DossiersPage').then(m => ({ default: m.DossiersPage })));
+const DossierDetailPage = lazy(() => import('@/features/ocop/pages/DossierDetailPage').then(m => ({ default: m.DossierDetailPage })));
+const CreateDossierWizardPage = lazy(() => import('@/features/ocop/pages/CreateDossierWizardPage').then(m => ({ default: m.CreateDossierWizardPage })));
+const EvidencesPage = lazy(() => import('@/features/ocop/pages/EvidencesPage').then(m => ({ default: m.EvidencesPage })));
+const EvaluationsPage = lazy(() => import('@/features/ocop/pages/EvaluationsPage').then(m => ({ default: m.EvaluationsPage })));
+const DecisionsPage = lazy(() => import('@/features/ocop/pages/DecisionsPage').then(m => ({ default: m.DecisionsPage })));
+const OcopReportsPage = lazy(() => import('@/features/ocop/pages/OcopReportsPage').then(m => ({ default: m.OcopReportsPage })));
+const FinancePage = lazy(() => import('@/features/finance/pages/FinancePage').then(m => ({ default: m.FinancePage })));
+const ReportsPage = lazy(() => import('@/features/system/pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const AuditPage = lazy(() => import('@/features/system/pages/AuditPage').then(m => ({ default: m.AuditPage })));
+const SystemSettingsPage = lazy(() => import('@/features/system/pages/SystemSettingsPage').then(m => ({ default: m.SystemSettingsPage })));
+
+const PageLoader: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[400px] w-full p-8">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+      <span className="text-xs font-semibold text-slate-500">Đang tải trang...</span>
+    </div>
+  </div>
+);
 
 export const AppRoutes: React.FC = () => {
   return (
-    <Routes>
-      {/* Guest Auth Routes */}
-      <Route element={<GuestRoute />}>
-        <Route element={<AuthLayout />}>
-          <Route path="/auth/login" element={<LoginPage />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Guest Auth Routes */}
+        <Route element={<GuestRoute />}>
+          <Route element={<AuthLayout />}>
+            <Route path="/auth/login" element={<LoginPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      {/* Protected App Routes */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          
-          {/* QUẢN LÝ HTX Module */}
-          <Route path="/cooperative" element={<CoopProfilePage />} />
-          <Route path="/members" element={<MembersPage />} />
-          <Route path="/capital" element={<CapitalPage />} />
-          <Route path="/profit-distribution" element={<ProfitPage />} />
+        {/* Protected App Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            
+            {/* QUẢN LÝ HTX Module */}
+            <Route path="/cooperative" element={<CoopProfilePage />} />
+            <Route path="/members" element={<MembersPage />} />
+            <Route path="/capital" element={<CapitalPage />} />
+            <Route path="/profit-distribution" element={<ProfitPage />} />
 
-          {/* Agriculture Production Module */}
-          <Route path="/agriculture/plots" element={<FarmPlotsPage />} />
-          <Route path="/agriculture/seasons" element={<CropSeasonsPage />} />
-          <Route path="/agriculture/logs" element={<FarmingLogsPage />} />
-          <Route path="/agriculture/harvests" element={<HarvestsPage />} />
-          <Route path="/agriculture/lots/:id/traceability" element={<LotTraceabilityPage />} />
+            {/* Agriculture Production Module */}
+            <Route path="/agriculture/plots" element={<FarmPlotsPage />} />
+            <Route path="/agriculture/seasons" element={<CropSeasonsPage />} />
+            <Route path="/agriculture/logs" element={<FarmingLogsPage />} />
+            <Route path="/agriculture/harvests" element={<HarvestsPage />} />
+            <Route path="/agriculture/lots/:id/traceability" element={<LotTraceabilityPage />} />
 
-          {/* Inventory & Products Module */}
-          <Route path="/inventory/products" element={<ProductsPage />} />
-          <Route path="/inventory/materials" element={<MaterialsPage />} />
+            {/* Inventory & Products Module */}
+            <Route path="/inventory/products" element={<ProductsPage />} />
+            <Route path="/inventory/materials" element={<MaterialsPage />} />
 
-          {/* OCOP Digital Suite Module */}
-          <Route path="/ocop/criteria" element={<CriteriaPage />} />
-          <Route path="/ocop/dossiers" element={<DossiersPage />} />
-          <Route path="/ocop/dossiers/new" element={<CreateDossierWizardPage />} />
-          <Route path="/ocop/dossiers/:id" element={<DossierDetailPage />} />
-          <Route path="/ocop/evidences" element={<EvidencesPage />} />
-          <Route path="/ocop/evaluation" element={<EvaluationsPage />} />
-          <Route path="/ocop/decisions" element={<DecisionsPage />} />
-          <Route path="/ocop/reports" element={<OcopReportsPage />} />
+            {/* OCOP Digital Suite Module */}
+            <Route path="/ocop/criteria" element={<CriteriaPage />} />
+            <Route path="/ocop/dossiers" element={<DossiersPage />} />
+            <Route path="/ocop/dossiers/new" element={<CreateDossierWizardPage />} />
+            <Route path="/ocop/dossiers/:id" element={<DossierDetailPage />} />
+            <Route path="/ocop/evidences" element={<EvidencesPage />} />
+            <Route path="/ocop/evaluation" element={<EvaluationsPage />} />
+            <Route path="/ocop/decisions" element={<DecisionsPage />} />
+            <Route path="/ocop/reports" element={<OcopReportsPage />} />
 
-          {/* Finance & System modules */}
-          <Route path="/finance" element={<FinancePage />} />
-          <Route path="/finance/*" element={<FinancePage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/audit" element={<AuditPage />} />
-          <Route path="/system/settings" element={<SystemSettingsPage />} />
+            {/* Finance & System modules */}
+            <Route path="/finance" element={<FinancePage />} />
+            <Route path="/finance/*" element={<FinancePage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/audit" element={<AuditPage />} />
+            <Route path="/system/settings" element={<SystemSettingsPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      {/* Default Fallback */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+        {/* Default Fallback */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </Suspense>
   );
 };

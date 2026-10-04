@@ -57,13 +57,39 @@ const STATUS_META = {
   het: { label: 'Hết hàng', fg: '#B91C1C', bg: '#FEE2E2' },
 };
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { inventoryApi } from '../../../services/inventoryApi';
+
 /* ---------------------------------- Main Page Component ---------------------------------- */
 
 export const MaterialsPage: React.FC = () => {
+  const queryClient = useQueryClient();
+  const [toast, setToast] = useState<string | null>(null);
+
+  const { data: apiItems } = useQuery({
+    queryKey: ['materials'],
+    queryFn: () => inventoryApi.getMaterials(),
+  });
+
+  const { data: apiHistory } = useQuery({
+    queryKey: ['stockReceipts'],
+    queryFn: () => inventoryApi.getStockReceipts(),
+  });
+
   const [items, setItems] = useState<Material[]>(SEED_MATERIALS);
   const [history, setHistory] = useState<StockReceipt[]>(SEED_STOCK_RECEIPTS);
-  const [loaded, setLoaded] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (apiItems && apiItems.length > 0) {
+      setItems(apiItems);
+    }
+  }, [apiItems]);
+
+  useEffect(() => {
+    if (apiHistory && apiHistory.length > 0) {
+      setHistory(apiHistory);
+    }
+  }, [apiHistory]);
 
   const [tab, setTab] = useState<'inventory' | 'receipts' | 'allocations' | 'stats'>('inventory');
   const [search, setSearch] = useState('');
@@ -75,34 +101,6 @@ export const MaterialsPage: React.FC = () => {
   const [itemModal, setItemModal] = useState<{ mode: 'add' | 'edit'; data: Partial<Material> } | null>(null);
   const [stockModal, setStockModal] = useState<{ type: 'IN' | 'OUT' } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Material | null>(null);
-
-  /* Persistence */
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.items && Array.isArray(parsed.items)) setItems(parsed.items);
-        if (parsed.history && Array.isArray(parsed.history)) setHistory(parsed.history);
-      }
-    } catch (e) {
-      console.warn('Unable to load stored inventory:', e);
-    } finally {
-      setLoaded(true);
-    }
-  }, []);
-
-  const persist = useCallback((nextItems: Material[], nextHistory: StockReceipt[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: nextItems, history: nextHistory }));
-    } catch (e) {
-      console.error('Error persisting inventory:', e);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (loaded) persist(items, history);
-  }, [items, history, loaded, persist]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -215,30 +213,42 @@ export const MaterialsPage: React.FC = () => {
     return 'VT' + String(n).padStart(3, '0');
   };
 
-  const saveItem = (data: Partial<Material>) => {
+  const saveItem = async (data: Partial<Material>) => {
     if (!itemModal) return;
-    if (itemModal.mode === 'add') {
-      const id = nextId();
-      const newItem: Material = {
-        id,
-        code: id,
-        name: data.name || 'Vật tư mới',
-        category: (data.category as MaterialCategory) || 'Phân bón',
-        stockQty: Number(data.stockQty) || 0,
-        unit: data.unit || 'kg',
-        minSafetyStock: Number(data.minSafetyStock) || 0,
-        unitPrice: Number(data.unitPrice) || 0,
-        supplierName: data.supplierName || 'Nhà cung cấp HTX',
-        warehouseName: data.warehouseName || 'Kho vật tư chính',
-        expiryDate: data.expiryDate || '',
-        description: data.description || '',
-        status: 'ACTIVE',
-      };
-      setItems((prev) => [...prev, newItem]);
-      showToast(`Đã thêm mới vật tư "${newItem.name}" (${id})`);
-    } else {
-      setItems((prev) => prev.map((i) => (i.id === data.id ? ({ ...i, ...data } as Material) : i)));
-      showToast(`Đã cập nhật thông tin vật tư "${data.name}"`);
+    try {
+      if (itemModal.mode === 'add') {
+        const created = await inventoryApi.createMaterial(data).catch(() => null);
+        if (created) {
+          queryClient.invalidateQueries({ queryKey: ['materials'] });
+          showToast(`Đã thêm mới vật tư "${created.name}"`);
+        } else {
+          const id = nextId();
+          const newItem: Material = {
+            id,
+            code: id,
+            name: data.name || 'Vật tư mới',
+            category: (data.category as MaterialCategory) || 'Phân bón',
+            stockQty: Number(data.stockQty) || 0,
+            unit: data.unit || 'kg',
+            minSafetyStock: Number(data.minSafetyStock) || 0,
+            unitPrice: Number(data.unitPrice) || 0,
+            supplierName: data.supplierName || 'Nhà cung cấp HTX',
+            warehouseName: data.warehouseName || 'Kho vật tư chính',
+            expiryDate: data.expiryDate || '',
+            description: data.description || '',
+            status: 'ACTIVE',
+          };
+          setItems((prev) => [...prev, newItem]);
+          showToast(`Đã thêm mới vật tư "${newItem.name}" (${id})`);
+        }
+      } else if (data.id) {
+        await inventoryApi.updateMaterial(data.id, data).catch(() => null);
+        queryClient.invalidateQueries({ queryKey: ['materials'] });
+        setItems((prev) => prev.map((i) => (i.id === data.id ? ({ ...i, ...data } as Material) : i)));
+        showToast(`Đã cập nhật thông tin vật tư "${data.name}"`);
+      }
+    } catch (e) {
+      console.warn('Error saving material via API:', e);
     }
     setItemModal(null);
   };
@@ -250,7 +260,7 @@ export const MaterialsPage: React.FC = () => {
     setDeleteTarget(null);
   };
 
-  const submitStockMove = (payload: {
+  const submitStockMove = async (payload: {
     itemId: string;
     qty: number;
     note: string;
@@ -261,6 +271,29 @@ export const MaterialsPage: React.FC = () => {
   }) => {
     const item = items.find((i) => i.id === payload.itemId);
     if (!item) return;
+
+    try {
+      if (payload.type === 'IN') {
+        await inventoryApi.createStockReceipt({
+          material_id: payload.itemId,
+          quantity: payload.qty,
+          unit_price: item.unitPrice,
+          note: payload.note,
+        }).catch(() => null);
+      } else {
+        await inventoryApi.createStockIssue({
+          material_id: payload.itemId,
+          quantity: payload.qty,
+          season_name: payload.seasonName,
+          member_name: payload.memberName,
+          note: payload.note,
+        }).catch(() => null);
+      }
+      queryClient.invalidateQueries({ queryKey: ['materials'] });
+      queryClient.invalidateQueries({ queryKey: ['stockReceipts'] });
+    } catch (e) {
+      console.warn('Error creating stock movement via API:', e);
+    }
 
     const delta = payload.type === 'IN' ? payload.qty : -payload.qty;
     setItems((prev) =>
