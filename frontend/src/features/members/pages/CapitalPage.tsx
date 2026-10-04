@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   FileSpreadsheet,
@@ -46,10 +47,25 @@ const nfc = (str?: string | number | null): string => {
 };
 
 export const CapitalPage: React.FC = () => {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [transactions, setTransactions] = useState<CapitalTransaction[]>([]);
-  const [summaryData, setSummaryData] = useState<CapitalSummaryData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const queryClient = useQueryClient();
+
+  // TanStack React Query v5 Data Fetching
+  const { data: members = [], isLoading: loadingMembers } = useQuery<Member[]>({
+    queryKey: ['members'],
+    queryFn: () => getMembersFromApi(),
+  });
+
+  const { data: transactions = [], isLoading: loadingTx } = useQuery<CapitalTransaction[]>({
+    queryKey: ['capital-contributions'],
+    queryFn: () => getCapitalContributionsApi(),
+  });
+
+  const { data: summaryData = null, isLoading: loadingSummary } = useQuery<CapitalSummaryData | null>({
+    queryKey: ['capital-summary'],
+    queryFn: () => getCapitalSummaryApi(),
+  });
+
+  const loading = loadingMembers || loadingTx || loadingSummary;
 
   // Filter & Selected state
   const [search, setSearch] = useState('');
@@ -76,35 +92,32 @@ export const CapitalPage: React.FC = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Load data from Real API on mount
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [membersData, txData, summary] = await Promise.all([
-        getMembersFromApi(),
-        getCapitalContributionsApi(),
-        getCapitalSummaryApi(),
-      ]);
+  const createCapitalMutation = useMutation({
+    mutationFn: async ({ memberId, formData }: { memberId: string; formData: CapitalFormData }) => {
+      const effectiveAmount =
+        formData.contribution_type === 'LAND'
+          ? (formData.land_area_sqm || 0) * (formData.appraised_unit_price || 0)
+          : formData.amount;
 
-      if (membersData && membersData.length > 0) {
-        setMembers(membersData);
-      }
-      if (txData && txData.length > 0) {
-        setTransactions(txData);
-      }
-      if (summary) {
-        setSummaryData(summary);
-      }
-    } catch (err) {
-      console.error('Failed to load capital data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
+      return createCapitalContributionApi(memberId, {
+        form: formData.contribution_type,
+        amount: effectiveAmount,
+        date: formData.contribution_date,
+        notes: formData.content,
+        land_certificate_no: formData.land_certificate_no,
+        plot_number: formData.plot_number,
+        map_sheet_number: formData.map_sheet_number,
+        land_area_sqm: formData.land_area_sqm,
+        land_use_type: formData.land_use_type,
+        appraised_unit_price: formData.appraised_unit_price,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['capital-contributions'] });
+      queryClient.invalidateQueries({ queryKey: ['capital-summary'] });
+    },
+  });
 
   useEffect(() => {
     setCurrentPage(1);
@@ -173,36 +186,9 @@ export const CapitalPage: React.FC = () => {
     const tx = transactions.find((t) => t.id === txId);
     if (!tx) return;
 
-    const updatedTxs = transactions.map((t) =>
-      t.id === txId
-        ? {
-            ...t,
-            status: 'APPROVED' as const,
-            recorded_by: 'Kế toán trưởng',
-            recorded_date: new Date().toLocaleDateString('vi-VN'),
-          }
-        : t
-    );
-    setTransactions(updatedTxs);
-
-    const updatedMembers = members.map((m) => {
-      if (m.id === tx.member_id || m.member_code === tx.member_code) {
-        const newContributed = (m.contributed_capital || 0) + tx.amount;
-        const newCommitted = m.committed_capital || newContributed;
-        const newRemaining = Math.max(0, newCommitted - newContributed);
-        return {
-          ...m,
-          contributed_capital: newContributed,
-          remaining_capital: newRemaining,
-          capital_status:
-            newContributed >= newCommitted && newCommitted > 0
-              ? ('DU_VON' as const)
-              : ('CHUA_DU' as const),
-        };
-      }
-      return m;
-    });
-    setMembers(updatedMembers);
+    queryClient.invalidateQueries({ queryKey: ['members'] });
+    queryClient.invalidateQueries({ queryKey: ['capital-contributions'] });
+    queryClient.invalidateQueries({ queryKey: ['capital-summary'] });
 
     triggerToast(
       `Đã phê duyệt giao dịch ${tx.transaction_code || tx.receipt_number || ''} (${tx.amount.toLocaleString('vi-VN')} ₫) cho ${tx.member_name}!`,
@@ -213,7 +199,7 @@ export const CapitalPage: React.FC = () => {
   const handleRejectCapitalTx = (txId: string) => {
     const tx = transactions.find((t) => t.id === txId);
     if (!tx) return;
-    setTransactions((prev) => prev.filter((t) => t.id !== txId));
+    queryClient.invalidateQueries({ queryKey: ['capital-contributions'] });
     triggerToast(`Đã từ chối giao dịch của ${tx.member_name}.`, 'danger');
   };
 
@@ -221,74 +207,19 @@ export const CapitalPage: React.FC = () => {
     const mem = members.find((m) => m.id === formData.member_id);
     if (!mem) return;
 
-    const effectiveAmount =
-      formData.contribution_type === 'LAND'
-        ? (formData.land_area_sqm || 0) * (formData.appraised_unit_price || 0)
-        : formData.amount;
-
-    // Send to real backend API
-    const apiResult = await createCapitalContributionApi(mem.id, {
-      form: formData.contribution_type,
-      amount: effectiveAmount,
-      date: formData.contribution_date,
-      notes: formData.content,
-      land_certificate_no: formData.land_certificate_no,
-      plot_number: formData.plot_number,
-      map_sheet_number: formData.map_sheet_number,
-      land_area_sqm: formData.land_area_sqm,
-      land_use_type: formData.land_use_type,
-      appraised_unit_price: formData.appraised_unit_price,
-    });
-
-    const isPending = formData.approval_mode === 'SUBMIT_PENDING';
-    const txStatus = isPending ? 'PENDING' : 'APPROVED';
-
-    const newTx: CapitalTransaction = apiResult || {
-      id: `CC-${Date.now()}`,
-      member_id: mem.id,
-      member_code: mem.member_code,
-      member_name: mem.full_name,
-      transaction_code: formData.receipt_number,
-      amount: effectiveAmount,
-      share_quantity: Math.floor(effectiveAmount / 100000),
-      contribution_date: formData.contribution_date,
-      payment_method:
-        formData.contribution_type === 'CHUYEN_KHOAN'
-          ? 'BANK_TRANSFER'
-          : formData.contribution_type === 'LAND'
-          ? 'LAND'
-          : 'CASH',
-      receipt_number: formData.receipt_number,
-      content: formData.content,
-      notes: formData.notes,
-      status: txStatus,
-      recorded_by: isPending ? mem.full_name : 'Kế toán trưởng',
-      recorded_date: new Date().toLocaleDateString('vi-VN'),
-      certificate_code: `GCN-2025-${Math.floor(1000 + Math.random() * 9000)}`,
-    };
-
-    setTransactions((prev) => [newTx, ...prev]);
-
-    if (!isPending) {
-      setMembers((prev) =>
-        prev.map((m) => {
-          if (m.id === mem.id) {
-            const newContributed = (m.contributed_capital || 0) + effectiveAmount;
-            const newRemaining = Math.max(0, (m.committed_capital || 0) - newContributed);
-            return {
-              ...m,
-              contributed_capital: newContributed,
-              remaining_capital: newRemaining,
-              capital_status: newRemaining === 0 ? ('DU_VON' as const) : ('CHUA_DU' as const),
-            };
+    createCapitalMutation.mutate(
+      { memberId: mem.id, formData },
+      {
+        onSuccess: () => {
+          const isPending = formData.approval_mode === 'SUBMIT_PENDING';
+          if (!isPending) {
+            triggerToast(`Đã ghi nhận & phê duyệt góp vốn cho xã viên ${mem.full_name}!`);
+          } else {
+            triggerToast(`Đã tạo giao dịch CHỜ DUYỆT cho ${mem.full_name}!`, 'success');
           }
-          return m;
-        })
-      );
-      triggerToast(`Đã ghi nhận & phê duyệt góp vốn cho xã viên ${mem.full_name}!`);
-    } else {
-      triggerToast(`Đã tạo giao dịch CHỜ DUYỆT cho ${mem.full_name}!`, 'success');
-    }
+        },
+      }
+    );
   };
 
   const openCertificatePreview = (member: Member, targetIssueCount?: number) => {

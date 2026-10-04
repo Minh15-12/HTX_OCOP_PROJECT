@@ -1032,6 +1032,22 @@ export const approveMemberApi = async (id: string): Promise<boolean> => {
   return true;
 };
 
+export const transitionMemberStatusApi = async (id: string, targetStatus: string, reason?: string): Promise<boolean> => {
+  try {
+    await apiClient.post(`/members/${id}/status-transitions`, { target_status: targetStatus, reason });
+  } catch (error) {
+    console.warn('API transition status notice:', error);
+  }
+
+  const stored = getStoredMembers();
+  if (stored) {
+    const updated = stored.map(m => (m.id === id ? { ...m, status: targetStatus as any } : m));
+    saveMembersToStorage(updated);
+  }
+  return true;
+};
+
+
 export const getCapitalSummaryApi = async (): Promise<any> => {
   try {
     const res: any = await apiClient.get('/capital-contributions/summary');

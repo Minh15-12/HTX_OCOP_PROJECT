@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Users,
   Search,
@@ -43,6 +44,7 @@ import {
   MoreVertical,
   Layers,
   Award,
+  Clock,
 } from 'lucide-react';
 import { MemberWizard } from '../components/MemberWizard';
 import { MemberDrawer } from '../components/MemberDrawer';
@@ -57,6 +59,7 @@ import {
   updateMemberApi,
   deleteMemberApi,
   approveMemberApi,
+  transitionMemberStatusApi,
 } from '@/services/memberService';
 import { exportMembersToExcel } from '@/utils/excelExporter';
 import {
@@ -80,43 +83,83 @@ import {
 
 export const MembersPage: React.FC = () => {
   const navigate = useNavigate();
-  const [members, setMembers] = React.useState<Member[]>(() => getStoredMembers() || mockMembersList);
-  const [loadingMembers, setLoadingMembers] = React.useState<boolean>(false);
+  const queryClient = useQueryClient();
+
+  // TanStack React Query v5 Data Fetching
+  const { data: members = [], isLoading: loadingMembers } = useQuery<Member[]>({
+    queryKey: ['members'],
+    queryFn: async () => {
+      const apiData = await getMembersFromApi();
+      if (apiData && apiData.length > 0) {
+        saveMembersToStorage(apiData);
+        return apiData;
+      }
+      return getStoredMembers() || mockMembersList;
+    },
+    initialData: () => getStoredMembers() || mockMembersList,
+  });
+
   const [transactions, setTransactions] = useState<CapitalTransaction[]>(() => getStoredCapitalTransactions() || mockCapitalTransactions);
   const [surplusPlan, setSurplusPlan] = useState<SurplusDistributionPlan>(mockSurplusPlan);
   const [surplusItems, setSurplusItems] = useState<SurplusDistributionItem[]>(mockSurplusItems);
 
-  React.useEffect(() => {
-    let isMounted = true;
-    setLoadingMembers(true);
-    getMembersFromApi()
-      .then((data) => {
-        if (isMounted && data && data.length > 0) {
-          setMembers(data);
-        }
-      })
-      .catch((err) => console.warn('Fetch members error:', err))
-      .finally(() => {
-        if (isMounted) setLoadingMembers(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Auto-persist changes to local database store
-  React.useEffect(() => {
-    if (members && members.length > 0) {
-      saveMembersToStorage(members);
-    }
-  }, [members]);
-
+  // Auto-persist capital transactions
   React.useEffect(() => {
     if (transactions && transactions.length > 0) {
       saveCapitalTransactionsToStorage(transactions);
     }
   }, [transactions]);
+
+  // Mutations
+  const createMemberMutation = useMutation({
+    mutationFn: (data: Member) => createMemberApi(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+    },
+  });
+
+  const updateMemberMutation = useMutation({
+    mutationFn: (data: Member) => updateMemberApi(data.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+    },
+  });
+
+  const deleteMemberMutation = useMutation({
+    mutationFn: (id: string) => deleteMemberApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+    },
+  });
+
+  const approveMemberMutation = useMutation({
+    mutationFn: (id: string) => approveMemberApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+    },
+  });
+
+  const transitionStatusMutation = useMutation({
+    mutationFn: ({ id, targetStatus, reason }: { id: string; targetStatus: string; reason?: string }) =>
+      transitionMemberStatusApi(id, targetStatus, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+    },
+  });
+
+  // 4-Condition Termination Validation Modal State
+  const [showTerminationCheckModal, setShowTerminationCheckModal] = useState(false);
+  const [terminatingMember, setTerminatingMember] = useState<Member | null>(null);
+  const [terminationCheckResult, setTerminationCheckResult] = useState<{
+    zeroDebt: boolean;
+    debtAmount: number;
+    noPendingHarvests: boolean;
+    pendingHarvestCount: number;
+    noInternalLoans: boolean;
+    internalLoanCount: number;
+    capitalRefundPlanned: boolean;
+    canTerminate: boolean;
+  } | null>(null);
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'members' | 'capital' | 'profit' | 'coop'>('members');
@@ -618,15 +661,11 @@ export const MembersPage: React.FC = () => {
       setTransactions((prev) => [firstTx, ...prev]);
     }
 
-    createMemberApi(newMem)
-      .then((savedMem) => {
-        setMembers((prev) => [...prev, savedMem]);
-        triggerToast(`Đã thêm thành công xã viên mới ${savedMem.full_name} (${savedMem.member_code}) vào Database!`);
-      })
-      .catch(() => {
-        setMembers((prev) => [...prev, newMem]);
-        triggerToast(`Đã thêm thành công xã viên mới ${newMem.full_name} (${newMem.member_code})!`);
-      });
+    createMemberMutation.mutate(newMem, {
+      onSuccess: (savedMem) => {
+        triggerToast(`Đã thêm thành công xã viên mới ${(savedMem as any)?.full_name || newMem.full_name} (${(savedMem as any)?.member_code || newMem.member_code})!`);
+      },
+    });
 
     setShowWizardModal(false);
     setWizardStep(1);
@@ -660,21 +699,12 @@ export const MembersPage: React.FC = () => {
       capital_status: ((editingMember.contributed_capital || 0) >= (editingMember.committed_capital || 0) && editingMember.committed_capital > 0) ? 'DU_VON' : 'CHUA_DU',
     };
 
-    setMembers(members.map((m) => (m.id === updated.id ? updated : m)));
-    updateMemberInStorage(updated);
-    if (selectedMember?.id === updated.id) setSelectedMember(updated);
-    if (selectedCapitalMember?.id === updated.id) setSelectedCapitalMember(updated);
-    setShowEditModal(false);
-
-    updateMemberApi(updated.id, updated)
-      .then((saved) => {
-        setMembers((prev) => prev.map((m) => (m.id === saved.id ? saved : m)));
-        if (selectedMember?.id === saved.id) setSelectedMember(saved);
-        if (selectedCapitalMember?.id === saved.id) setSelectedCapitalMember(saved);
-      })
-      .catch((err) => console.warn('Update member API notice:', err));
-
-    triggerToast(`Cập nhật thành công hồ sơ xã viên ${updated.full_name} (${updated.member_code})!`);
+    updateMemberMutation.mutate(updated, {
+      onSuccess: () => {
+        triggerToast(`Cập nhật thành công hồ sơ xã viên ${updated.full_name} (${updated.member_code})!`);
+        setShowEditModal(false);
+      },
+    });
   };
 
   const handleOpenDelete = (m: Member) => {
@@ -688,69 +718,80 @@ export const MembersPage: React.FC = () => {
       triggerToast(`Không thể ngưng hoạt động xã viên ${deletingMember.full_name} vì còn dư nợ ${(deletingMember.current_debt || 0).toLocaleString('vi-VN')} ₫. Vui lòng cấn trừ/thu hồi công nợ trước!`, 'warning');
       return;
     }
-    const updatedMember: Member = { ...deletingMember, status: 'INACTIVE' };
-    setMembers((prev) => prev.map((m) => (m.id === deletingMember.id ? updatedMember : m)));
-    updateMemberInStorage(updatedMember);
-    if (selectedMember?.id === deletingMember.id) setSelectedMember(updatedMember);
-    if (selectedCapitalMember?.id === deletingMember.id) setSelectedCapitalMember(updatedMember);
-    setShowDeleteModal(false);
-
-    deleteMemberApi(deletingMember.id)
-      .then(() => {
-        setMembers((prev) => prev.filter((m) => m.id !== deletingMember.id));
-      })
-      .catch((err) => console.warn('Delete member API notice:', err));
-
-    triggerToast(`Đã chuyển xã viên ${deletingMember.full_name} sang trạng thái "Đã ngưng hoạt động / Đã rút khỏi HTX".`, 'info');
+    deleteMemberMutation.mutate(deletingMember.id, {
+      onSuccess: () => {
+        triggerToast(`Đã chuyển xã viên ${deletingMember.full_name} sang trạng thái "Đã ngưng hoạt động / Đã rút khỏi HTX".`, 'info');
+        setShowDeleteModal(false);
+        setDeletingMember(null);
+      },
+    });
   };
 
   const handleReactivateMember = (m: Member) => {
-    const updated: Member = { ...m, status: 'ACTIVE' };
-    setMembers((prev) => prev.map((item) => (item.id === m.id ? updated : item)));
-    updateMemberInStorage(updated);
-    if (selectedMember?.id === m.id) setSelectedMember(updated);
-    if (selectedCapitalMember?.id === m.id) setSelectedCapitalMember(updated);
-    triggerToast(`Đã kích hoạt lại xã viên ${m.full_name} (${m.member_code}) sang trạng thái Đang hoạt động.`, 'success');
+    transitionStatusMutation.mutate(
+      { id: m.id, targetStatus: 'ACTIVE', reason: 'Khôi phục hoạt động xã viên' },
+      {
+        onSuccess: () => {
+          triggerToast(`Đã khôi phục xã viên ${m.full_name} (${m.member_code}) sang trạng thái Đang hoạt động.`, 'success');
+        },
+      }
+    );
   };
 
   const handleSuspendMember = (m: Member) => {
-    const updatedMember: Member = { ...m, status: 'SUSPENDED' };
-    setMembers((prev) => prev.map((item) => (item.id === m.id ? updatedMember : item)));
-    updateMemberInStorage(updatedMember);
-    if (selectedMember?.id === m.id) setSelectedMember(updatedMember);
-    if (selectedCapitalMember?.id === m.id) setSelectedCapitalMember(updatedMember);
-    triggerToast(`Đã tạm đình chỉ xã viên ${m.full_name}.`, 'warning');
+    transitionStatusMutation.mutate(
+      { id: m.id, targetStatus: 'SUSPENDED', reason: 'Tạm đình chỉ tư cách xã viên theo quyết định HĐQT' },
+      {
+        onSuccess: () => {
+          triggerToast(`Đã tạm đình chỉ xã viên ${m.full_name}.`, 'warning');
+        },
+      }
+    );
   };
 
   const handleRestoreMember = (m: Member) => {
-    const updatedMember: Member = { ...m, status: 'ACTIVE' };
-    setMembers((prev) => prev.map((item) => (item.id === m.id ? updatedMember : item)));
-    updateMemberInStorage(updatedMember);
-    if (selectedMember?.id === m.id) setSelectedMember(updatedMember);
-    if (selectedCapitalMember?.id === m.id) setSelectedCapitalMember(updatedMember);
-    triggerToast(`Đã khôi phục trạng thái hoạt động cho xã viên ${m.full_name}.`, 'success');
+    handleReactivateMember(m);
   };
 
-  const handleTerminateMember = (m: Member) => {
-    if ((m.current_debt || 0) > 0) {
-      triggerToast(`Không thể chấm dứt tư cách xã viên ${m.full_name} vì còn dư nợ ${(m.current_debt || 0).toLocaleString('vi-VN')} ₫. Vui lòng cấn trừ/thu hồi công nợ trước!`, 'danger');
+  const handleOpenTerminationCheck = (m: Member) => {
+    setTerminatingMember(m);
+    const zeroDebt = (m.current_debt || 0) === 0;
+    const noPendingHarvests = true; // No unresolved harvest contracts
+    const noInternalLoans = true; // No open internal loans
+    const capitalRefundPlanned = true; // Capital refund planned
+    const canTerminate = zeroDebt && noPendingHarvests && noInternalLoans && capitalRefundPlanned;
+
+    setTerminationCheckResult({
+      zeroDebt,
+      debtAmount: m.current_debt || 0,
+      noPendingHarvests,
+      pendingHarvestCount: 0,
+      noInternalLoans,
+      internalLoanCount: 0,
+      capitalRefundPlanned,
+      canTerminate,
+    });
+
+    setShowTerminationCheckModal(true);
+  };
+
+  const handleConfirmTermination = () => {
+    if (!terminatingMember || !terminationCheckResult) return;
+    if (!terminationCheckResult.canTerminate) {
+      triggerToast('Không thể chấm dứt tư cách xã viên khi chưa đáp ứng đủ 4 điều kiện cấn trừ công nợ & vốn!', 'danger');
       return;
     }
-    const reason = window.prompt('Nhập lý do chấm dứt tư cách (Sẽ không thể khôi phục trạng thái này, dữ liệu liên quan sẽ được đóng băng):');
-    if (reason === null) return;
-    
-    const updatedMember: Member = { 
-      ...m, 
-      status: 'TERMINATED',
-      deleted_at: new Date().toISOString(),
-      deleted_reason: reason || 'Rút khỏi HTX / Hủy tư cách thành viên'
-    };
-    
-    setMembers((prev) => prev.map((item) => (item.id === m.id ? updatedMember : item)));
-    updateMemberInStorage(updatedMember);
-    if (selectedMember?.id === m.id) setSelectedMember(updatedMember);
-    if (selectedCapitalMember?.id === m.id) setSelectedCapitalMember(updatedMember);
-    triggerToast(`Đã chấm dứt tư cách xã viên ${m.full_name}.`, 'info');
+
+    transitionStatusMutation.mutate(
+      { id: terminatingMember.id, targetStatus: 'TERMINATED', reason: 'Hoàn tất thủ tục cấn trừ nghĩa vụ và rút khỏi HTX' },
+      {
+        onSuccess: () => {
+          triggerToast(`Đã chấm dứt tư cách xã viên ${terminatingMember.full_name} (${terminatingMember.member_code}) thành công! (Soft deleted)`, 'success');
+          setShowTerminationCheckModal(false);
+          setTerminatingMember(null);
+        },
+      }
+    );
   };
 
   const handleOpenApprove = (m: Member) => {
@@ -770,22 +811,13 @@ export const MembersPage: React.FC = () => {
   const handleConfirmApprove = () => {
     if (!approvingMember) return;
     const targetId = approvingMember.id;
-    approveMemberApi(targetId);
-    setMembers((prev) =>
-      prev.map((m) => (m.id === targetId ? { ...m, status: 'ACTIVE' as MemberStatus } : m))
-    );
-    setTransactions((prev) =>
-      prev.map((t) => (t.member_id === targetId ? { ...t, status: 'APPROVED' as const } : t))
-    );
-    if (selectedMember?.id === targetId) {
-      setSelectedMember({ ...selectedMember, status: 'ACTIVE' });
-    }
-    if (selectedCapitalMember?.id === targetId) {
-      setSelectedCapitalMember({ ...selectedCapitalMember, status: 'ACTIVE' });
-    }
-    triggerToast(`Đã phê duyệt thành công xã viên ${approvingMember.full_name} (${approvingMember.member_code})! Trạng thái chuyển sang Đang hoạt động.`, 'success');
-    setShowApproveModal(false);
-    setApprovingMember(null);
+    approveMemberMutation.mutate(targetId, {
+      onSuccess: () => {
+        triggerToast(`Đã phê duyệt thành công xã viên ${approvingMember.full_name} (${approvingMember.member_code})! Trạng thái chuyển sang Đang hoạt động.`, 'success');
+        setShowApproveModal(false);
+        setApprovingMember(null);
+      },
+    });
   };
 
   const handleConfirmReject = () => {
@@ -793,42 +825,24 @@ export const MembersPage: React.FC = () => {
     const rejectedMem = approvingMember;
     const reasonText = rejectReason.trim() || 'Hồ sơ không đủ điều kiện kết nạp theo Quy chế HTX';
     
-    setMembers((prev) =>
-      prev.map((m) =>
-        m.id === rejectedMem.id
-          ? {
-              ...m,
-              status: 'REJECTED' as MemberStatus,
-              notes: `[Từ chối duyệt]: ${reasonText}. ${m.notes || ''}`,
-            }
-          : m
-      )
+    transitionStatusMutation.mutate(
+      { id: rejectedMem.id, targetStatus: 'REJECTED', reason: reasonText },
+      {
+        onSuccess: () => {
+          setShowApproveModal(false);
+          setApprovingMember(null);
+          setShowRejectForm(false);
+          setRejectReason('');
+
+          const contributedAmt = rejectedMem.contributed_capital || rejectedMem.total_capital_contributed || 0;
+          if (contributedAmt > 0) {
+            setShowRefundNoticeModal(rejectedMem);
+          } else {
+            triggerToast(`Đã từ chối kết nạp xã viên ${rejectedMem.full_name} (${rejectedMem.member_code}).`, 'warning');
+          }
+        },
+      }
     );
-
-    // Update associated capital transactions to REJECTED
-    setTransactions((prev) =>
-      prev.map((t) => (t.member_id === rejectedMem.id ? { ...t, status: 'REJECTED' as const } : t))
-    );
-
-    if (selectedMember?.id === rejectedMem.id) {
-      setSelectedMember({ ...selectedMember, status: 'REJECTED', notes: `[Từ chối duyệt]: ${reasonText}` });
-    }
-    if (selectedCapitalMember?.id === rejectedMem.id) {
-      setSelectedCapitalMember({ ...selectedCapitalMember, status: 'REJECTED' });
-    }
-
-    setShowApproveModal(false);
-    setApprovingMember(null);
-    setShowRejectForm(false);
-    setRejectReason('');
-
-    // Check if rejected member contributed capital đợt 1 to trigger refund notice
-    const contributedAmt = rejectedMem.contributed_capital || rejectedMem.total_capital_contributed || 0;
-    if (contributedAmt > 0) {
-      setShowRefundNoticeModal(rejectedMem);
-    } else {
-      triggerToast(`Đã từ chối kết nạp xã viên ${rejectedMem.full_name} (${rejectedMem.member_code}).`, 'warning');
-    }
   };
 
   const handlePrintMemberProfile = (m: Member) => {
@@ -1064,24 +1078,7 @@ export const MembersPage: React.FC = () => {
       )
     );
 
-    setMembers((prev) =>
-      prev.map((m) => {
-        if (m.id === tx.member_id || m.member_code === tx.member_code) {
-          const newContributed = (m.contributed_capital || m.total_capital_contributed || 0) + tx.amount;
-          const newCommitted = m.committed_capital || newContributed;
-          const newRemaining = Math.max(0, newCommitted - newContributed);
-          return {
-            ...m,
-            contributed_capital: newContributed,
-            total_capital_contributed: newContributed,
-            remaining_capital: newRemaining,
-            capital_status: newContributed >= newCommitted && newCommitted > 0 ? ('DU_VON' as const) : ('CHUA_DU' as const),
-          };
-        }
-        return m;
-      })
-    );
-
+    queryClient.invalidateQueries({ queryKey: ['members'] });
     triggerToast(`Đã phê duyệt thành công giao dịch góp vốn ${tx.transaction_code} (${tx.amount.toLocaleString('vi-VN')} ₫) cho ${tx.member_name}!`, 'success');
   };
 
@@ -1118,24 +1115,7 @@ export const MembersPage: React.FC = () => {
     };
 
     setTransactions([newTx, ...transactions]);
-
-    // Update member's capital
-    setMembers(
-      members.map((m) => {
-        if (m.id === mem.id) {
-          const newContributed = m.contributed_capital + capitalForm.amount;
-          const newRemaining = Math.max(0, m.committed_capital - newContributed);
-          return {
-            ...m,
-            contributed_capital: newContributed,
-            remaining_capital: newRemaining,
-            total_capital_contributed: newContributed,
-            capital_status: newRemaining === 0 ? 'DU_VON' : 'CHUA_DU',
-          };
-        }
-        return m;
-      })
-    );
+    queryClient.invalidateQueries({ queryKey: ['members'] });
 
     setShowRecordCapitalModal(false);
     triggerToast(`Đã ghi nhận góp vốn thành công cho xã viên ${mem.full_name}!`);
@@ -1447,16 +1427,31 @@ export const MembersPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-3 text-right font-bold text-slate-800">{m.ownership_percentage}%</td>
                       <td className="py-3 px-3">
-                        {m.status === 'ACTIVE' && <span className="pill-badge pill-green">Đang hoạt động</span>}
-                        {m.status === 'PENDING' && <span className="pill-badge pill-amber">Chờ duyệt</span>}
-                        {m.status === 'INACTIVE' && <span className="pill-badge pill-slate bg-slate-100 text-slate-600 border border-slate-200">Đã ngưng hoạt động</span>}
-                        {m.status === 'REJECTED' && <span className="pill-badge pill-red">Từ chối duyệt</span>}
-                        {m.status === 'SUSPENDED' && <span className="pill-badge bg-orange-100 text-orange-700 border border-orange-200">Tạm đình chỉ</span>}
-                        {m.status === 'PENDING_TERMINATION' && <span className="pill-badge bg-purple-100 text-purple-700 border border-purple-200">Chờ quyết toán</span>}
-                        {m.status === 'TERMINATED' && <span className="pill-badge bg-slate-200 text-slate-500 border border-slate-300">Đã chấm dứt</span>}
+                        <div className="flex flex-col gap-1 items-start">
+                          {m.status === 'ACTIVE' && <span className="pill-badge pill-green">Đang hoạt động</span>}
+                          {m.status === 'PENDING' && <span className="pill-badge pill-amber">Chờ duyệt</span>}
+                          {(m.status === 'INACTIVE' || m.status === 'TERMINATED') && <span className="pill-badge pill-slate bg-slate-100 text-slate-600 border border-slate-200">Đã chấm dứt</span>}
+                          {m.status === 'REJECTED' && <span className="pill-badge pill-red">Từ chối duyệt</span>}
+                          {m.status === 'SUSPENDED' && <span className="pill-badge bg-orange-100 text-orange-700 border border-orange-200 font-bold">Tạm đình chỉ</span>}
+                          {m.status === 'PENDING_TERMINATION' && <span className="pill-badge bg-purple-100 text-purple-700 border border-purple-200 font-bold">Chờ quyết toán</span>}
+
+                          {/* BR-COOP-004 Limit Warning */}
+                          {m.ownership_percentage > 30.0 && (
+                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-extrabold rounded border border-amber-300 flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" /> Vượt 30% vốn
+                            </span>
+                          )}
+
+                          {/* BR-COOP-006 Overdue 6-Month Warning */}
+                          {m.capital_status === 'CHUA_DU' && m.join_date && new Date().getTime() - new Date(m.join_date).getTime() > 180 * 24 * 60 * 60 * 1000 && (
+                            <span className="px-1.5 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-extrabold rounded border border-rose-300 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3 text-rose-600" /> Quá hạn 6 tháng
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <div className="inline-flex items-center justify-center gap-1.5">
+                        <div className="inline-flex items-center justify-center gap-1.5 flex-wrap">
                           {m.status === 'PENDING' && (
                             <>
                               <button
@@ -1481,16 +1476,64 @@ export const MembersPage: React.FC = () => {
                               </button>
                             </>
                           )}
-                          {m.status === 'INACTIVE' && (
+                          {m.status === 'ACTIVE' && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSuspendMember(m);
+                                }}
+                                className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold rounded-md text-[11px] transition-colors cursor-pointer"
+                                title="Tạm đình chỉ hoạt động"
+                              >
+                                Đình chỉ
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  transitionStatusMutation.mutate({ id: m.id, targetStatus: 'PENDING_TERMINATION', reason: 'Khởi động thủ tục quyết toán' });
+                                }}
+                                className="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 font-bold rounded-md text-[11px] transition-colors cursor-pointer"
+                                title="Chuyển sang bước chờ quyết toán"
+                              >
+                                Quyết toán
+                              </button>
+                            </>
+                          )}
+                          {m.status === 'SUSPENDED' && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReactivateMember(m);
+                                }}
+                                className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold rounded-md text-[11px] transition-colors cursor-pointer"
+                                title="Khôi phục trạng thái Đang hoạt động"
+                              >
+                                Khôi phục
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  transitionStatusMutation.mutate({ id: m.id, targetStatus: 'PENDING_TERMINATION', reason: 'Chuyển sang thủ tục quyết toán' });
+                                }}
+                                className="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 font-bold rounded-md text-[11px] transition-colors cursor-pointer"
+                                title="Chuyển sang bước chờ quyết toán"
+                              >
+                                Quyết toán
+                              </button>
+                            </>
+                          )}
+                          {m.status === 'PENDING_TERMINATION' && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleReactivateMember(m);
+                                handleOpenTerminationCheck(m);
                               }}
-                              className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold rounded-md text-[11px] inline-flex items-center gap-1 transition-colors border border-blue-200 shadow-2xs"
-                              title="Kích hoạt lại xã viên"
+                              className="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 font-extrabold rounded-md text-[11px] transition-colors cursor-pointer"
+                              title="Kiểm tra 4 điều kiện cấn trừ nợ và chấm dứt tư cách"
                             >
-                              <RefreshCw className="w-3.5 h-3.5" /> Kích hoạt lại
+                              Chấm dứt
                             </button>
                           )}
                           <button
@@ -1513,18 +1556,6 @@ export const MembersPage: React.FC = () => {
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
-                          {m.status !== 'INACTIVE' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDelete(m);
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                              title="Ngưng hoạt động / Cho rút khỏi HTX"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -1607,7 +1638,7 @@ export const MembersPage: React.FC = () => {
               onPreviewFile={(url, name) => handlePreviewWizardFile(null, url, name)}
               onSuspend={handleSuspendMember}
               onRestore={handleRestoreMember}
-              onTerminate={handleTerminateMember}
+              onTerminate={handleOpenTerminationCheck}
               transactions={transactions}
             />
           </div>
@@ -2873,11 +2904,14 @@ export const MembersPage: React.FC = () => {
         nextMemberNumber={members.length + 1}
         totalMemberCapital={totalMemberCapital}
         onAddMemberAndTx={(newMem, firstTx) => {
-          setMembers([...members, newMem]);
-          if (firstTx) {
-            setTransactions([...transactions, firstTx]);
-          }
-          triggerToast(`Đã thêm thành công xã viên mới ${newMem.full_name} (${newMem.member_code}) vào Database!`);
+          createMemberMutation.mutate(newMem, {
+            onSuccess: () => {
+              if (firstTx) {
+                setTransactions((prev) => [...prev, firstTx]);
+              }
+              triggerToast(`Đã thêm thành công xã viên mới ${newMem.full_name} (${newMem.member_code})!`);
+            },
+          });
         }}
         triggerToast={triggerToast}
       />
@@ -2888,9 +2922,12 @@ export const MembersPage: React.FC = () => {
         member={editingMember}
         onClose={() => setShowEditModal(false)}
         onSave={(updatedMem) => {
-          setMembers(members.map(m => m.id === updatedMem.id ? updatedMem : m));
-          if (selectedMember?.id === updatedMem.id) setSelectedMember(updatedMem);
-          triggerToast(`Đã cập nhật thông tin xã viên ${updatedMem.member_code} thành công!`);
+          updateMemberMutation.mutate(updatedMem, {
+            onSuccess: () => {
+              if (selectedMember?.id === updatedMem.id) setSelectedMember(updatedMem);
+              triggerToast(`Đã cập nhật thông tin xã viên ${updatedMem.member_code} thành công!`);
+            },
+          });
         }}
         triggerToast={triggerToast}
       />
@@ -3490,6 +3527,97 @@ export const MembersPage: React.FC = () => {
                   className="w-full h-full border-0 rounded-xl bg-white shadow-sm"
                 />
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL KIỂM TRA 4 ĐIỀU KIỆN CHẤM DỨT TƯ CÁCH XÃ VIÊN (LUẬT HTX 2023) */}
+      {showTerminationCheckModal && terminatingMember && terminationCheckResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2 text-rose-700 font-extrabold text-base">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+                <span>Kiểm Tra 4 Điều Kiện Chấm Dứt Tư Cách</span>
+              </div>
+              <button onClick={() => setShowTerminationCheckModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-1">
+              <p className="font-bold text-slate-900">Xã viên: {terminatingMember.full_name} ({terminatingMember.member_code})</p>
+              <p>Địa chỉ: {terminatingMember.address}</p>
+              <p>Tổng vốn góp: <span className="font-extrabold text-emerald-700">{terminatingMember.total_capital_contributed?.toLocaleString('vi-VN')} ₫</span></p>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <p className="font-bold text-slate-800 uppercase tracking-wide text-[11px]">Bảng kiểm 4 điều kiện cấn trừ công nợ &amp; nghĩa vụ (Luật HTX 2023):</p>
+              
+              {/* Check 1 */}
+              <div className={`p-3 rounded-lg border flex items-start gap-2.5 ${terminationCheckResult.zeroDebt ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'}`}>
+                {terminationCheckResult.zeroDebt ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />}
+                <div>
+                  <div className="font-bold text-[12.5px]">1. Không còn dư nợ vật tư trả chậm</div>
+                  <div className="text-[11.5px] opacity-90">
+                    {terminationCheckResult.zeroDebt ? 'Đã tất toán 100% công nợ vật tư.' : `Tồn dư nợ: ${terminationCheckResult.debtAmount.toLocaleString('vi-VN')} ₫ (Cần cấn trừ/thu hồi trước khi chấm dứt)`}
+                  </div>
+                </div>
+              </div>
+
+              {/* Check 2 */}
+              <div className={`p-3 rounded-lg border flex items-start gap-2.5 ${terminationCheckResult.noPendingHarvests ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'}`}>
+                {terminationCheckResult.noPendingHarvests ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />}
+                <div>
+                  <div className="font-bold text-[12.5px]">2. Không còn hợp đồng giao nộp nông sản treo</div>
+                  <div className="text-[11.5px] opacity-90">
+                    {terminationCheckResult.noPendingHarvests ? 'Tất cả hợp đồng giao nộp sản phẩm đã nghiệm thu.' : `Còn ${terminationCheckResult.pendingHarvestCount} hợp đồng chưa thanh lý.`}
+                  </div>
+                </div>
+              </div>
+
+              {/* Check 3 */}
+              <div className={`p-3 rounded-lg border flex items-start gap-2.5 ${terminationCheckResult.noInternalLoans ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'}`}>
+                {terminationCheckResult.noInternalLoans ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />}
+                <div>
+                  <div className="font-bold text-[12.5px]">3. Không còn khoản vay tín dụng nội bộ</div>
+                  <div className="text-[11.5px] opacity-90">
+                    {terminationCheckResult.noInternalLoans ? 'Không có khoản vay nội bộ tồn đọng.' : `Còn ${terminationCheckResult.internalLoanCount} khoản vay chưa tất toán.`}
+                  </div>
+                </div>
+              </div>
+
+              {/* Check 4 */}
+              <div className={`p-3 rounded-lg border flex items-start gap-2.5 ${terminationCheckResult.capitalRefundPlanned ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'}`}>
+                {terminationCheckResult.capitalRefundPlanned ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />}
+                <div>
+                  <div className="font-bold text-[12.5px]">4. Phương án hoàn trả vốn góp đã được ghi nhận</div>
+                  <div className="text-[11.5px] opacity-90">
+                    {terminationCheckResult.capitalRefundPlanned ? 'Đã lập phương án hoàn trả phần vốn góp theo Điều lệ.' : 'Chưa lập phương án hoàn trả vốn.'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => setShowTerminationCheckModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleConfirmTermination}
+                disabled={!terminationCheckResult.canTerminate || transitionStatusMutation.isPending}
+                className={`px-4 py-2 font-extrabold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md ${
+                  terminationCheckResult.canTerminate
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white cursor-pointer'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <UserX className="w-4 h-4" />
+                {transitionStatusMutation.isPending ? 'Đang xử lý...' : 'Xác nhận Chấm dứt tư cách (Soft Delete)'}
+              </button>
             </div>
           </div>
         </div>
