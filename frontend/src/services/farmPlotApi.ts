@@ -1,6 +1,15 @@
 import { apiClient } from './apiClient';
 
-export type PlotStatus = 'ACTIVE' | 'FALLOW' | 'PREPARING';
+export type PlotStatus = 'ACTIVE' | 'IN_QUARANTINE' | 'FALLOW' | 'INACTIVE' | 'PREPARING';
+
+export interface MemberAssignment {
+  id: string;
+  member_id: string;
+  member_name: string;
+  member_code: string;
+  role: string;
+  assigned_date: string;
+}
 
 export interface FarmPlot {
   id: string;
@@ -10,8 +19,11 @@ export interface FarmPlot {
   plot_code: string;
   area: number;
   status: string;
+  safe_harvest_date?: string | null;
+  gps_coordinates?: string | null;
   land_relation?: any;
   created_at?: string;
+  assignments?: MemberAssignment[];
 }
 
 export interface FarmPlotFormData {
@@ -27,6 +39,8 @@ export interface ProductionUnit {
   crop: string;
   area: number;
   status: string;
+  puc_code?: string | null;
+  puc_status?: 'ACTIVE' | 'INACTIVE' | 'UNDER_PUC_REVIEW';
   location?: any;
   registration_information?: any;
 }
@@ -42,6 +56,8 @@ const initialProductionUnits: ProductionUnit[] = [
     crop: 'Cà phê Arabica',
     area: 12.5,
     status: 'ACTIVE',
+    puc_code: 'PUC-49-012-8821',
+    puc_status: 'ACTIVE',
   },
   {
     id: 'pu-02',
@@ -50,6 +66,8 @@ const initialProductionUnits: ProductionUnit[] = [
     crop: 'Ớt chuông Sweet Palermo',
     area: 8.0,
     status: 'ACTIVE',
+    puc_code: 'PUC-49-015-9923',
+    puc_status: 'ACTIVE',
   },
   {
     id: 'pu-03',
@@ -57,17 +75,19 @@ const initialProductionUnits: ProductionUnit[] = [
     name: 'Vùng Chè Shan Tuyết Cổ Thụ',
     crop: 'Chè Shan Tuyết',
     area: 5.5,
-    status: 'PREPARING',
+    status: 'UNDER_PUC_REVIEW',
+    puc_code: 'PUC-49-018-0045',
+    puc_status: 'UNDER_PUC_REVIEW',
   },
 ];
 
 const initialPlots: FarmPlot[] = [
-  { id: 'plot-101', production_unit_id: 'pu-01', plot_code: 'TD-01-CAPHE', area: 4.5, status: 'ACTIVE' },
-  { id: 'plot-102', production_unit_id: 'pu-01', plot_code: 'TD-02-CAPHE', area: 4.0, status: 'ACTIVE' },
-  { id: 'plot-103', production_unit_id: 'pu-01', plot_code: 'TD-03-CAPHE', area: 4.0, status: 'ACTIVE' },
-  { id: 'plot-201', production_unit_id: 'pu-02', plot_code: 'TD-01-OTCHUONG', area: 5.0, status: 'ACTIVE' },
-  { id: 'plot-202', production_unit_id: 'pu-02', plot_code: 'TD-02-OTCHUONG', area: 3.0, status: 'ACTIVE' },
-  { id: 'plot-301', production_unit_id: 'pu-03', plot_code: 'TD-01-CHE', area: 5.5, status: 'PREPARING' },
+  { id: 'plot-101', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV001-01', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9404° N, 108.4583° E' },
+  { id: 'plot-102', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV001-02', area: 4.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-15', gps_coordinates: '11.9412° N, 108.4590° E' },
+  { id: 'plot-103', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV002-01', area: 4.0, status: 'ACTIVE', gps_coordinates: '11.9420° N, 108.4601° E' },
+  { id: 'plot-201', production_unit_id: 'pu-02', plot_code: 'PLOT-TT-XV003-01', area: 5.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-20', gps_coordinates: '11.9501° N, 108.4712° E' },
+  { id: 'plot-202', production_unit_id: 'pu-02', plot_code: 'PLOT-TT-XV003-02', area: 3.0, status: 'ACTIVE', gps_coordinates: '11.9510° N, 108.4720° E' },
+  { id: 'plot-301', production_unit_id: 'pu-03', plot_code: 'PLOT-TT-XV004-01', area: 5.5, status: 'FALLOW', gps_coordinates: '11.9600° N, 108.4800° E' },
 ];
 
 export function getStoredProductionUnits(): ProductionUnit[] {
@@ -137,6 +157,7 @@ export async function createProductionUnit(payload: {
   name: string;
   crop: string;
   area: number;
+  puc_code?: string;
   cooperative_id?: string;
   location?: any;
   registration_information?: any;
@@ -153,6 +174,8 @@ export async function createProductionUnit(payload: {
       crop: payload.crop,
       area: Number(payload.area),
       status: 'ACTIVE',
+      puc_code: payload.puc_code || `PUC-49-${Math.floor(100 + Math.random() * 900)}-${Math.floor(1000 + Math.random() * 9000)}`,
+      puc_status: 'ACTIVE',
     };
     const updated = [newUnit, ...list];
     saveProductionUnitsToStorage(updated);
@@ -162,7 +185,7 @@ export async function createProductionUnit(payload: {
 
 export async function updateProductionUnit(
   id: string,
-  payload: Partial<Pick<ProductionUnit, 'name' | 'crop' | 'area' | 'status'>>
+  payload: Partial<Pick<ProductionUnit, 'name' | 'crop' | 'area' | 'status' | 'puc_code' | 'puc_status'>>
 ) {
   try {
     return await apiClient.patch(`/production-units/${id}`, payload);
@@ -188,16 +211,6 @@ export async function fetchPlotsByUnit(unitId: string) {
   return { data: getStoredPlotsByUnit(unitId) };
 }
 
-export async function fetchPlot(plotId: string) {
-  try {
-    return await apiClient.get(`/farm-plots/${plotId}`);
-  } catch (err) {
-    const all = getAllStoredPlots();
-    const found = all.find((p) => p.id === plotId);
-    return { data: found || null };
-  }
-}
-
 export async function createPlot(unitId: string, payload: FarmPlotFormData) {
   try {
     return await apiClient.post(`/production-units/${unitId}/plots`, payload);
@@ -214,5 +227,28 @@ export async function createPlot(unitId: string, payload: FarmPlotFormData) {
     allPlots.push(newPlot);
     saveAllPlotsToStorage(allPlots);
     return { data: newPlot };
+  }
+}
+
+export async function fetchPlotMemberAssignments(plotId: string): Promise<MemberAssignment[]> {
+  try {
+    const res: any = await apiClient.get(`/farm-plots/${plotId}/member-assignments`);
+    const list = res?.data ?? res ?? [];
+    if (Array.isArray(list)) return list;
+  } catch (err) {
+    console.warn(`API fetchPlotMemberAssignments(${plotId}) notice:`, err);
+  }
+  return [
+    { id: 'ma-1', member_id: 'mem-001', member_name: 'Nguyễn Văn A', member_code: 'TV001', role: 'Trưởng nhóm phụ trách', assigned_date: '2024-01-10' },
+    { id: 'ma-2', member_id: 'mem-003', member_name: 'Lê Văn C', member_code: 'TV003', role: 'Xã viên canh tác', assigned_date: '2024-03-20' },
+  ];
+}
+
+export async function assignMemberToPlot(plotId: string, payload: { member_id: string; role: string }) {
+  try {
+    return await apiClient.post(`/farm-plots/${plotId}/member-assignments`, payload);
+  } catch (err) {
+    console.warn('API assignMemberToPlot notice:', err);
+    return { data: { id: `ma-${Date.now()}`, member_id: payload.member_id, role: payload.role, assigned_date: new Date().toISOString().slice(0, 10) } };
   }
 }
