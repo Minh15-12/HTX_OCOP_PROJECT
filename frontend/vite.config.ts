@@ -31,13 +31,13 @@ export default defineConfig({
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
             }
-            if (id.includes('@tanstack') || id.includes('axios')) {
-              return 'vendor-query-api';
+            if (id.includes('xlsx')) {
+              return 'vendor-xlsx';
             }
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom') || id.includes('scheduler')) {
-              return 'vendor-react-core';
+            if (id.includes('@tanstack')) {
+              return 'vendor-query';
             }
-            return 'vendor-libs';
+            return 'vendor-framework';
           }
         },
       },

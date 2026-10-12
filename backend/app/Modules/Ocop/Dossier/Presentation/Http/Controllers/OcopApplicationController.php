@@ -12,11 +12,13 @@ use Modules\Ocop\Dossier\Presentation\Http\Requests\CreateOcopApplicationRequest
 use Modules\Ocop\Dossier\Presentation\Http\Requests\UpdateOcopApplicationRequest;
 use Modules\Ocop\Dossier\Presentation\Http\Resources\ApplicationDetailResource;
 use Modules\Ocop\Dossier\Presentation\Http\Resources\OcopApplicationResource;
+use Modules\Ocop\Services\OcopScoreSuggestionService;
 
 class OcopApplicationController extends BaseController
 {
     public function __construct(
-        private readonly OcopApplicationService $applicationService
+        private readonly OcopApplicationService $applicationService,
+        private readonly OcopScoreSuggestionService $scoreSuggestionService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -91,6 +93,16 @@ class OcopApplicationController extends BaseController
         return $this->success(
             data: new ApplicationDetailResource($app),
             message: 'Nộp hồ sơ OCOP thành công. Hồ sơ đã chuyển sang trạng thái khóa (Read-Only)'
+        );
+    }
+
+    public function scoreSuggestions(string $id): JsonResponse
+    {
+        $suggestions = $this->scoreSuggestionService->getScoreSuggestions($id);
+
+        return $this->success(
+            data: $suggestions,
+            message: 'Tải danh sách gợi ý điểm tự chấm OCOP thông minh thành công'
         );
     }
 }

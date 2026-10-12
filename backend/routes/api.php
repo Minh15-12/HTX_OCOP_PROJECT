@@ -231,6 +231,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/ocop/applications', [OcopApplicationController::class, 'store'])->name('api.ocop.applications.store');
     Route::get('/ocop/applications/{id}', [OcopApplicationController::class, 'show'])->name('api.ocop.applications.show');
     Route::patch('/ocop/applications/{id}', [OcopApplicationController::class, 'update'])->name('api.ocop.applications.update');
+    Route::get('/ocop/applications/{id}/score-suggestions', [OcopApplicationController::class, 'scoreSuggestions'])->name('api.ocop.applications.score-suggestions');
     Route::get('/ocop/applications/{id}/self-assessments', [SelfAssessmentController::class, 'index'])->name('api.ocop.applications.self-assessments.index');
     Route::post('/ocop/applications/{id}/self-assessments', [SelfAssessmentController::class, 'store'])->name('api.ocop.applications.self-assessments.store');
     Route::post('/ocop/applications/{id}/ready-for-submission', [OcopApplicationController::class, 'readyForSubmission'])->name('api.ocop.applications.ready-for-submission');
@@ -239,6 +240,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     // OCOP Evidence Management APIs (Section 31 of 12_API_SPECIFICATION.md)
     Route::get('/ocop/applications/{applicationId}/evidences', [EvidenceController::class, 'indexByApplication'])->name('api.ocop.applications.evidences.index');
     Route::post('/ocop/applications/{applicationId}/evidences', [EvidenceController::class, 'storeInApplication'])->name('api.ocop.applications.evidences.store');
+    Route::post('/ocop/applications/{applicationId}/extract-evidence', [EvidenceController::class, 'extractInternal'])->name('api.ocop.applications.evidences.extract');
     Route::get('/ocop/evidences/{id}', [EvidenceController::class, 'show'])->name('api.ocop.evidences.show');
     Route::get('/ocop/evidences/{id}/download', [EvidenceController::class, 'downloadUrl'])->name('api.ocop.evidences.download');
     Route::get('/ocop/evidences/{id}/file-stream', [EvidenceController::class, 'fileStream'])->name('api.ocop.evidences.file-stream');
@@ -273,6 +275,15 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     // Document Generation & Certificate APIs (Section 35 of 12_API_SPECIFICATION.md)
     Route::post('/documents/generate/ocop-dossier/{applicationId}', [DocumentController::class, 'generateDossier'])->name('api.documents.generate.dossier');
     Route::post('/documents/generate/certificate/{applicationId}', [DocumentController::class, 'generateCertificate'])->name('api.documents.generate.certificate');
+    Route::get('/documents/preview/form-01/{applicationId}', [DocumentController::class, 'previewForm01'])->name('api.documents.preview.form-01');
+    Route::get('/documents/preview/form-02/{applicationId}', [DocumentController::class, 'previewForm02'])->name('api.documents.preview.form-02');
+    Route::get('/documents/preview/form-03/{applicationId}', [DocumentController::class, 'previewForm03'])->name('api.documents.preview.form-03');
+    Route::post('/documents/generate/form-01/{applicationId}', [DocumentController::class, 'generateForm01'])->name('api.documents.generate.form-01');
+    Route::post('/documents/generate/form-02/{applicationId}', [DocumentController::class, 'generateForm02'])->name('api.documents.generate.form-02');
+    Route::post('/documents/generate/form-03/{applicationId}', [DocumentController::class, 'generateForm03'])->name('api.documents.generate.form-03');
+    Route::get('/documents/generate/form-01/{applicationId}', [DocumentController::class, 'generateForm01'])->name('api.documents.generate.form-01.get');
+    Route::get('/documents/generate/form-02/{applicationId}', [DocumentController::class, 'generateForm02'])->name('api.documents.generate.form-02.get');
+    Route::get('/documents/generate/form-03/{applicationId}', [DocumentController::class, 'generateForm03'])->name('api.documents.generate.form-03.get');
     Route::get('/documents/{id}/download', [DocumentController::class, 'download'])->name('api.documents.download');
 
     // Notifications

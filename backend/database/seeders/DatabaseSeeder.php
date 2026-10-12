@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             CouncilLevelSeeder::class,
             UserSeeder::class,
             MemberSeeder::class,
+            OcopSweetPalermoCriteriaSeeder::class,
         ]);
     }
 }
