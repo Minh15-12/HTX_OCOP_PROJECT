@@ -39,6 +39,39 @@ class HarvestModel extends Model
         'uniformity_rate' => 'decimal:2',
     ];
 
+    protected $appends = [
+        'grade_a_kg',
+        'grade_b_kg',
+        'reject_kg',
+    ];
+
+    public function getGradeAKgAttribute(): float
+    {
+        if ($this->grade !== 'GRADE_A') {
+            return 0.0;
+        }
+        if (isset($this->quality_information['grade_a_kg'])) {
+            return (float) $this->quality_information['grade_a_kg'];
+        }
+        return (float) $this->quantity;
+    }
+
+    public function getGradeBKgAttribute(): float
+    {
+        if (isset($this->quality_information['grade_b_kg'])) {
+            return (float) $this->quality_information['grade_b_kg'];
+        }
+        return $this->grade === 'GRADE_B' ? (float) $this->quantity : 0.0;
+    }
+
+    public function getRejectKgAttribute(): float
+    {
+        if (isset($this->quality_information['reject_kg'])) {
+            return (float) $this->quality_information['reject_kg'];
+        }
+        return $this->grade === 'REJECT' ? (float) $this->quantity : 0.0;
+    }
+
     public function cropSeason(): BelongsTo
     {
         return $this->belongsTo(CropSeasonModel::class, 'crop_season_id');
