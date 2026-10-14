@@ -17,6 +17,7 @@ const CropSeasonsPage = lazy(() => import('@/features/agriculture/pages/CropSeas
 const FarmingLogsPage = lazy(() => import('@/features/agriculture/pages/FarmingLogsPage').then(m => ({ default: m.FarmingLogsPage })));
 const HarvestsPage = lazy(() => import('@/features/agriculture/pages/HarvestsPage').then(m => ({ default: m.HarvestsPage })));
 const LotTraceabilityPage = lazy(() => import('@/features/agriculture/pages/LotTraceabilityPage').then(m => ({ default: m.LotTraceabilityPage })));
+const PublicTraceabilityPage = lazy(() => import('@/features/agriculture/pages/PublicTraceabilityPage').then(m => ({ default: m.PublicTraceabilityPage })));
 const ProductsPage = lazy(() => import('@/features/inventory/pages/ProductsPage').then(m => ({ default: m.ProductsPage })));
 const MaterialsPage = lazy(() => import('@/features/inventory/pages/MaterialsPage').then(m => ({ default: m.MaterialsPage })));
 const CriteriaPage = lazy(() => import('@/features/ocop/pages/CriteriaPage').then(m => ({ default: m.CriteriaPage })));
@@ -51,6 +52,10 @@ export const AppRoutes: React.FC = () => {
             <Route path="/auth/login" element={<LoginPage />} />
           </Route>
         </Route>
+
+        {/* Public Consumer QR Traceability Routes (No Auth Required) */}
+        <Route path="/trace/:lotId" element={<PublicTraceabilityPage />} />
+        <Route path="/public/trace/:lotId" element={<PublicTraceabilityPage />} />
 
         {/* Protected App Routes */}
         <Route element={<ProtectedRoute />}>

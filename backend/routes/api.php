@@ -10,6 +10,7 @@ use Modules\Agriculture\Presentation\Http\Controllers\LotController;
 use Modules\Agriculture\Presentation\Http\Controllers\MaterialUsageController;
 use Modules\Agriculture\Presentation\Http\Controllers\PhiCalculationController;
 use Modules\Agriculture\Presentation\Http\Controllers\ProductionUnitController;
+use Modules\Agriculture\Presentation\Http\Controllers\PublicTraceabilityController;
 use Modules\Cooperative\Presentation\Http\Controllers\CapitalContributionController;
 use Modules\Cooperative\Presentation\Http\Controllers\CooperativeController;
 use Modules\Cooperative\Presentation\Http\Controllers\MemberController;
@@ -43,6 +44,7 @@ use Modules\Ocop\Evaluation\Presentation\Http\Controllers\FinalDecisionControlle
 use Modules\Product\Presentation\Http\Controllers\ProductController;
 use Modules\Report\Presentation\Http\Controllers\DocumentController;
 use Modules\Report\Presentation\Http\Controllers\ReportController;
+use Modules\Notification\Presentation\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,6 +54,10 @@ use Modules\Report\Presentation\Http\Controllers\ReportController;
 
 // Health Check Endpoint (Public)
 Route::get('/health', [HealthController::class, 'check'])->name('api.health');
+
+// Public Traceability Routes (Public, outside auth:sanctum)
+Route::get('/public/trace/{lotId}', [PublicTraceabilityController::class, 'show'])->name('api.public.trace');
+Route::get('/trace/{lotId}', [PublicTraceabilityController::class, 'show'])->name('api.trace');
 
 // Authentication Routes (Public / Protected)
 Route::prefix('auth')->group(function () {
@@ -145,6 +151,10 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/harvests', [HarvestController::class, 'store'])->name('api.harvests.store');
     Route::get('/harvests/{id}', [HarvestController::class, 'show'])->name('api.harvests.show');
     Route::patch('/harvests/{id}', [HarvestController::class, 'update'])->name('api.harvests.update');
+    Route::post('/harvests/{id}/kcs/gate-check', [HarvestController::class, 'gateCheck'])->name('api.harvests.gate-check');
+    Route::post('/harvests/{id}/kcs/quick-lab', [HarvestController::class, 'quickLab'])->name('api.harvests.quick-lab');
+    Route::post('/harvests/{id}/kcs/grading', [HarvestController::class, 'grading'])->name('api.harvests.grading');
+    Route::post('/harvests/settle-season', [HarvestController::class, 'settleSeason'])->name('api.harvests.settle-season');
 
     Route::get('/lots', [LotController::class, 'index'])->name('api.lots.index');
     Route::post('/lots', [LotController::class, 'store'])->name('api.lots.store');
