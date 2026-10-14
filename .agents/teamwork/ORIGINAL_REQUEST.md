@@ -62,3 +62,65 @@ Requested team: Full multi-agent team (Backend DDD & Seeders, Frontend UX Nông 
 - Lệnh kiểm tra xác thực:
   - Backend: `php artisan test --filter=Ocop`
   - Frontend: `npm run build && npm run lint`
+
+
+## 2026-10-13T16:16:40Z
+
+Số hóa toàn diện phân hệ Sản xuất & Nhật ký canh tác kết hợp phân hệ Thu hoạch & Truy xuất nguồn gốc cho HTX Nông nghiệp Tân Tiến (Ớt chuông Sweet Palermo Đỏ Đà Lạt), tích hợp dữ liệu liên thông xuyên suốt giữa Xã viên, Vùng trồng, Kho vật tư, Kiểm soát an toàn PHI (Pre-Harvest Interval), KCS 3 cấp, Mã lô GS1 và Mã QR công khai truy xuất nguồn gốc theo Thông tư 02/2024/TT-BNNPTNT.
+
+Working directory: f:\HTX_OCOP_PROJECT
+Integrity mode: development
+
+Requested team: Full multi-agent team (Backend DDD, Frontend Farmer UX, QA & Verification)
+Directive: Thực hiện atomic commits cho các mốc chức năng quan trọng (Production, Farming Logs, Harvest, KCS, GS1 QR Traceability).
+
+## Requirements
+
+### R1. Phân hệ Sản xuất & Nhật ký Canh tác Chuẩn Thông tư 02/2024/TT-BNNPTNT
+- Quản lý phân cấp: Hợp tác xã (`Cooperative`) → Vùng trồng (`ProductionUnit`, Mã PUC) → Thửa đất (`FarmPlot`, mã `PLOT-[HTX]-[MaXaVien]-[STT]`, tọa độ GPS, diện tích) → Mùa vụ (`CropSeason`: Kế hoạch, Đang canh tác, Hoàn thành, Hủy).
+- Nhật ký canh tác điện tử (`FarmingLog`) ghi nhận đủ 10 trường quy chuẩn TT02/2024: hoạt động, thời gian thực hiện, mã thửa đất, mã mùa vụ, SKU vật tư, số lô vật tư, liều lượng/khối lượng, số ngày PHI, GPS tọa độ, hình ảnh thực tế đính kèm.
+- Cơ chế bảo vệ an toàn PHI Guard (Pre-Harvest Interval): Tự động tính `safe_harvest_date = spray_date + PHI_days` khi có nhật ký phun thuốc BVTV, tự động chuyển thửa đất sang `IN_QUARANTINE`.
+
+### R2. Phân hệ Thu hoạch & Kiểm soát Chất lượng KCS 3 Cấp
+- Lệnh thu hoạch và chốt chặn an toàn: Hệ thống **chặn hoàn toàn** lệnh thu hoạch nếu `harvest_date < safe_harvest_date` (Error code `ERR_HARVEST_PHI_VIOLATION`), tuyệt đối không cho phép bù trừ hoặc ghi đè.
+- Quy trình KCS 3 cấp:
+  1. *Gate Check*: Kiểm tra mã lệnh, đối soát PHI và nguồn gốc thửa đất.
+  2. *Quick Lab*: Kiểm tra dư lượng thuốc BVTV/hóa chất cấm (`LAB_PASSED` / `LAB_REJECTED`).
+  3. *Grading*: Phân loại chất lượng nông sản (Grade A: Premium $\ge 90\%$ đồng đều, Brix $\ge 7^\circ$; Grade B: Standard; Reject: Không đạt an toàn).
+
+### R3. Định danh Lô hàng GS1 & Trang Tra cứu Truy xuất Nguồn gốc QR Công khai
+- Quy chuẩn định danh mã lô thu hoạch theo chuẩn GS1: `LOT-[CoopCode]-[PlotCode]-[YYYYMMDD]-[Seq]`.
+- Trang công khai Tra cứu Truy xuất Nguồn gốc (Public Traceability View) hoạt động tại route không yêu cầu đăng nhập (`/trace/:lotId` hoặc `/public/trace/:lotId`): Quét mã QR hiển thị đầy đủ thông tin HTX Tân Tiến, mã PUC, ớt chuông Sweet Palermo, hành trình canh tác, kết quả kiểm nghiệm KCS, chứng nhận VietGAP, bản đồ định vị thửa đất.
+
+### R4. Tích hợp Liên thông Nghiệp vụ Toàn Hệ thống
+- **Liên kết Kho Vật tư**: Kiểm soát xuất nợ đầu vụ (Credit Advance), đối soát số lượng vật tư sử dụng trong nhật ký so với phiếu xuất kho cho xã viên.
+- **Liên kết Tài chính & Thu mua**: Tự động tổng hợp sản lượng Grade A / Grade B để cấn trừ công nợ vật tư đầu vụ và lập phiếu chi/thanh toán thực trả cho xã viên.
+- **Liên kết OCOP**: Trích xuất tự động dữ liệu vùng trồng, nhật ký canh tác tuân thủ PHI và hợp đồng thu mua làm minh chứng số (SHA-256) cho hồ sơ OCOP.
+
+### R5. Tối ưu Giao diện Frontend Thân thiện & Dễ thao tác cho Nông dân (Farmer UX)
+- Màn hình ghi nhận nhật ký canh tác nhanh (Quick Mobile Logging): Các nút bấm to rõ ($\ge 48\text{px}$), hỗ trợ chọn việc 1 chạm (Làm đất, Bón phân, Phun thuốc, Chăm sóc, Thu hoạch), chọn nhanh vật tư, tự động điền tọa độ GPS, chụp ảnh từ camera.
+- Màn hình Vùng trồng & Mùa vụ: Hiển thị trực quan trạng thái thửa đất (Xanh: Đang canh tác, Đỏ/Cam: Đang cách ly PHI kèm đồng hồ đếm ngược ngày an toàn, Xám: Đang nghỉ vụ).
+- Màn hình Thu hoạch & Phân loại KCS: Thao tác nhập kết quả test lab và phân hạng Grade A/B rõ ràng, nút in tem nhãn có mã QR truy xuất.
+
+## Acceptance Criteria
+
+### Tính Đúng đắn & Toàn vẹn Dữ liệu Nghiệp vụ
+- [ ] Backend chặn 100% mọi nỗ lực tạo lệnh thu hoạch khi thửa đất chưa hết ngày cách ly PHI (`ERR_HARVEST_PHI_VIOLATION`).
+- [ ] Nhật ký canh tác lưu trữ và trả về đầy đủ 10 trường Thông tư 02/2024/TT-BNNPTNT.
+- [ ] Mã lô thu hoạch sinh tự động đúng quy chuẩn GS1: `LOT-TT-[PlotCode]-[YYYYMMDD]-[Seq]`.
+- [ ] Quy trình KCS 3 cấp (Gate Check → Quick Lab → Grading) chuyển trạng thái chính xác và tính sản lượng Grade A / B chuẩn xác.
+
+### Liên thông & Tra cứu Công khai
+- [ ] Quét hoặc truy cập URL mã QR công khai (`/trace/:lotId` hoặc `/public/trace/:lotId`) hiển thị đầy đủ hồ sơ nguồn gốc sản phẩm mà không bị chặn bởi Auth middleware.
+- [ ] Dữ liệu thu hoạch liên thông đồng bộ sang Phiếu thu mua / Công nợ của xã viên trong module Tài chính và liên kết minh chứng OCOP.
+
+### Trải nghiệm Frontend Nông dân & Kiểm thử
+- [ ] Giao diện các trang `FarmPlotsPage`, `CropSeasonsPage`, `FarmingLogsPage`, `HarvestsPage`, `LotTraceabilityPage` được thiết kế mới mẻ, hiện đại, tối ưu cho thao tác nông dân trên di động/máy tính bảng.
+- [ ] Toàn bộ Backend test suites (`php artisan test`) và Frontend build/lint (`npm run build`, `npm run lint`) chạy thành công 100%, không phát sinh lỗi.
+
+## Verification Resources
+- Nhánh Git làm việc: `feature/production-farming-harvest-traceability`
+- Tài liệu quy chuẩn: `docs/31_FARMING_WORKFLOW.md`, `AGENT.md` (mục 11.1), `docs/10_DOMAIN_MODEL.md`, `docs/11_DATABASE_DESIGN_FINAL.md`.
+- Lệnh kiểm tra xác thực:
+  - Backend: `php artisan test --filter=Agriculture` và `php artisan test --filter=CropSeason`
+  - Frontend: `npm run build && npm run lint`
