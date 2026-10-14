@@ -82,23 +82,23 @@ const getTimelineProgress = (startDateStr?: string | null, endDateStr?: string |
 
 /** Mock data đẹp – tham khảo UI main */
 const MOCK_UNITS: ProductionUnit[] = [
-  { id: 'u1', unit_code: 'VT-ML-02', name: 'Thôn 2 - Mê Linh', crop: 'Cà phê Arabica', area: 32.5, status: 'ACTIVE' },
-  { id: 'u2', unit_code: 'VT-LH-03', name: 'Thôn 3 - Lâm Hà', crop: 'Tiêu', area: 15.0, status: 'ACTIVE' },
-  { id: 'u3', unit_code: 'VT-DT-01', name: 'Thôn 1 - Đạ Tẻh', crop: 'Cà phê Robusta', area: 18.5, status: 'ACTIVE' },
-  { id: 'u4', unit_code: 'VT-TH-04', name: 'Thôn 4 - Tân Hà', crop: 'Sầu riêng', area: 12.0, status: 'ACTIVE' },
-  { id: 'u5', unit_code: 'VT-DD-05', name: 'Thôn 5 - Đơn Dương', crop: 'Chè', area: 10.0, status: 'ACTIVE' },
-  { id: 'u6', unit_code: 'VT-LH-06', name: 'Thôn 6 - Lâm Hà', crop: 'Bơ', area: 8.5, status: 'ACTIVE' },
+  { id: 'u1', unit_code: 'VT-DALAT-01', name: 'Vùng trồng Hòn Bồ (P12 - Đà Lạt)', crop: 'Ớt chuông Sweet Palermo Đỏ', area: 15.0, status: 'ACTIVE' },
+  { id: 'u2', unit_code: 'VT-DASAR-02', name: 'Vùng trồng Liên Kết Đạ Sar - Lạc Dương', crop: 'Ớt chuông Sweet Palermo Đỏ & Vàng', area: 12.5, status: 'ACTIVE' },
+  { id: 'u3', unit_code: 'VT-DANHIM-03', name: 'Vùng Trồng Đơn Dương', crop: 'Ớt chuông Sweet Palermo Đỏ Baby', area: 8.5, status: 'ACTIVE' },
+  { id: 'u4', unit_code: 'VT-LACDUONG-04', name: 'Vùng trồng Đạ Chais', crop: 'Ớt chuông Sweet Palermo Đỏ', area: 10.0, status: 'ACTIVE' },
+  { id: 'u5', unit_code: 'VT-HONBO-05', name: 'Khu Khảo Nghiệm Giống F1 Hòn Bồ', crop: 'Ớt chuông Sweet Palermo Sô-cô-la', area: 6.0, status: 'PREPARING' },
+  { id: 'u6', unit_code: 'VT-DONDUONG-06', name: 'Vùng Nghỉ Cải Tạo Đất Hữu Cơ', crop: 'Cải tạo đất hữu cơ', area: 7.0, status: 'FALLOW' },
 ];
 
 const MOCK_SEASONS: CropSeason[] = [
-  { id: 's1', production_unit_id: 'u1', unit_code: 'VT-ML-02', unit_name: 'Thôn 2 - Mê Linh', name: 'Vụ Đông Xuân 2024-2025', crop: 'Cà phê Arabica', start_date: '2024-11-01', expected_end_date: '2025-02-28', status: 'COMPLETED' },
-  { id: 's2', production_unit_id: 'u1', unit_code: 'VT-ML-02', unit_name: 'Thôn 2 - Mê Linh', name: 'Vụ Hè Thu 2025', crop: 'Cà phê Arabica', start_date: '2025-03-01', expected_end_date: '2025-07-31', status: 'ACTIVE' },
-  { id: 's3', production_unit_id: 'u1', unit_code: 'VT-ML-02', unit_name: 'Thôn 2 - Mê Linh', name: 'Vụ Thu Đông 2025', crop: 'Cà phê Arabica', start_date: '2025-08-01', expected_end_date: '2025-12-31', status: 'PLANNED' },
-  { id: 's4', production_unit_id: 'u2', unit_code: 'VT-LH-03', unit_name: 'Thôn 3 - Lâm Hà', name: 'Vụ Đông Xuân 2025-2026', crop: 'Tiêu', start_date: '2025-11-01', expected_end_date: '2026-02-28', status: 'PLANNED' },
-  { id: 's5', production_unit_id: 'u3', unit_code: 'VT-DT-01', unit_name: 'Thôn 1 - Đạ Tẻh', name: 'Vụ Hè Thu 2025', crop: 'Cà phê Robusta', start_date: '2025-03-01', expected_end_date: '2025-07-31', status: 'ACTIVE' },
-  { id: 's6', production_unit_id: 'u4', unit_code: 'VT-TH-04', unit_name: 'Thôn 4 - Tân Hà', name: 'Vụ Mùa 2025', crop: 'Sầu riêng', start_date: '2025-06-01', expected_end_date: '2025-09-30', status: 'ACTIVE' },
-  { id: 's7', production_unit_id: 'u5', unit_code: 'VT-DD-05', unit_name: 'Thôn 5 - Đơn Dương', name: 'Vụ Đông Xuân 2025-2026', crop: 'Chè', start_date: '2025-11-01', expected_end_date: '2026-02-28', status: 'PLANNED' },
-  { id: 's8', production_unit_id: 'u6', unit_code: 'VT-LH-06', unit_name: 'Thôn 6 - Lâm Hà', name: 'Vụ Hè Thu 2025', crop: 'Bơ', start_date: '2025-03-01', expected_end_date: '2025-07-31', status: 'ACTIVE' },
+  { id: 's1', production_unit_id: 'u1', unit_code: 'VT-DALAT-01', unit_name: 'Vùng trồng Hòn Bồ P12', name: 'Vụ Ớt Chuông Sweet Palermo Thu Đông 2026', crop: 'Ớt chuông Sweet Palermo Đỏ', start_date: '2026-08-01', expected_end_date: '2026-12-31', status: 'ACTIVE' },
+  { id: 's2', production_unit_id: 'u1', unit_code: 'VT-DALAT-01', unit_name: 'Vùng trồng Hòn Bồ P12', name: 'Vụ Ớt Chuông Hè Thu 2026', crop: 'Ớt chuông Sweet Palermo Đỏ', start_date: '2026-03-01', expected_end_date: '2026-07-31', status: 'COMPLETED' },
+  { id: 's3', production_unit_id: 'u2', unit_code: 'VT-DASAR-02', unit_name: 'Vùng liên kết Đạ Sar', name: 'Vụ Ớt Chuông Xuất Khẩu Đạ Sar 2026', crop: 'Ớt chuông Sweet Palermo Đỏ & Vàng', start_date: '2026-08-15', expected_end_date: '2026-12-25', status: 'ACTIVE' },
+  { id: 's4', production_unit_id: 'u2', unit_code: 'VT-DASAR-02', unit_name: 'Vùng liên kết Đạ Sar', name: 'Vụ Đông Xuân 2026-2027 Kế Hoạch', crop: 'Ớt chuông Sweet Palermo Đỏ', start_date: '2026-11-01', expected_end_date: '2027-03-31', status: 'PLANNED' },
+  { id: 's5', production_unit_id: 'u3', unit_code: 'VT-DANHIM-03', unit_name: 'Vùng Đơn Dương', name: 'Vụ Ớt Palermo Baby Thu Đông 2026', crop: 'Ớt chuông Sweet Palermo Đỏ Baby', start_date: '2026-07-01', expected_end_date: '2026-11-30', status: 'ACTIVE' },
+  { id: 's6', production_unit_id: 'u4', unit_code: 'VT-LACDUONG-04', unit_name: 'Vùng Đạ Chais', name: 'Vụ Thu Đông Đạ Chais 2026', crop: 'Ớt chuông Sweet Palermo Đỏ', start_date: '2026-08-01', expected_end_date: '2026-12-15', status: 'ACTIVE' },
+  { id: 's7', production_unit_id: 'u5', unit_code: 'VT-HONBO-05', unit_name: 'Khu Khảo Nghiệm F1', name: 'Vụ Khảo Nghiệm Giống F1 2026', crop: 'Ớt chuông Sweet Palermo Sô-cô-la', start_date: '2026-09-01', expected_end_date: '2027-01-31', status: 'PLANNED' },
+  { id: 's8', production_unit_id: 'u6', unit_code: 'VT-DONDUONG-06', unit_name: 'Vùng Nghỉ Cải Tạo', name: 'Đợt Nghỉ Dưỡng Đất & Cải Tạo Vi Sinh 2026', crop: 'Cải tạo đất hữu cơ', start_date: '2026-06-01', expected_end_date: '2026-10-31', status: 'ACTIVE' },
 ];
 
 export const CropSeasonsPage: React.FC = () => {

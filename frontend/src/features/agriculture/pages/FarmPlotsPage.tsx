@@ -15,6 +15,7 @@ import {
   ShieldAlert,
   UserCheck,
 } from 'lucide-react';
+import { PhiCountdownBadge } from '../components/PhiCountdownBadge';
 import {
   fetchProductionUnits,
   createProductionUnit,
@@ -31,19 +32,19 @@ import {
 const statusText: Record<string, string> = {
   ACTIVE: 'Đang canh tác',
   PREPARING: 'Chuẩn bị đất',
-  FALLOW: 'Đang nghỉ',
-  INACTIVE: 'Ngưng',
+  FALLOW: 'Đang nghỉ vụ',
+  INACTIVE: 'Ngưng canh tác',
   UNDER_PUC_REVIEW: 'Chờ đánh giá PUC ⚠️',
   IN_QUARANTINE: 'Cách ly PHI 🛑',
 };
 
 const statusClass: Record<string, string> = {
-  ACTIVE: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  ACTIVE: 'border-emerald-300 bg-emerald-50 text-emerald-800 font-bold',
   PREPARING: 'border-amber-200 bg-amber-50 text-amber-700',
-  FALLOW: 'border-slate-200 bg-slate-100 text-slate-600',
+  FALLOW: 'border-slate-300 bg-slate-100 text-slate-600 font-medium',
   INACTIVE: 'border-red-200 bg-red-50 text-red-600',
   UNDER_PUC_REVIEW: 'border-amber-300 bg-amber-100 text-amber-900 font-bold',
-  IN_QUARANTINE: 'border-rose-300 bg-rose-100 text-rose-800 font-bold animate-pulse',
+  IN_QUARANTINE: 'border-rose-400 bg-rose-100 text-rose-900 font-extrabold animate-pulse ring-2 ring-rose-200',
 };
 
 type UnitForm = {
@@ -71,31 +72,29 @@ const toList = (res: any): any[] => {
   return Array.isArray(list) ? list : [];
 };
 
-/** Mock data chuẩn hóa theo main */
+/** Mock data chuẩn hóa cho HTX Tân Tiến - Ớt Chuông Sweet Palermo Đỏ Đà Lạt */
 const MOCK_UNITS: ProductionUnit[] = [
-  { id: 'u1', unit_code: 'VT-ML-02', name: 'Thôn 2 - Mê Linh', crop: 'Cà phê Arabica', area: 32.5, status: 'ACTIVE', puc_code: 'PUC-49-012-8821', puc_status: 'ACTIVE' },
-  { id: 'u2', unit_code: 'VT-LH-03', name: 'Thôn 3 - Lâm Hà', crop: 'Tiêu', area: 15.0, status: 'ACTIVE', puc_code: 'PUC-49-015-9923', puc_status: 'ACTIVE' },
-  { id: 'u3', unit_code: 'VT-DT-01', name: 'Thôn 1 - Đạ Tẻh', crop: 'Cà phê Robusta', area: 18.5, status: 'ACTIVE', puc_code: 'PUC-49-018-0045', puc_status: 'UNDER_PUC_REVIEW' },
-  { id: 'u4', unit_code: 'VT-TH-04', name: 'Thôn 4 - Tân Hà', crop: 'Sầu riêng', area: 12.0, status: 'ACTIVE', puc_code: 'PUC-49-020-1122', puc_status: 'ACTIVE' },
-  { id: 'u5', unit_code: 'VT-DD-05', name: 'Thôn 5 - Đơn Dương', crop: 'Chè', area: 10.0, status: 'ACTIVE', puc_code: 'PUC-49-022-3344', puc_status: 'ACTIVE' },
-  { id: 'u6', unit_code: 'VT-LH-06', name: 'Thôn 6 - Lâm Hà', crop: 'Bơ', area: 8.5, status: 'ACTIVE', puc_code: 'PUC-49-025-5566', puc_status: 'ACTIVE' },
-  { id: 'u7', unit_code: 'VT-ML-07', name: 'Thôn 7 - Mê Linh', crop: 'Cà phê Arabica', area: 22.0, status: 'PREPARING', puc_code: 'PUC-49-027-7788', puc_status: 'ACTIVE' },
-  { id: 'u8', unit_code: 'VT-DT-08', name: 'Thôn 8 - Đạ Tẻh', crop: 'Cà phê Robusta', area: 14.0, status: 'FALLOW', puc_code: 'PUC-49-030-9900', puc_status: 'ACTIVE' },
+  { id: 'u1', unit_code: 'VT-DALAT-01', name: 'Vùng trồng Ớt Chuông Sweet Palermo Hòn Bồ (P12 - Đà Lạt)', crop: 'Ớt chuông Sweet Palermo Đỏ', area: 15.0, status: 'ACTIVE', puc_code: 'PUC-49-015-9923', puc_status: 'ACTIVE' },
+  { id: 'u2', unit_code: 'VT-DASAR-02', name: 'Vùng trồng Liên Kết Đạ Sar - Lạc Dương (HTX Tân Tiến)', crop: 'Ớt chuông Sweet Palermo Đỏ & Vàng', area: 12.5, status: 'ACTIVE', puc_code: 'PUC-49-015-9924', puc_status: 'ACTIVE' },
+  { id: 'u3', unit_code: 'VT-DANHIM-03', name: 'Vùng Trồng Công Nghệ Cao Đơn Dương', crop: 'Ớt chuông Sweet Palermo Đỏ Baby', area: 8.5, status: 'ACTIVE', puc_code: 'PUC-49-018-0045', puc_status: 'UNDER_PUC_REVIEW' },
+  { id: 'u4', unit_code: 'VT-LACDUONG-04', name: 'Vùng trồng Liên Kết Xã Đạ Chais', crop: 'Ớt chuông Sweet Palermo Đỏ', area: 10.0, status: 'ACTIVE', puc_code: 'PUC-49-020-1122', puc_status: 'ACTIVE' },
+  { id: 'u5', unit_code: 'VT-HONBO-05', name: 'Khu Nhà Kính Khảo Nghiệm Giống F1 Hòn Bồ', crop: 'Ớt chuông Sweet Palermo Sô-cô-la', area: 6.0, status: 'PREPARING', puc_code: 'PUC-49-022-3344', puc_status: 'ACTIVE' },
+  { id: 'u6', unit_code: 'VT-DONDUONG-06', name: 'Vùng Nghỉ Dưỡng Đất & Cải Tạo Hữu Cơ', crop: 'Cải tạo đất hữu cơ', area: 7.0, status: 'FALLOW', puc_code: 'PUC-49-025-5566', puc_status: 'ACTIVE' },
 ];
 
 const MOCK_PLOTS: Record<string, FarmPlot[]> = {
   u1: [
-    { id: 'p1', production_unit_id: 'u1', plot_code: 'TD-01', area: 8.5, status: 'ACTIVE', unit_name: 'Thôn 2 - Mê Linh' },
-    { id: 'p2', production_unit_id: 'u1', plot_code: 'TD-02', area: 12.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-15', unit_name: 'Thôn 2 - Mê Linh' },
-    { id: 'p3', production_unit_id: 'u1', plot_code: 'TD-03', area: 12.0, status: 'ACTIVE', unit_name: 'Thôn 2 - Mê Linh' },
+    { id: 'p1', production_unit_id: 'u1', plot_code: 'PLOT-TT-XV001-01', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9501° N, 108.4712° E', unit_name: 'Nhà kính Hòn Bồ 01' },
+    { id: 'p2', production_unit_id: 'u1', plot_code: 'PLOT-TT-XV001-02', area: 4.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-20', gps_coordinates: '11.9510° N, 108.4720° E', unit_name: 'Nhà kính Hòn Bồ 02' },
+    { id: 'p3', production_unit_id: 'u1', plot_code: 'PLOT-TT-XV002-01', area: 6.5, status: 'ACTIVE', gps_coordinates: '11.9525° N, 108.4735° E', unit_name: 'Nhà kính Hòn Bồ 03' },
   ],
   u2: [
-    { id: 'p4', production_unit_id: 'u2', plot_code: 'TD-04', area: 7.5, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-20', unit_name: 'Thôn 3 - Lâm Hà' },
-    { id: 'p5', production_unit_id: 'u2', plot_code: 'TD-05', area: 7.5, status: 'ACTIVE', unit_name: 'Thôn 3 - Lâm Hà' },
+    { id: 'p4', production_unit_id: 'u2', plot_code: 'PLOT-TT-XV003-01', area: 5.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-18', gps_coordinates: '11.9404° N, 108.4583° E', unit_name: 'Thửa Đất Đạ Sar 01' },
+    { id: 'p5', production_unit_id: 'u2', plot_code: 'PLOT-TT-XV003-02', area: 7.5, status: 'ACTIVE', gps_coordinates: '11.9412° N, 108.4590° E', unit_name: 'Thửa Đất Đạ Sar 02' },
   ],
   u3: [
-    { id: 'p6', production_unit_id: 'u3', plot_code: 'TD-06', area: 9.0, status: 'ACTIVE', unit_name: 'Thôn 1 - Đạ Tẻh' },
-    { id: 'p7', production_unit_id: 'u3', plot_code: 'TD-07', area: 9.5, status: 'ACTIVE', unit_name: 'Thôn 1 - Đạ Tẻh' },
+    { id: 'p6', production_unit_id: 'u3', plot_code: 'PLOT-TT-XV004-01', area: 4.0, status: 'ACTIVE', gps_coordinates: '11.9600° N, 108.4800° E', unit_name: 'Thửa Công Nghệ Cao 01' },
+    { id: 'p7', production_unit_id: 'u3', plot_code: 'PLOT-TT-XV004-02', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9610° N, 108.4810° E', unit_name: 'Thửa Công Nghệ Cao 02' },
   ],
 };
 
@@ -690,22 +689,48 @@ export const FarmPlotsPage: React.FC = () => {
                       <ul className="space-y-2.5">
                         {plots.map((p) => {
                           const isQuarantine = p.status === 'IN_QUARANTINE';
+                          const isFallow = p.status === 'FALLOW';
+                          const borderBgClass = isQuarantine
+                            ? 'border-rose-300 bg-rose-50/80 shadow-xs ring-1 ring-rose-200'
+                            : isFallow
+                            ? 'border-slate-200 bg-slate-50/80'
+                            : 'border-emerald-200 bg-emerald-50/30 hover:border-emerald-300 hover:bg-emerald-50/60';
+
                           return (
-                            <li key={p.id} className={`rounded-xl border p-3 transition ${isQuarantine ? 'border-rose-200 bg-rose-50/70' : 'border-slate-100 bg-slate-50/70 hover:border-emerald-100 hover:bg-emerald-50/40'}`}>
+                            <li key={p.id} className={`rounded-xl border p-3.5 transition ${borderBgClass}`}>
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm ${isQuarantine ? 'bg-rose-100 text-rose-600' : 'bg-white text-emerald-600'}`}>
+                                  <div
+                                    className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm ${
+                                      isQuarantine
+                                        ? 'bg-rose-100 text-rose-600 animate-pulse'
+                                        : isFallow
+                                        ? 'bg-slate-200 text-slate-600'
+                                        : 'bg-white text-emerald-600'
+                                    }`}
+                                  >
                                     {isQuarantine ? <ShieldAlert className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
                                   </div>
                                   <div>
-                                    <p className="text-xs font-bold text-slate-700">{p.plot_code}</p>
-                                    <span className={`text-[10px] font-bold ${isQuarantine ? 'text-rose-700' : 'text-slate-400'}`}>
-                                      {statusText[p.status] || p.status}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-xs font-bold text-slate-800">{p.plot_code}</p>
+                                      <span
+                                        className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold border ${
+                                          statusClass[p.status] || 'border-slate-200 bg-slate-100 text-slate-700'
+                                        }`}
+                                      >
+                                        {statusText[p.status] || p.status}
+                                      </span>
+                                    </div>
+                                    {p.gps_coordinates && (
+                                      <div className="mt-0.5 text-[10.5px] font-mono text-slate-500">
+                                        📍 {p.gps_coordinates}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-slate-600">{p.area} ha</span>
+                                  <span className="text-xs font-bold text-slate-700">{p.area} ha</span>
                                   <button
                                     onClick={() => openAssignmentsModal(p)}
                                     className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 shadow-xs hover:border-emerald-200 hover:text-emerald-700"
@@ -716,11 +741,9 @@ export const FarmPlotsPage: React.FC = () => {
                                   </button>
                                 </div>
                               </div>
-                              {isQuarantine && (
-                                <div className="mt-2 rounded-lg border border-rose-200 bg-rose-100/80 px-2.5 py-1.5 text-[11px] font-bold text-rose-800">
-                                  🛑 Cách ly PHI đến: {p.safe_harvest_date || '15/10/2026'}
-                                </div>
-                              )}
+                              <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                                <PhiCountdownBadge safeHarvestDate={p.safe_harvest_date} status={p.status} />
+                              </div>
                             </li>
                           );
                         })}
