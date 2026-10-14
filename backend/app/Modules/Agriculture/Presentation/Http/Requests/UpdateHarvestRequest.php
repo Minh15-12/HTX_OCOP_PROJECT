@@ -18,6 +18,15 @@ class UpdateHarvestRequest extends FormRequest
             'quantity' => ['sometimes', 'numeric', 'gt:0'],
             'unit' => ['sometimes', 'string', 'max:30'],
             'quality_information' => ['nullable', 'array'],
+            'kcs_status' => ['nullable', 'string', 'max:50'],
+            'kcs_gate_check' => ['nullable', 'array'],
+            'kcs_quick_lab' => ['nullable', 'array'],
+            'grade' => ['nullable', 'string', 'in:GRADE_A,GRADE_B,REJECT'],
+            'brix_level' => ['nullable', 'numeric', 'min:0'],
+            'uniformity_rate' => ['nullable', 'numeric', 'between:0,100'],
+            'grade_a_kg' => ['nullable', 'numeric', 'min:0'],
+            'grade_b_kg' => ['nullable', 'numeric', 'min:0'],
+            'reject_kg' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

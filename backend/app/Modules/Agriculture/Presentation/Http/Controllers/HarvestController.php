@@ -68,7 +68,16 @@ class HarvestController extends BaseController
             harvestDate: $request->input('harvest_date'),
             quantity: (float) $request->input('quantity'),
             unit: $request->input('unit'),
-            qualityInformation: $request->input('quality_information')
+            qualityInformation: $request->input('quality_information'),
+            kcsStatus: $request->input('kcs_status', 'PENDING_KCS'),
+            kcsGateCheck: $request->input('kcs_gate_check'),
+            kcsQuickLab: $request->input('kcs_quick_lab'),
+            grade: $request->input('grade', 'GRADE_B'),
+            brixLevel: $request->has('brix_level') ? (float) $request->input('brix_level') : null,
+            uniformityRate: $request->has('uniformity_rate') ? (float) $request->input('uniformity_rate') : null,
+            gradeAKg: $request->has('grade_a_kg') ? (float) $request->input('grade_a_kg') : null,
+            gradeBKg: $request->has('grade_b_kg') ? (float) $request->input('grade_b_kg') : null,
+            rejectKg: $request->has('reject_kg') ? (float) $request->input('reject_kg') : null
         );
 
         $harvest = $this->harvestService->createHarvest($dto);
@@ -90,7 +99,16 @@ class HarvestController extends BaseController
             harvestDate: $request->input('harvest_date'),
             quantity: $request->has('quantity') ? (float) $request->input('quantity') : null,
             unit: $request->input('unit'),
-            qualityInformation: $request->input('quality_information')
+            qualityInformation: $request->input('quality_information'),
+            kcsStatus: $request->input('kcs_status'),
+            kcsGateCheck: $request->input('kcs_gate_check'),
+            kcsQuickLab: $request->input('kcs_quick_lab'),
+            grade: $request->input('grade'),
+            brixLevel: $request->has('brix_level') ? (float) $request->input('brix_level') : null,
+            uniformityRate: $request->has('uniformity_rate') ? (float) $request->input('uniformity_rate') : null,
+            gradeAKg: $request->has('grade_a_kg') ? (float) $request->input('grade_a_kg') : null,
+            gradeBKg: $request->has('grade_b_kg') ? (float) $request->input('grade_b_kg') : null,
+            rejectKg: $request->has('reject_kg') ? (float) $request->input('reject_kg') : null
         );
 
         $harvest = $this->harvestService->updateHarvest($id, $dto);
@@ -98,6 +116,76 @@ class HarvestController extends BaseController
         return ApiResponse::success(
             data: new HarvestResource($harvest),
             message: 'Cập nhật thông tin thu hoạch thành công'
+        );
+    }
+
+    public function gateCheck(string $id, Request $request): JsonResponse
+    {
+        if (!Gate::allows('AGRICULTURE.UPDATE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền thực hiện kiểm tra cổng thu hoạch', status: 403);
+        }
+
+        $harvest = $this->harvestService->gateCheck($id, $request->all());
+
+        return ApiResponse::success(
+            data: new HarvestResource($harvest),
+            message: 'Kiểm tra Gate Check cổng nông trường hoàn tất thành công'
+        );
+    }
+
+    public function quickLab(string $id, Request $request): JsonResponse
+    {
+        if (!Gate::allows('AGRICULTURE.UPDATE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền cập nhật kết quả kiểm nghiệm lab', status: 403);
+        }
+
+        $harvest = $this->harvestService->quickLab($id, $request->all());
+
+        return ApiResponse::success(
+            data: new HarvestResource($harvest),
+            message: 'Ghi nhận kết quả Quick Lab thành công'
+        );
+    }
+
+    public function grading(string $id, Request $request): JsonResponse
+    {
+        if (!Gate::allows('AGRICULTURE.UPDATE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền phân loại phẩm cấp thu hoạch', status: 403);
+        }
+
+        $harvest = $this->harvestService->grading($id, $request->all());
+
+        return ApiResponse::success(
+            data: new HarvestResource($harvest),
+            message: 'Phân loại phẩm cấp nông sản hoàn tất thành công'
+        );
+    }
+
+    public function settleSeason(Request $request, \Modules\Agriculture\Application\Services\HarvestSettlementService $settlementService): JsonResponse
+    {
+        if (!Gate::allows('AGRICULTURE.UPDATE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền thực hiện quyết toán mùa vụ nông sản', status: 403);
+        }
+
+        $request->validate([
+            'season_id' => ['required', 'uuid', 'exists:crop_seasons,id'],
+            'member_id' => ['required', 'uuid', 'exists:members,id'],
+            'grade_a_price' => ['nullable', 'numeric', 'min:0'],
+            'grade_b_price' => ['nullable', 'numeric', 'min:0'],
+            'service_fee_rate' => ['nullable', 'numeric', 'between:0,1'],
+        ]);
+
+        $result = $settlementService->settleSeasonHarvests(
+            seasonId: $request->input('season_id'),
+            memberId: $request->input('member_id'),
+            gradeAPrice: $request->filled('grade_a_price') ? (float) $request->input('grade_a_price') : 35000,
+            gradeBPrice: $request->filled('grade_b_price') ? (float) $request->input('grade_b_price') : 25000,
+            serviceFeeRate: $request->filled('service_fee_rate') ? (float) $request->input('service_fee_rate') : 0.025
+        );
+
+        return ApiResponse::success(
+            data: $result,
+            message: 'Quyết toán sản lượng thu hoạch và cấn trừ nợ thành công'
         );
     }
 }
