@@ -113,6 +113,15 @@ class FarmingLogService
             }
         }
 
+        // Auto-lookup phi_days from material catalog if not manually provided
+        $phiDays = $dto->phiDays;
+        if (($phiDays === null || $phiDays === '') && $dto->materialId) {
+            $material = \Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel::find($dto->materialId);
+            if ($material && isset($material->safety_information['phi_days']) && is_numeric($material->safety_information['phi_days'])) {
+                $phiDays = (int) $material->safety_information['phi_days'];
+            }
+        }
+
         $log = FarmingLogModel::create([
             'id' => $domainEntity->id,
             'crop_season_id' => $domainEntity->cropSeasonId,
@@ -126,21 +135,21 @@ class FarmingLogService
             'material_batch_number' => $dto->materialBatchNumber,
             'quantity_applied' => $dto->quantityApplied,
             'unit' => $dto->unit,
-            'phi_days' => $dto->phiDays,
+            'phi_days' => $phiDays,
             'gps_latitude' => $dto->gpsLatitude,
             'gps_longitude' => $dto->gpsLongitude,
         ]);
 
-        if ($dto->phiDays && $dto->phiDays > 0) {
+        if ($phiDays && $phiDays > 0) {
             $appDate = \Carbon\Carbon::parse($dto->activityDate);
-            $safetyDate = $appDate->copy()->addDays($dto->phiDays)->format('Y-m-d');
+            $safetyDate = $appDate->copy()->addDays($phiDays)->format('Y-m-d');
             
             \Modules\Agriculture\Infrastructure\Persistence\Models\PhiCalculationModel::create([
                 'id' => (string) Str::uuid(),
                 'farming_log_id' => $log->id,
                 'material_id' => $dto->materialId,
                 'application_date' => $dto->activityDate,
-                'configured_phi_days' => $dto->phiDays,
+                'configured_phi_days' => $phiDays,
                 'safety_date' => $safetyDate,
                 'status' => 'ACTIVE',
                 'source_reference' => ['source' => 'FARMING_LOG', 'log_id' => $log->id],
@@ -198,6 +207,13 @@ class FarmingLogService
         if ($dto->phiDays !== null) $updates['phi_days'] = $dto->phiDays;
         if ($dto->gpsLatitude !== null) $updates['gps_latitude'] = $dto->gpsLatitude;
         if ($dto->gpsLongitude !== null) $updates['gps_longitude'] = $dto->gpsLongitude;
+
+        if (isset($updates['material_id']) && !isset($updates['phi_days'])) {
+            $material = \Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel::find($updates['material_id']);
+            if ($material && isset($material->safety_information['phi_days']) && is_numeric($material->safety_information['phi_days'])) {
+                $updates['phi_days'] = (int) $material->safety_information['phi_days'];
+            }
+        }
 
         if (!empty($updates)) {
             $log->update($updates);
