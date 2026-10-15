@@ -18,11 +18,13 @@ import {
   Pencil,
   Trash2,
   AlertOctagon,
+  Scale,
+  FlaskConical,
+  Columns2,
+  Maximize2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { DataTable, Column } from '@/components/ui/DataTable';
 import { Modal } from '@/components/ui/Modal';
 import { formatDate, formatNumber } from '@/utils/formatters';
 import { useToast } from '@/components/ui/ToastNotification';
@@ -30,6 +32,7 @@ import { fetchHarvests, createHarvest, deleteHarvest } from '@/services/harvestA
 import { getAllStoredPlots, type FarmPlot } from '@/services/farmPlotApi';
 import { HarvestLabelPrintModal } from '../components/HarvestLabelPrintModal';
 import { HarvestDetailModal } from '../components/HarvestDetailModal';
+import { HarvestDetailPanel } from '../components/HarvestDetailPanel';
 import { EditHarvestModal } from '../components/EditHarvestModal';
 import { exportToExcel } from '@/utils/exportUtils';
 import type { HarvestItem, QualityGrade, QuickLabResult } from '@/types/agriculture';
@@ -41,10 +44,14 @@ export const HarvestsPage: React.FC = () => {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedHarvestForPrint, setSelectedHarvestForPrint] = useState<HarvestItem | null>(null);
-  const [selectedHarvestForDetail, setSelectedHarvestForDetail] = useState<HarvestItem | null>(null);
+  const [selectedHarvestForDetailModal, setSelectedHarvestForDetailModal] = useState<HarvestItem | null>(null);
   const [selectedHarvestForEdit, setSelectedHarvestForEdit] = useState<HarvestItem | null>(null);
   const [harvestToDelete, setHarvestToDelete] = useState<HarvestItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Master-Detail State (Split View)
+  const [selectedHarvestId, setSelectedHarvestId] = useState<string | null>(null);
+  const [isSplitView, setIsSplitView] = useState(true);
 
   // Search & Filter State
   const [search, setSearch] = useState('');
@@ -101,6 +108,28 @@ export const HarvestsPage: React.FC = () => {
       return matchSearch && matchGrade;
     });
   }, [rawHarvestList, search, selectedGrade]);
+
+  // Active harvest for Master-Detail inspection panel
+  const activeHarvest = useMemo(() => {
+    if (harvestList.length === 0) return null;
+    if (!selectedHarvestId) return harvestList[0];
+    return harvestList.find((h) => h.id === selectedHarvestId) || harvestList[0];
+  }, [harvestList, selectedHarvestId]);
+
+  // KPI Metrics Calculation (Hình 3)
+  const kpiStats = useMemo(() => {
+    const totalVolume = rawHarvestList.reduce((acc, h) => acc + (Number(h.quantity_kg) || 0), 0);
+    const gradeAVolume = rawHarvestList.reduce((acc, h) => acc + (Number(h.grade_a_kg) || 0), 0);
+    const gradeAPercent = totalVolume > 0 ? Math.round((gradeAVolume / totalVolume) * 100) : 0;
+    const totalLots = rawHarvestList.length;
+
+    return {
+      totalVolume,
+      gradeAVolume,
+      gradeAPercent,
+      totalLots,
+    };
+  }, [rawHarvestList]);
 
   // Create Harvest Mutation
   const createHarvestMutation = useMutation({
@@ -166,188 +195,108 @@ export const HarvestsPage: React.FC = () => {
     }
   };
 
-  const columns: Column<HarvestItem>[] = [
-    {
-      key: 'harvest_code',
-      header: 'Mã Lệnh Thu Hoạch',
-      render: (item) => (
-        <div>
-          <span className="font-bold text-emerald-800">{item.harvest_code}</span>
-          <div className="text-[11px] text-slate-400 font-mono">
-            {formatDate(item.harvest_date)}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'lot_code',
-      header: 'Mã Lô GS1 (Lot Code)',
-      render: (item) => (
-        <div>
-          <span className="font-mono text-xs font-extrabold px-2 py-0.5 bg-slate-100 text-slate-800 rounded border border-slate-300">
-            {item.lot_code}
-          </span>
-          <div className="text-[10px] text-slate-400 mt-0.5">Chuẩn GS1 Traceability</div>
-        </div>
-      ),
-    },
-    {
-      key: 'plot_name',
-      header: 'Thửa Đất / Vùng Trồng',
-      render: (item) => (
-        <div>
-          <span className="text-xs font-bold text-slate-800">{item.plot_code}</span>
-          <div className="text-[11px] text-slate-500">{item.plot_name}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'quantity_kg',
-      header: 'Sản Lượng KCS',
-      render: (item) => (
-        <div>
-          <span className="font-black text-slate-900 text-xs">
-            {formatNumber(item.quantity_kg)} kg
-          </span>
-          <div className="text-[10.5px] text-slate-500 font-medium">
-            Grade A: <strong className="text-emerald-700">{formatNumber(item.grade_a_kg || 0)} kg</strong>
-            {item.grade_b_kg ? ` • B: ${formatNumber(item.grade_b_kg)} kg` : ''}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'quality_grade',
-      header: 'Phẩm Cấp & KCS',
-      render: (item) => (
-        <div>
-          <span
-            className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-full border ${
-              item.quality_grade === 'GRADE_A'
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                : item.quality_grade === 'GRADE_B'
-                ? 'bg-amber-50 text-amber-800 border-amber-300'
-                : 'bg-rose-50 text-rose-800 border-rose-300'
-            }`}
-          >
-            {item.quality_grade === 'GRADE_A'
-              ? 'GRADE A (Thượng hạng)'
-              : item.quality_grade === 'GRADE_B'
-              ? 'GRADE B (Tiêu chuẩn)'
-              : 'REJECT'}
-          </span>
-          <div className="text-[10px] text-slate-500 mt-0.5">
-            Brix: {item.brix_level || 7.5}° • ĐĐ: {item.uniformity_rate || 90}%
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'phi_status',
-      header: 'Khóa PHI & Lab',
-      render: (item) => (
-        <div className="space-y-0.5">
-          {item.is_phi_cleared ? (
-            <span className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              <ShieldCheck className="w-3 h-3 text-emerald-600" /> Gate PHI: Pass
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-[10.5px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-              <ShieldAlert className="w-3 h-3 text-rose-600" /> Chưa hết PHI
-            </span>
-          )}
-          <span className="flex items-center gap-1 text-[10.5px] font-bold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-            <CheckCircle className="w-3 h-3 text-emerald-600" /> Quick Lab: Âm tính
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: 'actions',
-      header: 'Thao Tác & Quản Lý',
-      render: (item) => (
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Button Xem Chi Tiết KCS */}
-          <button
-            onClick={() => setSelectedHarvestForDetail(item)}
-            title="Xem chi tiết hồ sơ KCS 3 cấp"
-            className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-
-          {/* Button Chỉnh Sửa KCS */}
-          <button
-            onClick={() => setSelectedHarvestForEdit(item)}
-            title="Chỉnh sửa KCS & Phân bổ sản lượng"
-            className="p-1.5 text-slate-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-
-          {/* Button In Tem Nhãn */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedHarvestForPrint(item)}
-            leftIcon={<Printer className="w-3.5 h-3.5 text-emerald-600" />}
-            className="border-emerald-300 text-emerald-800 hover:bg-emerald-50 text-[11px] px-2.5 py-1"
-          >
-            Tem QR
-          </Button>
-
-          {/* Button Cây Truy Xuất */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/agriculture/lots/${item.id}/traceability`)}
-            leftIcon={<GitBranch className="w-3.5 h-3.5 text-cop-600" />}
-            title="Xem cây phả hệ truy xuất nội bộ"
-            className="text-[11px] px-2.5 py-1"
-          >
-            Cây Phả Hệ
-          </Button>
-
-          {/* Button Hủy / Xóa */}
-          <button
-            onClick={() => setHarvestToDelete(item)}
-            title="Hủy lệnh thu hoạch"
-            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ),
-    },
-  ];
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Quản Lý Thu Hoạch, KCS 3 Cấp & Mã Lô GS1"
-        subtitle="Kiểm soát an toàn PHI Guard, kiểm nghiệm lab, phân hạng Grade A/B và in tem nhãn GS1 QR xuất xưởng cho HTX Tân Tiến"
-        action={
-          <div className="flex items-center gap-2.5">
-            <Button
-              variant="outline"
-              onClick={handleExportExcel}
-              leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-600" />}
-              className="border-slate-300 hover:bg-slate-50 text-slate-700"
-            >
-              Xuất Excel (.xlsx)
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => setIsAddModalOpen(true)}
-              leftIcon={<Plus className="w-4 h-4" />}
-            >
-              Ghi Nhận Thu Hoạch
-            </Button>
+    <div className="space-y-5 pb-12 animate-fade-in text-[13px] text-slate-700">
+      {/* 1. Header (Fixes Hình 2: Balanced, Bold CTA on top right) */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 shadow-sm ring-8 ring-emerald-50">
+            <Wheat className="h-6 w-6" strokeWidth={2.2} />
           </div>
-        }
-      />
+          <div>
+            <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-emerald-600">
+              <span>Thu hoạch & Phân loại KCS</span>
+              <span className="text-slate-300">•</span>
+              <span className="bg-emerald-100 text-emerald-800 px-2 py-0.2 rounded-full font-bold">
+                Chuẩn GS1 Traceability
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+              Quản Lý Thu Hoạch & KCS 3 Cấp
+            </h1>
+            <p className="mt-0.5 text-xs sm:text-sm text-slate-500">
+              HTX Tân Tiến Đà Lạt • Kiểm soát PHI Guard, xét nghiệm test kit, phân hạng Grade A/B và cấp mã lô GS1.
+            </p>
+          </div>
+        </div>
 
-      {/* Filter and Search Bar */}
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="min-h-[48px] shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20 transition hover:-translate-y-0.5 hover:bg-emerald-700 active:translate-y-0 cursor-pointer"
+        >
+          <Plus className="w-5 h-5 stroke-[2.5]" />
+          <span>Ghi nhận thu hoạch mới</span>
+        </button>
+      </div>
+
+      {/* 2. Top 4 KPI Metric Cards (Implements Hình 3: Overview Intelligence) */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {/* Card 1: Tổng sản lượng */}
+        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-slate-500">Tổng sản lượng thu hoạch</p>
+              <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
+                {formatNumber(kpiStats.totalVolume)} <span className="text-base font-bold text-slate-500">kg</span>
+              </p>
+              <p className="mt-1 text-xs text-slate-400">Ớt chuông Sweet Palermo</p>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <Wheat className="h-5 w-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Tỷ lệ Grade A */}
+        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-slate-500">Sản lượng Grade A (Premium)</p>
+              <p className="mt-2 text-3xl font-extrabold tracking-tight text-emerald-700">
+                {kpiStats.gradeAPercent}% <span className="text-sm font-bold text-slate-500">({formatNumber(kpiStats.gradeAVolume)} kg)</span>
+              </p>
+              <p className="mt-1 text-xs text-slate-400">Brix ≥ 7.0° • Đồng đều ≥ 90%</p>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <Scale className="h-5 w-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Mã lô GS1 */}
+        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-slate-500">Mã lô GS1 đã cấp</p>
+              <p className="mt-2 text-3xl font-extrabold tracking-tight text-blue-700">
+                {kpiStats.totalLots} <span className="text-base font-bold text-slate-500">lô</span>
+              </p>
+              <p className="mt-1 text-xs text-slate-400">Định danh QR xuất xưởng</p>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <QrCode className="h-5 w-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: KCS & PHI Guard */}
+        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-slate-500">Kiểm định KCS & PHI</p>
+              <p className="mt-2 text-3xl font-extrabold tracking-tight text-emerald-800">
+                100% <span className="text-sm font-bold text-slate-500">Đạt</span>
+              </p>
+              <p className="mt-1 text-xs text-slate-400">Âm tính dư lượng BVTV</p>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Filter and Search Toolbar */}
       <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-subtle flex flex-wrap items-center justify-between gap-3">
         <div className="relative flex-1 min-w-[280px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -360,22 +309,199 @@ export const HarvestsPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-500 shrink-0" />
-          <select
-            value={selectedGrade}
-            onChange={(e) => setSelectedGrade(e.target.value)}
-            className="min-h-[38px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+            <select
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value)}
+              className="min-h-[38px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
+            >
+              <option value="ALL">Tất cả phẩm cấp KCS</option>
+              <option value="GRADE_A">GRADE A (Thượng hạng)</option>
+              <option value="GRADE_B">GRADE B (Tiêu chuẩn)</option>
+              <option value="REJECT">REJECT (Không đạt)</option>
+            </select>
+          </div>
+
+          {/* Export Excel Button (Toolbar position) */}
+          <button
+            onClick={handleExportExcel}
+            className="min-h-[38px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition cursor-pointer"
+            title="Xuất danh sách thu hoạch sang Excel"
           >
-            <option value="ALL">Tất cả phẩm cấp KCS</option>
-            <option value="GRADE_A">GRADE A (Thượng hạng)</option>
-            <option value="GRADE_B">GRADE B (Tiêu chuẩn)</option>
-            <option value="REJECT">REJECT (Không đạt)</option>
-          </select>
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Xuất Excel</span>
+          </button>
+
+          {/* Toggle Split Master-Detail vs Full Table View */}
+          <button
+            onClick={() => setIsSplitView((prev) => !prev)}
+            className={`min-h-[38px] hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+              isSplitView
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+            title={isSplitView ? 'Đang bật chia đôi màn hình Master-Detail' : 'Bật chế độ chia đôi màn hình'}
+          >
+            {isSplitView ? <Columns2 className="w-4 h-4 text-emerald-600" /> : <Maximize2 className="w-4 h-4 text-slate-500" />}
+            <span>{isSplitView ? 'Chia đôi màn hình' : 'Xem toàn bảng'}</span>
+          </button>
         </div>
       </div>
 
-      <DataTable columns={columns} data={harvestList} isLoading={isLoading} />
+      {/* 4. Master-Detail Split View (Implements Hình 4) */}
+      <div className={`grid grid-cols-1 ${isSplitView ? 'xl:grid-cols-[minmax(0,1.55fr)_minmax(380px,0.95fr)]' : ''} gap-5 items-start`}>
+        {/* Left: Master Table Section */}
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-slate-50/70">
+            <div>
+              <h2 className="text-sm font-extrabold text-slate-800">Danh sách lệnh thu hoạch</h2>
+              <p className="mt-0.5 text-xs text-slate-400">
+                {harvestList.length} lượt thu hoạch • Click chọn dòng để xem chi tiết KCS bên phải
+              </p>
+            </div>
+            <div className="text-xs text-slate-400 font-medium hidden sm:block">
+              Chuẩn mã lô GS1
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            {isLoading ? (
+              <div className="p-12 text-center text-slate-400 text-xs font-medium">
+                Đang tải dữ liệu thu hoạch...
+              </div>
+            ) : harvestList.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 text-xs font-medium">
+                Chưa có dữ liệu thu hoạch phù hợp. Bấm "Ghi nhận thu hoạch mới" để thêm lượt thu hoạch đầu tiên.
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse text-[12.8px] min-w-[750px]">
+                <thead>
+                  <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-400 font-extrabold bg-slate-50">
+                    <th className="py-3 px-4 min-w-[130px]">Lệnh & Ngày</th>
+                    <th className="py-3 px-4 min-w-[180px]">Mã Lô GS1</th>
+                    <th className="py-3 px-4 min-w-[160px]">Thửa Đất</th>
+                    <th className="py-3 px-4 min-w-[130px]">Sản Lượng</th>
+                    <th className="py-3 px-4 min-w-[140px]">Phẩm Cấp</th>
+                    <th className="py-3 px-4 text-center min-w-[110px]">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {harvestList.map((item: HarvestItem) => {
+                    const isSelected = activeHarvest?.id === item.id;
+
+                    return (
+                      <tr
+                        key={item.id}
+                        onClick={() => setSelectedHarvestId(item.id)}
+                        className={`cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-emerald-50/70 ring-2 ring-emerald-500/40 font-medium'
+                            : 'hover:bg-slate-50/80 bg-white'
+                        }`}
+                      >
+                        {/* 1. Harvest Code & Date */}
+                        <td className="py-3.5 px-4 font-semibold text-slate-900 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />}
+                            <span className="font-bold text-emerald-800">{item.harvest_code}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                            {formatDate(item.harvest_date)}
+                          </div>
+                        </td>
+
+                        {/* 2. GS1 Lot Code */}
+                        <td className="py-3.5 px-4">
+                          <span className="font-mono text-xs font-extrabold px-2 py-0.5 bg-slate-100 text-slate-800 rounded border border-slate-300 inline-block whitespace-nowrap">
+                            {item.lot_code}
+                          </span>
+                        </td>
+
+                        {/* 3. Plot */}
+                        <td className="py-3.5 px-4">
+                          <div className="text-xs font-bold text-slate-800 whitespace-nowrap">{item.plot_code}</div>
+                          <div className="text-[11px] text-slate-500 truncate max-w-[150px]">{item.plot_name}</div>
+                        </td>
+
+                        {/* 4. Quantity */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className="font-black text-slate-900 text-xs">
+                            {formatNumber(item.quantity_kg)} kg
+                          </span>
+                          <div className="text-[10px] text-slate-500">
+                            A: <strong className="text-emerald-700">{formatNumber(item.grade_a_kg || 0)} kg</strong>
+                          </div>
+                        </td>
+
+                        {/* 5. Quality Grade */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2 py-0.5 rounded-full border ${
+                              item.quality_grade === 'GRADE_A'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                : item.quality_grade === 'GRADE_B'
+                                ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                : 'bg-rose-50 text-rose-800 border-rose-300'
+                            }`}
+                          >
+                            {item.quality_grade === 'GRADE_A' ? 'GRADE A' : item.quality_grade === 'GRADE_B' ? 'GRADE B' : 'REJECT'}
+                          </span>
+                        </td>
+
+                        {/* 6. Quick Action Icons */}
+                        <td className="py-3.5 px-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => setSelectedHarvestForDetailModal(item)}
+                              title="Xem chi tiết modal"
+                              className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setSelectedHarvestForEdit(item)}
+                              title="Sửa KCS"
+                              className="p-1.5 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setSelectedHarvestForPrint(item)}
+                              title="In tem QR"
+                              className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setHarvestToDelete(item)}
+                              title="Hủy lệnh thu hoạch"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+
+        {/* Right: Master-Detail Inspector Panel (Styled Identical to Reference Image 4) */}
+        {isSplitView && (
+          <HarvestDetailPanel
+            harvest={activeHarvest}
+            onEdit={(h) => setSelectedHarvestForEdit(h)}
+            onDelete={(h) => setHarvestToDelete(h)}
+            onPrintLabel={(h) => setSelectedHarvestForPrint(h)}
+          />
+        )}
+      </div>
 
       {/* Modal Add Harvest with 3-Tier KCS */}
       <Modal
@@ -491,7 +617,7 @@ export const HarvestsPage: React.FC = () => {
           {/* Tier 2: Quick Lab Test */}
           <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
             <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <FlaskConical className="w-4 h-4 text-emerald-600" />
               Cấp 2 - Quick Lab: Kiểm Nghiệm Dư Lượng Nhanh
             </h4>
 
@@ -546,7 +672,7 @@ export const HarvestsPage: React.FC = () => {
           {/* Tier 3: Grading & Quality */}
           <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
             <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Wheat className="w-4 h-4 text-emerald-600" />
+              <Scale className="w-4 h-4 text-emerald-600" />
               Cấp 3 - Grading: Phân Loại Phẩm Cấp Nông Sản
             </h4>
 
@@ -646,14 +772,14 @@ export const HarvestsPage: React.FC = () => {
         harvest={selectedHarvestForPrint}
       />
 
-      {/* Harvest Detail Modal */}
+      {/* Harvest Detail Modal (Mobile / Full view) */}
       <HarvestDetailModal
-        isOpen={!!selectedHarvestForDetail}
-        onClose={() => setSelectedHarvestForDetail(null)}
-        harvest={selectedHarvestForDetail}
+        isOpen={!!selectedHarvestForDetailModal}
+        onClose={() => setSelectedHarvestForDetailModal(null)}
+        harvest={selectedHarvestForDetailModal}
         onPrintLabel={() => {
-          if (selectedHarvestForDetail) {
-            setSelectedHarvestForPrint(selectedHarvestForDetail);
+          if (selectedHarvestForDetailModal) {
+            setSelectedHarvestForPrint(selectedHarvestForDetailModal);
           }
         }}
       />
@@ -693,14 +819,14 @@ export const HarvestsPage: React.FC = () => {
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 onClick={() => setHarvestToDelete(null)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer"
               >
                 Hủy bỏ
               </button>
               <button
                 onClick={handleDeleteHarvest}
                 disabled={isDeleting}
-                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition disabled:opacity-60"
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition disabled:opacity-60 cursor-pointer"
               >
                 {isDeleting ? 'Đang hủy...' : 'Xác nhận Hủy Lệnh'}
               </button>
