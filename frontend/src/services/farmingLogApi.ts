@@ -296,3 +296,99 @@ export async function getFarmingLogById(id: string): Promise<FarmingLog | undefi
   const logs = getStoredFarmingLogs();
   return logs.find((l) => l.id === id);
 }
+
+/**
+ * Update an existing farming log.
+ * Recalculates safe_harvest_date if phi_days or activity_date changes.
+ */
+export async function updateFarmingLog(
+  id: string,
+  payload: Partial<FarmingLogPayload>
+): Promise<FarmingLog> {
+  const stored = getStoredFarmingLogs();
+  const existingIndex = stored.findIndex((l) => l.id === id);
+  if (existingIndex === -1) {
+    throw new Error('Không tìm thấy nhật ký canh tác để cập nhật');
+  }
+
+  const existing = stored[existingIndex];
+  const newActivityDate = payload.activity_date || existing.activity_date;
+  const newPhiDays = payload.phi_days !== undefined ? Number(payload.phi_days) : (existing.phi_days || 0);
+  const newSafeDate = calculateSafeHarvestDate(newActivityDate, newPhiDays);
+
+  const updatedLog: FarmingLog = {
+    ...existing,
+    ...(payload.activity_type && { activity_type: payload.activity_type }),
+    ...(payload.activity_date && { activity_date: payload.activity_date }),
+    ...(payload.description !== undefined && { description: payload.description }),
+    ...(payload.material_id !== undefined && { material_id: payload.material_id }),
+    ...(payload.material_name !== undefined && { material_name: payload.material_name }),
+    ...(payload.material_sku !== undefined && { material_sku: payload.material_sku }),
+    ...(payload.material_batch_number !== undefined && { material_batch_number: payload.material_batch_number }),
+    ...(payload.quantity_applied !== undefined && { quantity_applied: Number(payload.quantity_applied) }),
+    ...(payload.unit !== undefined && { unit: payload.unit }),
+    phi_days: newPhiDays,
+    safe_harvest_date: newSafeDate,
+    ...(payload.gps_latitude !== undefined && { gps_latitude: payload.gps_latitude }),
+    ...(payload.gps_longitude !== undefined && { gps_longitude: payload.gps_longitude }),
+    ...(payload.attachment_reference !== undefined && { attachment_reference: payload.attachment_reference }),
+    ...(payload.performed_by !== undefined && {
+      performed_by: payload.performed_by,
+      performer_name: payload.performed_by,
+    }),
+  };
+
+  // Try remote backend API
+  try {
+    const res: any = await apiClient.patch(`/farming-logs/${id}`, payload);
+    if (res?.data) {
+      stored[existingIndex] = res.data;
+      saveFarmingLogsToStorage(stored);
+      return res.data;
+    }
+  } catch {
+    // Continue with local storage
+  }
+
+  stored[existingIndex] = updatedLog;
+  saveFarmingLogsToStorage(stored);
+
+  // If spraying with PHI days changed, update plot safe date
+  if (updatedLog.activity_type === 'SPRAYING' && newPhiDays > 0) {
+    try {
+      const plots = getAllStoredPlots();
+      const updatedPlots = plots.map((p) => {
+        if (p.id === updatedLog.plot_id || p.plot_code === updatedLog.plot_code) {
+          return {
+            ...p,
+            status: 'IN_QUARANTINE',
+            safe_harvest_date: newSafeDate,
+          };
+        }
+        return p;
+      });
+      saveAllPlotsToStorage(updatedPlots);
+    } catch (e) {
+      console.warn('Could not update plot status for PHI guard', e);
+    }
+  }
+
+  return updatedLog;
+}
+
+/**
+ * Delete a farming log by ID.
+ */
+export async function deleteFarmingLog(id: string): Promise<boolean> {
+  try {
+    await apiClient.delete(`/farming-logs/${id}`);
+  } catch {
+    // Local fallback
+  }
+
+  const stored = getStoredFarmingLogs();
+  const filtered = stored.filter((l) => l.id !== id);
+  saveFarmingLogsToStorage(filtered);
+  return true;
+}
+

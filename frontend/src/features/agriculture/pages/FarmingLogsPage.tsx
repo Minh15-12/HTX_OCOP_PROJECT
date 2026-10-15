@@ -9,19 +9,36 @@ import {
   Camera,
   MapPin,
   Filter,
-  Layers,
+  FileSpreadsheet,
+  Eye,
+  Pencil,
+  Trash2,
+  X,
+  AlertOctagon,
 } from 'lucide-react';
-import { fetchFarmingLogs } from '@/services/farmingLogApi';
+import { fetchFarmingLogs, deleteFarmingLog } from '@/services/farmingLogApi';
 import { QuickMobileLogModal } from '../components/QuickMobileLogModal';
-import { ACTIVITY_TYPES_META, type ActivityType } from '@/types/agriculture';
+import { FarmingLogDetailModal } from '../components/FarmingLogDetailModal';
+import { EditFarmingLogModal } from '../components/EditFarmingLogModal';
+import { ACTIVITY_TYPES_META } from '@/types/agriculture';
 import type { FarmingLog } from '@/types/agriculture';
+import { exportToExcel } from '@/utils/exportUtils';
+import { useToast } from '@/components/ui/ToastNotification';
 
 export const FarmingLogsPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
   const [search, setSearch] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<string>('ALL');
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
+  // Detail & Edit Modals State
+  const [selectedLogForDetail, setSelectedLogForDetail] = useState<FarmingLog | null>(null);
+  const [selectedLogForEdit, setSelectedLogForEdit] = useState<FarmingLog | null>(null);
+  const [logToDelete, setLogToDelete] = useState<FarmingLog | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: logsList = [], isLoading } = useQuery<FarmingLog[]>({
     queryKey: ['farming-logs', search, selectedActivity],
@@ -32,6 +49,52 @@ export const FarmingLogsPage: React.FC = () => {
       });
     },
   });
+
+  const handleExportExcel = () => {
+    if (!logsList || logsList.length === 0) {
+      showToast('Không có dữ liệu nhật ký canh tác để xuất!', 'warning');
+      return;
+    }
+
+    const exportRows = logsList.map((log, index) => {
+      const act = ACTIVITY_TYPES_META[log.activity_type]?.label || log.activity_type;
+      return {
+        'STT': index + 1,
+        'Mã nhật ký': log.id,
+        'Ngày thực hiện': log.activity_date,
+        'Mã thửa đất': log.plot_code,
+        'Tên thửa đất': log.plot_name || 'Vùng trồng ớt Sweet Palermo',
+        'Hoạt động TT02': act,
+        'Vật tư / Chế phẩm': log.material_name || 'Không dùng',
+        'Mã SKU vật tư': log.material_sku || '',
+        'Số lô sản xuất vật tư': log.material_batch_number || '',
+        'Khối lượng / Liều lượng': log.quantity_applied ? `${log.quantity_applied} ${log.unit || ''}` : '-',
+        'Số ngày cách ly (PHI)': log.phi_days ? `${log.phi_days} ngày` : '0 ngày',
+        'Ngày an toàn thu hoạch': log.safe_harvest_date || log.activity_date,
+        'Tọa độ GPS': log.gps_latitude && log.gps_longitude ? `${log.gps_latitude}, ${log.gps_longitude}` : '',
+        'Người thực hiện': log.performer_name || log.performed_by || 'Xã viên HTX Tân Tiến',
+        'Mô tả chi tiết': log.description || '',
+      };
+    });
+
+    exportToExcel(exportRows, 'Nhat_Ky_Canh_Tac_TT02_HTX_Tan_Tien', 'NhatKyCanhTac');
+    showToast('Xuất sổ nhật ký canh tác sang file Excel (.xlsx) thành công!', 'success');
+  };
+
+  const handleDeleteLog = async () => {
+    if (!logToDelete) return;
+    try {
+      setIsDeleting(true);
+      await deleteFarmingLog(logToDelete.id);
+      showToast(`Đã xóa lượt ghi nhật ký [${logToDelete.id}] thành công`, 'success');
+      setLogToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
+    } catch (err: any) {
+      showToast(err.message || 'Xóa nhật ký thất bại', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-5 pb-12 animate-fade-in text-[13px]">
@@ -45,13 +108,23 @@ export const FarmingLogsPage: React.FC = () => {
             HTX Tân Tiến Đà Lạt • Quản lý nhật ký thời gian thực, liên thông PHI Guard, tọa độ GPS và số lô vật tư.
           </p>
         </div>
-        <button
-          onClick={() => setIsLogModalOpen(true)}
-          className="min-h-[48px] inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-5 h-5 stroke-[2.5]" />
-          <span>Ghi nhật ký mới (TT02)</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+          <button
+            onClick={handleExportExcel}
+            className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white border border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-700 font-bold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer"
+            title="Xuất dữ liệu 10 trường sang Excel"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Xuất Excel (.xlsx)</span>
+          </button>
+          <button
+            onClick={() => setIsLogModalOpen(true)}
+            className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
+          >
+            <Plus className="w-5 h-5 stroke-[2.5]" />
+            <span>Ghi nhật ký mới (TT02)</span>
+          </button>
+        </div>
       </div>
 
       {/* Notice Banner PHI Guard */}
@@ -123,6 +196,7 @@ export const FarmingLogsPage: React.FC = () => {
                   <th className="py-3 px-4">Tọa độ GPS</th>
                   <th className="py-3 px-4">Minh chứng</th>
                   <th className="py-3 px-4">Người thực hiện</th>
+                  <th className="py-3 px-4 text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -175,7 +249,7 @@ export const FarmingLogsPage: React.FC = () => {
                             )}
                           </div>
                         ) : (
-                          <span className="text-slate-400 italic">Không dùng vật tư hóa chất</span>
+                          <span className="text-slate-400 italic">Không dùng vật tư</span>
                         )}
                       </td>
 
@@ -221,7 +295,7 @@ export const FarmingLogsPage: React.FC = () => {
                         {log.attachment_reference && log.attachment_reference.length > 0 ? (
                           <button
                             onClick={() => setSelectedPhoto(log.attachment_reference![0])}
-                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 underline decoration-emerald-400"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 underline decoration-emerald-400 cursor-pointer"
                           >
                             <Camera className="w-3.5 h-3.5 text-emerald-600" />
                             Xem ảnh ({log.attachment_reference.length})
@@ -234,6 +308,33 @@ export const FarmingLogsPage: React.FC = () => {
                       {/* 9. Performer */}
                       <td className="py-3.5 px-4 text-slate-700 font-medium whitespace-nowrap">
                         {log.performer_name || log.performed_by || 'Xã viên HTX Tân Tiến'}
+                      </td>
+
+                      {/* 10. Actions (View, Edit, Delete) */}
+                      <td className="py-3.5 px-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => setSelectedLogForDetail(log)}
+                            title="Xem chi tiết 10 trường TT02"
+                            className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setSelectedLogForEdit(log)}
+                            title="Chỉnh sửa nhật ký"
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setLogToDelete(log)}
+                            title="Xóa nhật ký canh tác"
+                            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -252,6 +353,64 @@ export const FarmingLogsPage: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
         }}
       />
+
+      {/* Farming Log Detail Modal (10 Fields TT02) */}
+      <FarmingLogDetailModal
+        isOpen={!!selectedLogForDetail}
+        onClose={() => setSelectedLogForDetail(null)}
+        log={selectedLogForDetail}
+      />
+
+      {/* Edit Farming Log Modal */}
+      <EditFarmingLogModal
+        isOpen={!!selectedLogForEdit}
+        onClose={() => setSelectedLogForEdit(null)}
+        log={selectedLogForEdit}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
+        }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {logToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in text-[13px]">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-3 bg-rose-100 rounded-2xl">
+                <AlertOctagon className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-900 text-base">Xác Nhận Xóa Nhật Ký</h3>
+                <p className="text-xs text-slate-500">Mã lượt ghi: {logToDelete.id}</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-rose-50/80 rounded-2xl border border-rose-200 text-xs text-rose-900 leading-relaxed">
+              Bạn có chắc chắn muốn xóa lượt ghi nhật ký này vào ngày <strong>{logToDelete.activity_date}</strong> trên thửa đất <strong>{logToDelete.plot_code}</strong>?
+              <br />
+              <span className="text-[11px] text-rose-700 italic mt-1 block">
+                * Lưu ý: Lịch sử canh tác cần được lưu giữ tối thiểu 2 năm theo Thông tư 02/2024/TT-BNNPTNT để phục vụ đánh giá OCOP và chứng nhận VietGAP.
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setLogToDelete(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleDeleteLog}
+                disabled={isDeleting}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition disabled:opacity-60"
+              >
+                {isDeleting ? 'Đang xóa...' : 'Xác nhận Xóa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Photo Preview Modal */}
       {selectedPhoto && (

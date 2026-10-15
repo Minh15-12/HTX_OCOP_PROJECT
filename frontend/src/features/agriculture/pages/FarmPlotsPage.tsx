@@ -14,14 +14,21 @@ import {
   Users,
   ShieldAlert,
   UserCheck,
+  Trash2,
+  FileSpreadsheet,
+  AlertOctagon,
 } from 'lucide-react';
 import { PhiCountdownBadge } from '../components/PhiCountdownBadge';
+import { EditFarmPlotModal } from '../components/EditFarmPlotModal';
+import { exportToExcel } from '@/utils/exportUtils';
+import { useToast } from '@/components/ui/ToastNotification';
 import {
   fetchProductionUnits,
   createProductionUnit,
   updateProductionUnit,
   fetchPlotsByUnit,
   createPlot,
+  deletePlot,
   fetchPlotMemberAssignments,
   assignMemberToPlot,
   type ProductionUnit,
@@ -119,12 +126,18 @@ export const FarmPlotsPage: React.FC = () => {
   const [plotSaving, setPlotSaving] = useState(false);
   const [showPlotForm, setShowPlotForm] = useState(false);
 
+  const { showToast } = useToast();
+  const [editingPlot, setEditingPlot] = useState<FarmPlot | null>(null);
+  const [plotToDelete, setPlotToDelete] = useState<FarmPlot | null>(null);
+  const [isDeletingPlot, setIsDeletingPlot] = useState(false);
+
   // Member Assignment Modal State
   const [selectedPlotForAssignments, setSelectedPlotForAssignments] = useState<FarmPlot | null>(null);
   const [assignments, setAssignments] = useState<MemberAssignment[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [newMemberId, setNewMemberId] = useState('mem-001');
   const [newMemberRole, setNewMemberRole] = useState('Xã viên canh tác VietGAP');
+
 
   const loadUnits = async (keepId?: string) => {
     try {
@@ -179,6 +192,43 @@ export const FarmPlotsPage: React.FC = () => {
     const updated = await fetchPlotMemberAssignments(selectedPlotForAssignments.id);
     setAssignments(updated);
   };
+
+  const handleDeletePlot = async () => {
+    if (!plotToDelete || !selected) return;
+    try {
+      setIsDeletingPlot(true);
+      await deletePlot(selected.id, plotToDelete.id);
+      showToast(`Đã xóa / ngưng canh tác thửa đất [${plotToDelete.plot_code}] thành công`, 'success');
+      setPlotToDelete(null);
+      await loadPlots(selected.id);
+    } catch (err: any) {
+      showToast(err.message || 'Xóa thửa đất thất bại', 'error');
+    } finally {
+      setIsDeletingPlot(false);
+    }
+  };
+
+  const handleExportPlotsExcel = () => {
+    if (!plots || plots.length === 0) {
+      showToast('Không có dữ liệu thửa đất để xuất!', 'warning');
+      return;
+    }
+    const exportData = plots.map((p, idx) => ({
+      'STT': idx + 1,
+      'Mã thửa đất': p.plot_code,
+      'Vùng sản xuất': selected?.name || p.unit_name || '',
+      'Mã vùng': selected?.unit_code || '',
+      'Mã PUC': selected?.puc_code || '',
+      'Cây trồng': selected?.crop || '',
+      'Diện tích (ha)': p.area,
+      'Trạng thái': statusText[p.status] || p.status,
+      'Tọa độ GPS': p.gps_coordinates || '',
+      'Ngày an toàn PHI': p.safe_harvest_date || 'Không cách ly',
+    }));
+    exportToExcel(exportData, `Danh_Sach_Thua_Dat_${selected?.unit_code || 'HTX'}`, 'ThuaDat');
+    showToast('Xuất danh sách thửa đất sang Excel thành công!', 'success');
+  };
+
 
   useEffect(() => {
     loadUnits();
@@ -622,12 +672,21 @@ export const FarmPlotsPage: React.FC = () => {
                         <h4 className="text-sm font-extrabold text-slate-800">Thửa đất</h4>
                         <p className="mt-0.5 text-[11px] text-slate-400">{plots.length} thửa thuộc vùng này</p>
                       </div>
-                      <button
-                        onClick={() => setShowPlotForm((v) => !v)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Thêm thửa
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={handleExportPlotsExcel}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition cursor-pointer"
+                          title="Xuất Excel danh sách thửa đất"
+                        >
+                          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" /> Xuất Excel
+                        </button>
+                        <button
+                          onClick={() => setShowPlotForm((v) => !v)}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 cursor-pointer"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Thêm thửa
+                        </button>
+                      </div>
                     </div>
 
                     {showPlotForm && (
@@ -729,15 +788,29 @@ export const FarmPlotsPage: React.FC = () => {
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-slate-700">{p.area} ha</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-slate-700 mr-1">{p.area} ha</span>
+                                  <button
+                                    onClick={() => setEditingPlot(p)}
+                                    className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-blue-600 hover:bg-blue-50 shadow-2xs transition cursor-pointer"
+                                    title="Chỉnh sửa thông tin thửa đất"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </button>
                                   <button
                                     onClick={() => openAssignmentsModal(p)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 shadow-xs hover:border-emerald-200 hover:text-emerald-700"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 shadow-xs hover:border-emerald-200 hover:text-emerald-700 cursor-pointer"
                                     title="Phân công xã viên"
                                   >
                                     <Users className="h-3 w-3 text-emerald-600" />
                                     Xã viên
+                                  </button>
+                                  <button
+                                    onClick={() => setPlotToDelete(p)}
+                                    className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 shadow-2xs transition cursor-pointer"
+                                    title="Xóa / Ngưng canh tác thửa đất"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
                                   </button>
                                 </div>
                               </div>
@@ -749,6 +822,7 @@ export const FarmPlotsPage: React.FC = () => {
                         })}
                       </ul>
                     )}
+
                   </div>
                 </div>
               </div>
@@ -912,6 +986,61 @@ export const FarmPlotsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Edit Farm Plot Modal */}
+      {selected && (
+        <EditFarmPlotModal
+          isOpen={!!editingPlot}
+          onClose={() => setEditingPlot(null)}
+          plot={editingPlot}
+          unitId={selected.id}
+          onSuccess={() => {
+            if (selected) loadPlots(selected.id);
+          }}
+        />
+      )}
+
+      {/* Delete Plot Confirmation Modal */}
+      {plotToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in text-[13px]">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-3 bg-rose-100 rounded-2xl">
+                <AlertOctagon className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-900 text-base">Xóa / Ngưng Canh Tác Thửa Đất</h3>
+                <p className="text-xs text-slate-500">Mã thửa: {plotToDelete.plot_code}</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-rose-50/80 rounded-2xl border border-rose-200 text-xs text-rose-900 leading-relaxed">
+              Bạn có chắc chắn muốn xóa thửa đất <strong>[{plotToDelete.plot_code}]</strong> (Diện tích: {plotToDelete.area} ha) khỏi danh sách quản lý vùng trồng <strong>{selected?.name}</strong>?
+              <br />
+              <span className="text-[11px] text-rose-700 italic mt-1 block">
+                * Thao tác này sẽ cập nhật trạng thái hoặc gỡ bỏ phân công xã viên trên thửa đất này.
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setPlotToDelete(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleDeletePlot}
+                disabled={isDeletingPlot}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition disabled:opacity-60 cursor-pointer"
+              >
+                {isDeletingPlot ? 'Đang xử lý...' : 'Xác nhận Xóa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

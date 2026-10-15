@@ -282,3 +282,87 @@ export async function getHarvestById(idOrLotCode: string): Promise<HarvestItem |
   const harvests = getStoredHarvests();
   return harvests.find((h) => h.id === idOrLotCode || h.lot_code === idOrLotCode);
 }
+
+/**
+ * Update an existing harvest record (KCS re-grading, test lab results, volume distribution).
+ */
+export async function updateHarvest(
+  id: string,
+  payload: Partial<HarvestPayload> & { notes?: string }
+): Promise<HarvestItem> {
+  const stored = getStoredHarvests();
+  const existingIndex = stored.findIndex((h) => h.id === id || h.lot_code === id);
+  if (existingIndex === -1) {
+    throw new Error('Không tìm thấy thông tin thu hoạch để cập nhật');
+  }
+
+  const existing = stored[existingIndex];
+
+  // 3-Tier KCS Recalculation
+  let finalGrade = payload.quality_grade || existing.quality_grade;
+  let finalKcsStatus = payload.kcs_status || existing.kcs_status;
+
+  const quickLab = payload.kcs_quick_lab || existing.kcs_quick_lab;
+  if (quickLab?.test_result === 'LAB_REJECTED') {
+    finalGrade = 'REJECT';
+    finalKcsStatus = 'REJECTED';
+  } else if (finalGrade === 'GRADE_A') {
+    const brix = payload.brix_level ?? existing.brix_level ?? 7.5;
+    const uniformity = payload.uniformity_rate ?? existing.uniformity_rate ?? 90;
+    if (brix < 7.0 || uniformity < 90.0) {
+      finalGrade = 'GRADE_B';
+    }
+  }
+
+  const updatedHarvest: HarvestItem = {
+    ...existing,
+    ...(payload.harvest_date && { harvest_date: payload.harvest_date }),
+    ...(payload.quantity_kg !== undefined && { quantity_kg: Number(payload.quantity_kg) }),
+    ...(payload.grade_a_kg !== undefined && { grade_a_kg: Number(payload.grade_a_kg) }),
+    ...(payload.grade_b_kg !== undefined && { grade_b_kg: Number(payload.grade_b_kg) }),
+    ...(payload.reject_kg !== undefined && { reject_kg: Number(payload.reject_kg) }),
+    quality_grade: finalGrade,
+    kcs_status: finalKcsStatus,
+    ...(payload.brix_level !== undefined && { brix_level: Number(payload.brix_level) }),
+    ...(payload.uniformity_rate !== undefined && { uniformity_rate: Number(payload.uniformity_rate) }),
+    ...(payload.kcs_gate_check && { kcs_gate_check: payload.kcs_gate_check }),
+    ...(payload.kcs_quick_lab && { kcs_quick_lab: payload.kcs_quick_lab }),
+  };
+
+  // Try remote backend API
+  try {
+    const res: any = await apiClient.patch(`/harvests/${id}`, {
+      ...payload,
+      quality_grade: finalGrade,
+      kcs_status: finalKcsStatus,
+    });
+    if (res?.data) {
+      stored[existingIndex] = res.data;
+      saveHarvestsToStorage(stored);
+      return res.data;
+    }
+  } catch {
+    // Continue with local storage
+  }
+
+  stored[existingIndex] = updatedHarvest;
+  saveHarvestsToStorage(stored);
+  return updatedHarvest;
+}
+
+/**
+ * Delete or cancel a harvest record by ID.
+ */
+export async function deleteHarvest(id: string): Promise<boolean> {
+  try {
+    await apiClient.delete(`/harvests/${id}`);
+  } catch {
+    // Fallback
+  }
+
+  const stored = getStoredHarvests();
+  const filtered = stored.filter((h) => h.id !== id && h.lot_code !== id);
+  saveHarvestsToStorage(filtered);
+  return true;
+}
+

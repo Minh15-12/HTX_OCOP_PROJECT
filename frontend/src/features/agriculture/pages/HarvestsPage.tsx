@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Wheat,
@@ -11,20 +11,27 @@ import {
   AlertTriangle,
   CheckCircle,
   ExternalLink,
+  Search,
+  Filter,
+  FileSpreadsheet,
+  Eye,
+  Pencil,
+  Trash2,
+  AlertOctagon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/layouts/PageHeader';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { Modal } from '@/components/ui/Modal';
 import { formatDate, formatNumber } from '@/utils/formatters';
 import { useToast } from '@/components/ui/ToastNotification';
-import { fetchHarvests, createHarvest } from '@/services/harvestApi';
+import { fetchHarvests, createHarvest, deleteHarvest } from '@/services/harvestApi';
 import { getAllStoredPlots, type FarmPlot } from '@/services/farmPlotApi';
 import { HarvestLabelPrintModal } from '../components/HarvestLabelPrintModal';
+import { HarvestDetailModal } from '../components/HarvestDetailModal';
+import { EditHarvestModal } from '../components/EditHarvestModal';
+import { exportToExcel } from '@/utils/exportUtils';
 import type { HarvestItem, QualityGrade, QuickLabResult } from '@/types/agriculture';
 
 export const HarvestsPage: React.FC = () => {
@@ -34,6 +41,14 @@ export const HarvestsPage: React.FC = () => {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedHarvestForPrint, setSelectedHarvestForPrint] = useState<HarvestItem | null>(null);
+  const [selectedHarvestForDetail, setSelectedHarvestForDetail] = useState<HarvestItem | null>(null);
+  const [selectedHarvestForEdit, setSelectedHarvestForEdit] = useState<HarvestItem | null>(null);
+  const [harvestToDelete, setHarvestToDelete] = useState<HarvestItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Search & Filter State
+  const [search, setSearch] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState<string>('ALL');
 
   // Form State
   const [plotId, setPlotId] = useState('plot-101');
@@ -62,12 +77,30 @@ export const HarvestsPage: React.FC = () => {
   );
 
   // Query Harvests
-  const { data: harvestList = [], isLoading } = useQuery<HarvestItem[]>({
+  const { data: rawHarvestList = [], isLoading } = useQuery<HarvestItem[]>({
     queryKey: ['harvests'],
     queryFn: async () => {
       return fetchHarvests();
     },
   });
+
+  // Filtered harvest list
+  const harvestList = useMemo(() => {
+    return rawHarvestList.filter((item) => {
+      const q = search.toLowerCase().trim();
+      const matchSearch =
+        !q ||
+        item.harvest_code.toLowerCase().includes(q) ||
+        (item.lot_code && item.lot_code.toLowerCase().includes(q)) ||
+        item.plot_code.toLowerCase().includes(q) ||
+        item.plot_name.toLowerCase().includes(q);
+
+      const matchGrade =
+        selectedGrade === 'ALL' || item.quality_grade === selectedGrade;
+
+      return matchSearch && matchGrade;
+    });
+  }, [rawHarvestList, search, selectedGrade]);
 
   // Create Harvest Mutation
   const createHarvestMutation = useMutation({
@@ -86,6 +119,52 @@ export const HarvestsPage: React.FC = () => {
       showToast(err.message || 'Ghi nhận thu hoạch thất bại.', 'error');
     },
   });
+
+  const handleExportExcel = () => {
+    if (!harvestList || harvestList.length === 0) {
+      showToast('Không có dữ liệu thu hoạch để xuất!', 'warning');
+      return;
+    }
+
+    const exportData = harvestList.map((item, idx) => ({
+      'STT': idx + 1,
+      'Mã lệnh thu hoạch': item.harvest_code,
+      'Mã lô GS1': item.lot_code,
+      'Ngày thu hoạch': item.harvest_date,
+      'Mã thửa đất': item.plot_code,
+      'Tên thửa đất': item.plot_name,
+      'Mùa vụ': item.crop_season_name || 'Vụ Ớt Chuông Sweet Palermo Thu Đông 2026',
+      'Tổng sản lượng (kg)': item.quantity_kg,
+      'Grade A (kg)': item.grade_a_kg || 0,
+      'Grade B (kg)': item.grade_b_kg || 0,
+      'Hàng loại (kg)': item.reject_kg || 0,
+      'Phẩm cấp KCS': item.quality_grade,
+      'Độ ngọt Brix (°)': item.brix_level ?? 7.5,
+      'Độ đồng đều (%)': item.uniformity_rate ?? 90,
+      'Kiểm soát Gate PHI': item.is_phi_cleared ? 'Đạt an toàn PHI' : 'Vi phạm PHI',
+      'Kết quả Quick Lab': item.kcs_quick_lab?.test_result === 'LAB_PASSED' ? 'Âm tính (Pass)' : 'Dương tính (Reject)',
+      'Mã Kit Test Lab': item.kcs_quick_lab?.kit_code || '',
+      'Dư lượng (ppm)': item.kcs_quick_lab?.residue_ppm ?? 0,
+    }));
+
+    exportToExcel(exportData, 'Danh_Sach_Thu_Hoach_KCS_GS1_HTX_Tan_Tien', 'ThuHoachKCS');
+    showToast('Xuất danh sách thu hoạch sang file Excel (.xlsx) thành công!', 'success');
+  };
+
+  const handleDeleteHarvest = async () => {
+    if (!harvestToDelete) return;
+    try {
+      setIsDeleting(true);
+      await deleteHarvest(harvestToDelete.id);
+      showToast(`Đã hủy lệnh thu hoạch [${harvestToDelete.harvest_code}] thành công`, 'success');
+      setHarvestToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ['harvests'] });
+    } catch (err: any) {
+      showToast(err.message || 'Hủy lệnh thu hoạch thất bại', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const columns: Column<HarvestItem>[] = [
     {
@@ -185,18 +264,36 @@ export const HarvestsPage: React.FC = () => {
     },
     {
       key: 'actions',
-      header: 'Thao Tác & Tem Nhãn',
+      header: 'Thao Tác & Quản Lý',
       render: (item) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Button Xem Chi Tiết KCS */}
+          <button
+            onClick={() => setSelectedHarvestForDetail(item)}
+            title="Xem chi tiết hồ sơ KCS 3 cấp"
+            className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+
+          {/* Button Chỉnh Sửa KCS */}
+          <button
+            onClick={() => setSelectedHarvestForEdit(item)}
+            title="Chỉnh sửa KCS & Phân bổ sản lượng"
+            className="p-1.5 text-slate-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+
           {/* Button In Tem Nhãn */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => setSelectedHarvestForPrint(item)}
             leftIcon={<Printer className="w-3.5 h-3.5 text-emerald-600" />}
-            className="border-emerald-300 text-emerald-800 hover:bg-emerald-50"
+            className="border-emerald-300 text-emerald-800 hover:bg-emerald-50 text-[11px] px-2.5 py-1"
           >
-            In Tem QR
+            Tem QR
           </Button>
 
           {/* Button Cây Truy Xuất */}
@@ -206,9 +303,19 @@ export const HarvestsPage: React.FC = () => {
             onClick={() => navigate(`/agriculture/lots/${item.id}/traceability`)}
             leftIcon={<GitBranch className="w-3.5 h-3.5 text-cop-600" />}
             title="Xem cây phả hệ truy xuất nội bộ"
+            className="text-[11px] px-2.5 py-1"
           >
-            Cây Truy Xuất
+            Cây Phả Hệ
           </Button>
+
+          {/* Button Hủy / Xóa */}
+          <button
+            onClick={() => setHarvestToDelete(item)}
+            title="Hủy lệnh thu hoạch"
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       ),
     },
@@ -220,15 +327,53 @@ export const HarvestsPage: React.FC = () => {
         title="Quản Lý Thu Hoạch, KCS 3 Cấp & Mã Lô GS1"
         subtitle="Kiểm soát an toàn PHI Guard, kiểm nghiệm lab, phân hạng Grade A/B và in tem nhãn GS1 QR xuất xưởng cho HTX Tân Tiến"
         action={
-          <Button
-            variant="primary"
-            onClick={() => setIsAddModalOpen(true)}
-            leftIcon={<Plus className="w-4 h-4" />}
-          >
-            Ghi Nhận Thu Hoạch
-          </Button>
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-600" />}
+              className="border-slate-300 hover:bg-slate-50 text-slate-700"
+            >
+              Xuất Excel (.xlsx)
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => setIsAddModalOpen(true)}
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              Ghi Nhận Thu Hoạch
+            </Button>
+          </div>
         }
       />
+
+      {/* Filter and Search Bar */}
+      <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-subtle flex flex-wrap items-center justify-between gap-3">
+        <div className="relative flex-1 min-w-[280px]">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm mã lệnh (TH-), mã lô GS1, thửa đất, vùng trồng..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+          <select
+            value={selectedGrade}
+            onChange={(e) => setSelectedGrade(e.target.value)}
+            className="min-h-[38px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
+          >
+            <option value="ALL">Tất cả phẩm cấp KCS</option>
+            <option value="GRADE_A">GRADE A (Thượng hạng)</option>
+            <option value="GRADE_B">GRADE B (Tiêu chuẩn)</option>
+            <option value="REJECT">REJECT (Không đạt)</option>
+          </select>
+        </div>
+      </div>
 
       <DataTable columns={columns} data={harvestList} isLoading={isLoading} />
 
@@ -500,6 +645,69 @@ export const HarvestsPage: React.FC = () => {
         onClose={() => setSelectedHarvestForPrint(null)}
         harvest={selectedHarvestForPrint}
       />
+
+      {/* Harvest Detail Modal */}
+      <HarvestDetailModal
+        isOpen={!!selectedHarvestForDetail}
+        onClose={() => setSelectedHarvestForDetail(null)}
+        harvest={selectedHarvestForDetail}
+        onPrintLabel={() => {
+          if (selectedHarvestForDetail) {
+            setSelectedHarvestForPrint(selectedHarvestForDetail);
+          }
+        }}
+      />
+
+      {/* Edit Harvest Modal */}
+      <EditHarvestModal
+        isOpen={!!selectedHarvestForEdit}
+        onClose={() => setSelectedHarvestForEdit(null)}
+        harvest={selectedHarvestForEdit}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['harvests'] });
+        }}
+      />
+
+      {/* Delete Harvest Confirmation Modal */}
+      {harvestToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in text-[13px]">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-3 bg-rose-100 rounded-2xl">
+                <AlertOctagon className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-900 text-base">Hủy Lệnh Thu Hoạch</h3>
+                <p className="text-xs text-slate-500">Mã lệnh: {harvestToDelete.harvest_code}</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-rose-50/80 rounded-2xl border border-rose-200 text-xs text-rose-900 leading-relaxed">
+              Bạn có chắc chắn muốn hủy lượt thu hoạch này vào ngày <strong>{harvestToDelete.harvest_date}</strong> (Sản lượng: {harvestToDelete.quantity_kg} kg) trên thửa đất <strong>{harvestToDelete.plot_code}</strong>?
+              <br />
+              <span className="text-[11px] text-rose-700 italic mt-1 block">
+                * Mã lô GS1 [{harvestToDelete.lot_code}] liên quan sẽ bị thu hồi khỏi hệ thống xuất hàng.
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setHarvestToDelete(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleDeleteHarvest}
+                disabled={isDeleting}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition disabled:opacity-60"
+              >
+                {isDeleting ? 'Đang hủy...' : 'Xác nhận Hủy Lệnh'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

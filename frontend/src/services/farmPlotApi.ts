@@ -254,3 +254,45 @@ export async function assignMemberToPlot(plotId: string, payload: { member_id: s
     return { data: { id: `ma-${Date.now()}`, member_id: payload.member_id, role: payload.role, assigned_date: new Date().toISOString().slice(0, 10) } };
   }
 }
+
+export async function updatePlot(
+  unitId: string,
+  plotId: string,
+  payload: Partial<FarmPlot>
+): Promise<FarmPlot> {
+  const allPlots = getAllStoredPlots();
+  const index = allPlots.findIndex((p) => p.id === plotId);
+  if (index === -1) {
+    throw new Error('Không tìm thấy thửa đất để cập nhật');
+  }
+
+  const updated: FarmPlot = {
+    ...allPlots[index],
+    ...payload,
+    ...(payload.area !== undefined && { area: Number(payload.area) }),
+  };
+
+  try {
+    await apiClient.patch(`/farm-plots/${plotId}`, payload);
+  } catch (err) {
+    console.warn('API updatePlot notice, using local fallback:', err);
+  }
+
+  allPlots[index] = updated;
+  saveAllPlotsToStorage(allPlots);
+  return updated;
+}
+
+export async function deletePlot(unitId: string, plotId: string): Promise<boolean> {
+  try {
+    await apiClient.delete(`/farm-plots/${plotId}`);
+  } catch (err) {
+    console.warn('API deletePlot notice, using local fallback:', err);
+  }
+
+  const allPlots = getAllStoredPlots();
+  const filtered = allPlots.filter((p) => p.id !== plotId);
+  saveAllPlotsToStorage(filtered);
+  return true;
+}
+
