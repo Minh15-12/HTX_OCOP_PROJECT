@@ -500,32 +500,51 @@ Cần rà soát và thay thế các từ ngữ tiếng Anh hoặc từ ngữ ch�
 
 ## 7. KẾ HOẠCH CẢI TIẾN CHI TIẾT TỪNG GIAI ĐOẠN (ROADMAP)
 
-### Giai đoạn 1: Sửa Điều Hướng & Chuẩn Hóa Menu (Ưu tiên cao nhất — 1 ngày)
-1. **Cập nhật `navigation.ts`**:
+### Giai đoạn 0: Nền Móng Backend & Seeder Dữ Liệu Thực Tế (ĐÃ HOÀN THÀNH ✅)
+1. **Bổ sung các API Endpoints còn thiếu:**
+   - ✅ `GET /api/v1/ocop/decisions`: Bổ sung `FinalDecisionController::index` và `FinalDecisionService::listDecisions()`, kèm enrich thông tin sản phẩm và số sao đạt được.
+   - ✅ `PATCH /api/v1/farm-plots/{plot_id}`: Bổ sung cập nhật diện tích, tọa độ GPS, mã PUC.
+   - ✅ `DELETE /api/v1/farm-plots/{plot_id}`: Bổ sung xóa có Foreign Key Guard (chặn xóa nếu thửa đất đã có nhật ký canh tác hoặc đợt thu hoạch).
+   - ✅ `GET /api/v1/harvests/settlements`: Bổ sung xem lịch sử quyết toán cấn trừ nợ mùa vụ.
+   - ✅ Sắp xếp lại thứ tự khai báo route tĩnh `/harvests/settle-season` và `/harvests/settlements` trước route tham số `/harvests/{id}` trong `routes/api.php`.
+2. **Khởi tạo và nạp Seeder Toàn diện (`HtxTanTienFullSystemSeeder.php`):**
+   - ✅ Nạp 2 Vùng sản xuất chuẩn (Đà Lạt & Đạ Sar).
+   - ✅ Nạp 3 Thửa đất canh tác có tọa độ GPS và mã PUC `PUC-49-015-9923`.
+   - ✅ Nạp 1 Mùa vụ Đông Xuân 2025-2026 kèm chỉ tiêu sản lượng 45.000 kg.
+   - ✅ Nạp 3 Vật tư chuẩn (Phân trùn quế Bio-Grow, Thuốc Neem Oil, Hạt giống Palermo F1).
+   - ✅ Nạp 1 Phiếu nhập kho KCS, 1 Phiếu xuất nợ đầu vụ cho xã viên Nguyễn Văn A (7.500.000đ).
+   - ✅ Nạp 2 Bản ghi công nợ mở cho xã viên.
+   - ✅ Nạp 2 Nhật ký canh tác điện tử chuẩn 10 trường Thông tư 02/2024.
+   - ✅ Nạp 1 Sản phẩm OCOP chuẩn: *Ớt chuông Sweet Palermo Đỏ Đà Lạt* (4 sao).
+   - ✅ Nạp 1 Lô thu hoạch KCS Grade A (1.250 kg, Brix 8.8) và Lô hàng GS1 tem QR `LOT-TT-2026-001`.
+   - ✅ Nạp 1 Hồ sơ OCOP tự chấm 92 điểm và 1 Quyết định công nhận sao của UBND Tỉnh Lâm Đồng.
+   - ✅ Bộ test kiểm thử `Phase0EndpointsTest` chạy pass 100%.
+
+### Giai đoạn 1: Sửa Điều Hướng & RBAC Menu Sidebar (1 ngày)
+1. **Cập nhật `navigation.ts` và `Sidebar.tsx`**:
    - Thêm mục *"Tiêu chí OCOP"* (`/ocop/criteria`) vào nhóm OCOP.
-   - Thêm mục *"Hội đồng chấm điểm"* (`/ocop/evaluation`) cho vai trò Giám khảo / Ban quản trị.
-   - Thêm mục *"Quyết định & Cấp sao"* (`/ocop/decisions`).
-   - Thêm badge đếm số lượng hồ sơ chờ duyệt thực tế.
+   - Thêm mục *"Hội đồng chấm điểm"* (`/ocop/evaluation`) kèm **RBAC Guard** (chỉ hiển thị cho `ADMIN`, `COUNCIL_EVALUATOR`, `HTX_MANAGER`).
+   - Thêm mục *"Quyết định & Cấp sao"* (`/ocop/decisions`) kết nối API `GET /ocop/decisions`.
 2. **Dọn dẹp `MembersPage.tsx`**:
    - Gỡ bỏ các tab con trùng lặp (`capital`, `profit`, `coop`) khỏi `MembersPage.tsx`, chỉ giữ lại phần Quản lý Xã viên và Bộ lọc FSM.
 
 ### Giai đoạn 2: Bổ Sung Phân Hệ Công Nợ & Quyết Toán Thu Mua (2–3 ngày)
-1. **Nâng cấp `FinancePage.tsx`**:
-   - Bổ sung Tab 1: **Sổ quỹ Thu - Chi** (kết nối API `/cash-transactions`).
-   - Bổ sung Tab 2: **Quản lý Công nợ Xã viên** (kết nối API `/receivable-payables` hiển thị chi tiết nợ vật tư từng xã viên).
-   - Bổ sung Tab 3: **Quyết toán mùa vụ & Cấn trừ nợ** (kết nối API `/harvest-settlements` cho phép chọn vụ thu hoạch, tự động tính $V_{\text{total}} - \text{Fee} - D$ và xuất phiếu thanh toán).
+1. **Nâng cấp `FinancePage.tsx` thành 3 Tab chuyên biệt**:
+   - Tab 1: **Sổ quỹ Thu - Chi** (kết nối API `/cash-transactions`).
+   - Tab 2: **Quản lý Công nợ Xã viên** (kết nối API `/receivable-payables` hiển thị chi tiết nợ vật tư từng xã viên).
+   - Tab 3: **Quyết toán mùa vụ & Cấn trừ nợ** (kết nối API `GET /harvests/settlements` xem lịch sử và `POST /harvests/settle-season` để thực hiện quyết toán cấn trừ nợ tự động).
 
 ### Giai đoạn 3: Khớp Nối API Sản Phẩm OCOP Chuẩn (1 ngày)
 1. **Refactor `ProductsPage.tsx`**:
    - Xóa bỏ dữ liệu mock không liên quan (Trà Oolong, Cà phê).
-   - Nối API `GET /api/v1/products` hiển thị đúng sản phẩm **Ớt chuông Sweet Palermo Đỏ Đà Lạt** (hạng 4 sao) và các phân loại nông sản của HTX Tân Tiến.
+   - Nối API `GET /api/v1/products` hiển thị đúng sản phẩm **Ớt chuông Sweet Palermo Đỏ Đà Lạt** (hạng 4 sao) từ Database thực tế.
    - Bổ sung chức năng gán Lô thu hoạch (`LOT`) vào Sản phẩm OCOP qua API `/products/{id}/lots`.
 
-### Giai đoạn 4: Hoàn Thiện Luồng OCOP Đa Cấp (QĐ 148) (2 ngày)
-1. **Đồng bộ hóa quy trình OCOP**:
-   - Từ trang Chi tiết hồ sơ (`/ocop/dossiers/:id`), bổ sung nút dẫn thẳng sang Phiên chấm điểm của Hội đồng (`/ocop/evaluation`).
-   - Hiển thị bảng so sánh điểm Tự chấm của HTX vs Điểm chấm của từng Giám khảo Hội đồng (Blind scoring).
-   - Cho phép xuất trọn bộ hồ sơ gồm: Biểu mẫu 1 (Phiếu đăng ký), Biểu mẫu 2 (Phương án kinh doanh), Biểu mẫu 3 (Phiếu tự chấm) có gắn chữ ký số/QR code.
+### Giai đoạn 4: Hoàn Thiện Form Góp Đất & Trần Nợ Xã Viên (2 ngày)
+1. **Bổ sung các trường dữ liệu còn thiếu trên Frontend**:
+   - Khối nhập Đất góp vốn trong [`CapitalRecordModal.tsx`](file:///f:/HTX_OCOP_PROJECT/frontend/src/features/cooperative/components/CapitalRecordModal.tsx) (Số sổ đỏ, thửa số, tờ bản đồ, diện tích m², đơn giá).
+   - Ô nhập hạn mức trần tín dụng `credit_limit` trong [`MemberWizard.tsx`](file:///f:/HTX_OCOP_PROJECT/frontend/src/features/members/components/MemberWizard.tsx).
+   - Khóa nút Chỉnh sửa (Read-only) khi Mùa vụ đã `COMPLETED` và Giao dịch vốn đã `APPROVED`.
 
 ### Giai đoạn 5: Tối Ưu Hóa Trải Nghiệm (UX States & Modern Design) (1 ngày)
 1. Bổ sung `Skeleton Loader` chuẩn cho các bảng dữ liệu thay cho spinner đơn điệu.
@@ -534,4 +553,5 @@ Cần rà soát và thay thế các từ ngữ tiếng Anh hoặc từ ngữ ch�
 
 ---
 
-> 📌 **Kết luận:** Hệ thống hiện tại đã sở hữu một nền tảng Backend cực kỳ vững chắc, tuân thủ chặt chẽ DDD và các quy tắc nghiệp vụ sâu sắc của HTX nông nghiệp Việt Nam. Việc thực hiện kế hoạch cải tiến trên sẽ đưa Frontend đạt độ hoàn thiện 100%, xóa bỏ hoàn toàn dữ liệu giả, đồng bộ điều hướng mượt mà và mang lại trải nghiệm chuyên nghiệp cho người dùng.
+> 📌 **Kết luận:** Nền tảng Backend hiện tại đã được củng cố toàn diện và sở hữu bộ dữ liệu thực tế mẫu mực về chuỗi giá trị Ớt chuông Sweet Palermo HTX Tân Tiến. Các giai đoạn tiếp theo của Frontend sẽ được triển khai trên nền dữ liệu sống, đảm bảo không gặp bất kỳ lỗi 404 hay bảng dữ liệu rỗng nào.
+
