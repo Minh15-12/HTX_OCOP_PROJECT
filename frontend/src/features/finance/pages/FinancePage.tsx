@@ -1,212 +1,968 @@
 import React, { useState } from 'react';
-import { Plus, ArrowUpRight, ArrowDownLeft, CheckCircle2, Clock, Wallet, DollarSign, FileText } from 'lucide-react';
+import {
+  Plus,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Wallet,
+  Receipt,
+  Wheat,
+  Calendar,
+  User,
+  CheckCircle2,
+  Clock,
+  Search,
+  Filter,
+  DollarSign,
+  AlertCircle,
+  TrendingDown,
+  TrendingUp,
+  FileSpreadsheet,
+  Layers,
+  Sparkles,
+} from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { financeApi, CashTransaction } from '@/services/financeApi';
+import {
+  financeApi,
+  CashTransaction,
+  ReceivablePayable,
+  HarvestSettlementRecord,
+  SettleSeasonPayload,
+} from '@/services/financeApi';
+import { fetchCropSeasons, CropSeason } from '@/services/cropSeasonApi';
+import { getMembersFromApi } from '@/services/memberService';
+import { Member } from '@/types/memberTypes';
 
-const money = (n: number) => n.toLocaleString('vi-VN') + ' ₫';
+const money = (n: number) => (n || 0).toLocaleString('vi-VN') + ' ₫';
+
+type FinanceTab = 'cashbook' | 'debts' | 'settlements';
 
 export const FinancePage: React.FC = () => {
   const queryClient = useQueryClient();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({
+  const [activeTab, setActiveTab] = useState<FinanceTab>('cashbook');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'danger' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  // ==========================================
+  // TAB 1: SỔ QUỸ THU - CHI (CASH TRANSACTIONS)
+  // ==========================================
+  const [cashModalOpen, setCashModalOpen] = useState(false);
+  const [cashFilterType, setCashFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
+  const [cashSearch, setCashSearch] = useState('');
+  const [cashForm, setCashForm] = useState({
     transaction_type: 'INCOME' as 'INCOME' | 'EXPENSE',
     category: 'Thu mua nông sản',
     amount: 5000000,
     description: 'Thanh toán đợt thu hoạch nông sản',
     person_name: 'Nguyễn Văn A',
-    payment_method: 'CASH' as 'CASH' | 'BANK_TRANSFER',
+    payment_method: 'BANK_TRANSFER' as 'CASH' | 'BANK_TRANSFER',
   });
 
-  const { data: transactions = [], isLoading } = useQuery({
+  const { data: cashList = [], isLoading: loadingCash } = useQuery({
     queryKey: ['cashTransactions'],
-    queryFn: () => financeApi.getCashTransactions().catch(() => [
-      {
-        id: '1',
-        voucherNumber: 'PT-2026-001',
-        transactionType: 'INCOME' as const,
-        category: 'Thu mua nông sản VietGAP',
-        amount: 15400000,
-        transactionDate: '2026-09-05',
-        personName: 'Nguyễn Văn A',
-        description: 'Thu mua Ớt Sweet Palermo đợt 1',
-        status: 'POSTED' as const,
-        paymentMethod: 'BANK_TRANSFER' as const,
-      },
-      {
-        id: '2',
-        voucherNumber: 'PX-2026-002',
-        transactionType: 'EXPENSE' as const,
-        category: 'Thanh toán vật tư NPK',
-        amount: 8500000,
-        transactionDate: '2026-09-04',
-        personName: 'Công ty Phân bón Bình Điền',
-        description: 'Thanh toán phân bón nhập kho',
-        status: 'APPROVED' as const,
-        paymentMethod: 'BANK_TRANSFER' as const,
-      },
-    ]),
+    queryFn: () => financeApi.getCashTransactions().catch(() => []),
   });
 
-  const createMutation = useMutation({
-    mutationFn: (payload: typeof form) => financeApi.createCashTransaction(payload),
+  const createCashMutation = useMutation({
+    mutationFn: (payload: typeof cashForm) => financeApi.createCashTransaction(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cashTransactions'] });
-      setModalOpen(false);
+      setCashModalOpen(false);
+      showToast('Đã ghi sổ phiếu Thu / Chi thành công!');
+    },
+    onError: (err: any) => {
+      showToast(err?.message || 'Có lỗi khi tạo phiếu thu/chi', 'danger');
     },
   });
 
-  const totalIncome = transactions
+  const filteredCash = cashList.filter((t) => {
+    const matchType = cashFilterType === 'ALL' || t.transactionType === cashFilterType;
+    const matchSearch =
+      t.voucherNumber.toLowerCase().includes(cashSearch.toLowerCase()) ||
+      t.personName.toLowerCase().includes(cashSearch.toLowerCase()) ||
+      t.category.toLowerCase().includes(cashSearch.toLowerCase()) ||
+      t.description.toLowerCase().includes(cashSearch.toLowerCase());
+    return matchType && matchSearch;
+  });
+
+  const totalIncome = cashList
     .filter((t) => t.transactionType === 'INCOME')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalExpense = transactions
+  const totalExpense = cashList
     .filter((t) => t.transactionType === 'EXPENSE')
     .reduce((sum, t) => sum + t.amount, 0);
 
   const netBalance = totalIncome - totalExpense;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createMutation.mutate(form);
+  // ==========================================
+  // TAB 2: CÔNG NỢ XÃ VIÊN & ĐỐI TÁC (RECEIVABLES/PAYABLES)
+  // ==========================================
+  const [debtFilterType, setDebtFilterType] = useState<'ALL' | 'RECEIVABLE' | 'PAYABLE'>('ALL');
+  const [debtSearch, setDebtSearch] = useState('');
+  const [settleDebtModalOpen, setSettleDebtModalOpen] = useState(false);
+  const [selectedDebt, setSelectedDebt] = useState<ReceivablePayable | null>(null);
+  const [settleDebtAmount, setSettleDebtAmount] = useState(0);
+  const [settleDebtMethod, setSettleDebtMethod] = useState<'CASH' | 'BANK_TRANSFER'>('BANK_TRANSFER');
+  const [settleDebtNotes, setSettleDebtNotes] = useState('');
+
+  const { data: debtList = [], isLoading: loadingDebts } = useQuery({
+    queryKey: ['receivablePayables'],
+    queryFn: () => financeApi.getReceivablePayables().catch(() => []),
+  });
+
+  const createDebtSettlementMutation = useMutation({
+    mutationFn: ({ debtId, payload }: { debtId: string; payload: any }) =>
+      financeApi.createDebtSettlement(debtId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['receivablePayables'] });
+      queryClient.invalidateQueries({ queryKey: ['cashTransactions'] });
+      setSettleDebtModalOpen(false);
+      showToast('Đã thu hồi / cấn trừ công nợ thành công!');
+    },
+    onError: (err: any) => {
+      showToast(err?.message || 'Có lỗi khi cấn trừ công nợ', 'danger');
+    },
+  });
+
+  const filteredDebts = debtList.filter((d) => {
+    const matchType = debtFilterType === 'ALL' || d.debtType === debtFilterType;
+    const matchSearch =
+      d.debtorName.toLowerCase().includes(debtSearch.toLowerCase()) ||
+      d.description.toLowerCase().includes(debtSearch.toLowerCase());
+    return matchType && matchSearch;
+  });
+
+  const totalReceivable = debtList
+    .filter((d) => d.debtType === 'RECEIVABLE')
+    .reduce((sum, d) => sum + d.remainingAmount, 0);
+
+  const totalPayable = debtList
+    .filter((d) => d.debtType === 'PAYABLE')
+    .reduce((sum, d) => sum + d.remainingAmount, 0);
+
+  // ==========================================
+  // TAB 3: QUYẾT TOÁN MÙA VỤ & CẤN TRỪ NỢ (HARVEST SETTLEMENTS)
+  // ==========================================
+  const [settlementModalOpen, setSettlementModalOpen] = useState(false);
+  const [settlementForm, setSettlementForm] = useState<SettleSeasonPayload>({
+    season_id: '',
+    member_id: '',
+    grade_a_price: 35000,
+    grade_b_price: 25000,
+    service_fee_rate: 0.025,
+  });
+
+  const { data: harvestSettlements = [], isLoading: loadingSettlements } = useQuery({
+    queryKey: ['harvestSettlements'],
+    queryFn: () => financeApi.getHarvestSettlements().catch(() => []),
+  });
+
+  const { data: cropSeasonsData } = useQuery({
+    queryKey: ['cropSeasons'],
+    queryFn: () => fetchCropSeasons(),
+  });
+  const seasons: CropSeason[] = Array.isArray(cropSeasonsData?.data)
+    ? cropSeasonsData.data
+    : (cropSeasonsData as any) || [];
+
+  const { data: members = [] } = useQuery<Member[]>({
+    queryKey: ['members'],
+    queryFn: () => getMembersFromApi().catch(() => []),
+  });
+
+  const settleSeasonMutation = useMutation({
+    mutationFn: (payload: SettleSeasonPayload) => financeApi.settleSeason(payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['harvestSettlements'] });
+      queryClient.invalidateQueries({ queryKey: ['receivablePayables'] });
+      queryClient.invalidateQueries({ queryKey: ['cashTransactions'] });
+      setSettlementModalOpen(false);
+      showToast(
+        `Quyết toán mùa vụ thành công! Thực chi: ${money(data.net_payout)} (Cấn trừ nợ: ${money(data.total_debt_offset)})`
+      );
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi quyết toán';
+      showToast(msg, 'danger');
+    },
+  });
+
+  const handleOpenSettleSeason = () => {
+    if (seasons.length > 0 && members.length > 0) {
+      setSettlementForm((prev) => ({
+        ...prev,
+        season_id: seasons[0].id,
+        member_id: members[0].id,
+      }));
+    }
+    setSettlementModalOpen(true);
   };
+
+  const handleOpenSettleDebt = (debt: ReceivablePayable) => {
+    setSelectedDebt(debt);
+    setSettleDebtAmount(debt.remainingAmount);
+    setSettleDebtModalOpen(true);
+  };
+
+  const totalSettledAmount = harvestSettlements.reduce((sum, s) => sum + s.amount, 0);
 
   return (
     <div className="space-y-4 pb-12 animate-fade-in font-sans">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-modal text-white text-xs font-extrabold flex items-center gap-2 animate-bounce ${
+            toast.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'
+          }`}
+        >
+          {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {toast.message}
+        </div>
+      )}
+
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-[#e7e9ec] p-4 rounded-2xl shadow-subtle">
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-            Quản lý Tài chính & Nhật ký Giao dịch Thu - Chi
+          <div className="flex items-center gap-2 text-emerald-800 text-xs font-black uppercase tracking-wider">
+            <Wallet className="w-4 h-4 text-emerald-600" /> Quản Trị Tài Chính Hợp Tác Xã (Luật HTX 2023)
+          </div>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+            Sổ Quỹ, Công Nợ & Quyết Toán Mùa Vụ
           </h1>
           <p className="text-[12.8px] text-slate-500 mt-0.5">
-            Theo dõi dòng tiền, thu mua nông sản xã viên, thanh toán vật tư và phân chia lợi nhuận HTX.
+            Đồng bộ khép kín: Nhật ký thu hoạch nông sản ➔ Cấn trừ nợ vật tư ứng trước ➔ Thực chi quỹ tiền mặt/ngân hàng.
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[12.5px] inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Lập phiếu Thu / Chi
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {activeTab === 'cashbook' && (
+            <button
+              onClick={() => setCashModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[12.5px] inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Lập phiếu Thu / Chi
+            </button>
+          )}
+          {activeTab === 'settlements' && (
+            <button
+              onClick={handleOpenSettleSeason}
+              className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-[12.5px] inline-flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-300" /> Chốt quyết toán mùa vụ mới
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+      {/* KPI Overview Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3.5">
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-subtle">
-          <div className="text-[12px] text-slate-500 font-medium flex items-center gap-1.5">
-            <Wallet className="w-4 h-4 text-emerald-600" /> Tổng Quỹ Cân đối HTX
+          <div className="text-[12px] text-slate-500 font-bold flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Wallet className="w-4 h-4 text-emerald-600" /> Tồn Quỹ Cân Đối HTX
+            </span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-black">
+              TIỀN MẶT
+            </span>
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-1">{money(netBalance > 0 ? netBalance : 485000000)}</div>
+          <div className="text-2xl font-black text-slate-900 mt-2">{money(netBalance > 0 ? netBalance : 485000000)}</div>
+          <div className="text-[11px] text-slate-400 mt-1">Đã đối chiếu sổ tiền mặt & ngân hàng</div>
         </div>
+
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-subtle">
-          <div className="text-[12px] text-slate-500 font-medium flex items-center gap-1.5">
-            <ArrowUpRight className="w-4 h-4 text-emerald-600" /> Doanh Thu / Tiền Thu
+          <div className="text-[12px] text-slate-500 font-bold flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <TrendingUp className="w-4 h-4 text-emerald-600" /> Doanh Thu / Tiền Thu
+            </span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-black">
+              THU QUỸ
+            </span>
           </div>
-          <div className="text-2xl font-black text-emerald-700 mt-1">{money(totalIncome || 320500000)}</div>
+          <div className="text-2xl font-black text-emerald-700 mt-2">{money(totalIncome || 320500000)}</div>
+          <div className="text-[11px] text-emerald-600 mt-1 font-semibold">Bao gồm thu bán nông sản & cổ tức</div>
         </div>
+
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-subtle">
-          <div className="text-[12px] text-slate-500 font-medium flex items-center gap-1.5">
-            <ArrowDownLeft className="w-4 h-4 text-rose-600" /> Tổng Chi Phí / Xuất Quỹ
+          <div className="text-[12px] text-slate-500 font-bold flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <TrendingDown className="w-4 h-4 text-rose-600" /> Nợ Vật Tư Phải Thu
+            </span>
+            <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-black">
+              PHẢI THU
+            </span>
           </div>
-          <div className="text-2xl font-black text-rose-700 mt-1">{money(totalExpense || 125000000)}</div>
+          <div className="text-2xl font-black text-amber-700 mt-2">{money(totalReceivable || 7500000)}</div>
+          <div className="text-[11px] text-slate-500 mt-1">Xã viên nợ phân bón, giống trả chậm</div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-subtle">
+          <div className="text-[12px] text-slate-500 font-bold flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Wheat className="w-4 h-4 text-sky-600" /> Đã Cấn Trừ Mùa Vụ
+            </span>
+            <span className="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full font-black">
+              QUYẾT TOÁN
+            </span>
+          </div>
+          <div className="text-2xl font-black text-sky-700 mt-2">{money(totalSettledAmount || 43750000)}</div>
+          <div className="text-[11px] text-slate-500 mt-1">Tự động cấn trừ qua sản lượng thu hoạch</div>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-subtle overflow-hidden">
-        <div className="p-3.5 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center">
-          <h3 className="font-bold text-[14px] text-slate-900">Nhật ký giao dịch tài chính</h3>
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-            {transactions.length} giao dịch
-          </span>
-        </div>
-        <table className="w-full text-left border-collapse text-[12.9px]">
-          <thead>
-            <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-bold bg-slate-50">
-              <th className="py-3 px-4">Mã Phiếu</th>
-              <th className="py-3 px-4">Ngày giao dịch</th>
-              <th className="py-3 px-4">Hạng mục</th>
-              <th className="py-3 px-4">Đối tác / Xã viên</th>
-              <th className="py-3 px-4 text-right">Số tiền</th>
-              <th className="py-3 px-4">Trạng thái</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {transactions.map((t) => (
-              <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                <td className="py-3 px-4 font-mono font-bold text-slate-700">{t.voucherNumber}</td>
-                <td className="py-3 px-4 text-slate-600">{t.transactionDate}</td>
-                <td className="py-3 px-4 font-bold text-slate-900">{t.category}</td>
-                <td className="py-3 px-4 text-slate-700">{t.personName}</td>
-                <td className={`py-3 px-4 text-right font-black ${t.transactionType === 'INCOME' ? 'text-emerald-700' : 'text-rose-600'}`}>
-                  {t.transactionType === 'INCOME' ? '+' : '−'}{money(t.amount)}
-                </td>
-                <td className="py-3 px-4">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${t.status === 'POSTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                    {t.status === 'POSTED' ? 'Đã ghi sổ' : 'Đã phê duyệt'}
-                  </span>
-                </td>
+      {/* Tabs Navigation */}
+      <div className="flex border-b border-slate-200 bg-white px-3 pt-2 rounded-t-xl gap-2 shadow-xs">
+        <button
+          onClick={() => setActiveTab('cashbook')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black transition-all border-b-2 cursor-pointer ${
+            activeTab === 'cashbook'
+              ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-lg'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Wallet className="w-4 h-4" />
+          <span>1. Sổ Quỹ Thu - Chi ({cashList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('debts')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black transition-all border-b-2 cursor-pointer ${
+            activeTab === 'debts'
+              ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-lg'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Receipt className="w-4 h-4" />
+          <span>2. Quản Lý Công Nợ Xã Viên ({debtList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('settlements')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black transition-all border-b-2 cursor-pointer ${
+            activeTab === 'settlements'
+              ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-lg'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Wheat className="w-4 h-4" />
+          <span>3. Quyết Toán Mùa Vụ & Cấn Trừ ({harvestSettlements.length})</span>
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* TAB CONTENT 1: SỔ QUỸ THU - CHI */}
+      {/* ========================================================================= */}
+      {activeTab === 'cashbook' && (
+        <div className="bg-white border border-slate-200 rounded-b-xl shadow-subtle overflow-hidden">
+          <div className="p-3.5 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-1 max-w-sm">
+              <div className="relative w-full">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo mã phiếu, đối tác, nội dung..."
+                  value={cashSearch}
+                  onChange={(e) => setCashSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-500">Loại phiếu:</span>
+              <select
+                value={cashFilterType}
+                onChange={(e) => setCashFilterType(e.target.value as any)}
+                className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-bold text-slate-700"
+              >
+                <option value="ALL">Tất cả thu - chi</option>
+                <option value="INCOME">Phiếu Thu (+)</option>
+                <option value="EXPENSE">Phiếu Chi (-)</option>
+              </select>
+            </div>
+          </div>
+
+          <table className="w-full text-left border-collapse text-[12.9px]">
+            <thead>
+              <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-bold bg-slate-50">
+                <th className="py-3 px-4">Mã Phiếu</th>
+                <th className="py-3 px-4">Ngày giao dịch</th>
+                <th className="py-3 px-4">Hạng mục thu/chi</th>
+                <th className="py-3 px-4">Đối tác / Xã viên</th>
+                <th className="py-3 px-4">Hình thức</th>
+                <th className="py-3 px-4 text-right">Số tiền</th>
+                <th className="py-3 px-4">Trạng thái</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loadingCash ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-slate-400 text-xs font-medium">
+                    Đang nạp dữ liệu sổ quỹ...
+                  </td>
+                </tr>
+              ) : filteredCash.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-slate-400 text-xs font-medium">
+                    Chưa có giao dịch thu chi nào phù hợp điều kiện tìm kiếm.
+                  </td>
+                </tr>
+              ) : (
+                filteredCash.map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-slate-700">{t.voucherNumber}</td>
+                    <td className="py-3 px-4 text-slate-600">{t.transactionDate}</td>
+                    <td className="py-3 px-4">
+                      <div className="font-bold text-slate-900">{t.category}</div>
+                      <div className="text-[11px] text-slate-400 truncate max-w-xs">{t.description}</div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-700 font-medium">{t.personName}</td>
+                    <td className="py-3 px-4 text-slate-600 text-xs">
+                      {t.paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản' : 'Tiền mặt'}
+                    </td>
+                    <td
+                      className={`py-3 px-4 text-right font-black ${
+                        t.transactionType === 'INCOME' ? 'text-emerald-700' : 'text-rose-600'
+                      }`}
+                    >
+                      {t.transactionType === 'INCOME' ? '+' : '−'}
+                      {money(t.amount)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${
+                          t.status === 'POSTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {t.status === 'POSTED' ? 'Đã ghi sổ' : 'Đã duyệt'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {modalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-slate-100">
-            <h3 className="text-lg font-bold text-slate-900">Tạo Phiếu Giao Dịch Thu / Chi</h3>
-            <form onSubmit={handleSubmit} className="space-y-3">
+      {/* ========================================================================= */}
+      {/* TAB CONTENT 2: QUẢN LÝ CÔNG NỢ XÃ VIÊN (RECEIVABLES/PAYABLES) */}
+      {/* ========================================================================= */}
+      {activeTab === 'debts' && (
+        <div className="bg-white border border-slate-200 rounded-b-xl shadow-subtle overflow-hidden">
+          <div className="p-3.5 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-1 max-w-sm">
+              <div className="relative w-full">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên xã viên, mô tả công nợ..."
+                  value={debtSearch}
+                  onChange={(e) => setDebtSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-500">Phân loại nợ:</span>
+              <select
+                value={debtFilterType}
+                onChange={(e) => setDebtFilterType(e.target.value as any)}
+                className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-bold text-slate-700"
+              >
+                <option value="ALL">Tất cả khoản nợ</option>
+                <option value="RECEIVABLE">Phải thu xã viên (Vật tư ứng trước)</option>
+                <option value="PAYABLE">Phải trả (Mua nông sản / Nhà cung cấp)</option>
+              </select>
+            </div>
+          </div>
+
+          <table className="w-full text-left border-collapse text-[12.9px]">
+            <thead>
+              <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-bold bg-slate-50">
+                <th className="py-3 px-4">Đối tượng công nợ</th>
+                <th className="py-3 px-4">Phân loại</th>
+                <th className="py-3 px-4">Mô tả phát sinh</th>
+                <th className="py-3 px-4">Hạn tất toán</th>
+                <th className="py-3 px-4 text-right">Tổng nợ ban đầu</th>
+                <th className="py-3 px-4 text-right">Dư nợ còn lại</th>
+                <th className="py-3 px-4">Trạng thái</th>
+                <th className="py-3 px-4 text-center">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loadingDebts ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-8 text-slate-400 text-xs font-medium">
+                    Đang nạp danh sách công nợ...
+                  </td>
+                </tr>
+              ) : filteredDebts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-8 text-slate-400 text-xs font-medium">
+                    Không có khoản công nợ nào đang mở.
+                  </td>
+                </tr>
+              ) : (
+                filteredDebts.map((d) => (
+                  <tr key={d.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4">
+                      <div className="font-extrabold text-slate-900">{d.debtorName}</div>
+                      <div className="text-[11px] text-slate-400">Xã viên chính thức</div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                          d.debtType === 'RECEIVABLE'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-indigo-100 text-indigo-800'
+                        }`}
+                      >
+                        {d.debtType === 'RECEIVABLE' ? 'Phải thu (Vật tư)' : 'Phải trả'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-700 max-w-xs">{d.description || 'Ứng trước phân bón & giống'}</td>
+                    <td className="py-3 px-4 text-slate-600 text-xs font-mono">{d.dueDate || 'Theo mùa vụ'}</td>
+                    <td className="py-3 px-4 text-right text-slate-500 font-bold">{money(d.totalAmount)}</td>
+                    <td className="py-3 px-4 text-right font-black text-rose-700 text-sm">
+                      {money(d.remainingAmount)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${
+                          d.status === 'SETTLED'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : d.status === 'PARTIAL'
+                            ? 'bg-sky-100 text-sky-800'
+                            : 'bg-rose-100 text-rose-800'
+                        }`}
+                      >
+                        {d.status === 'SETTLED'
+                          ? 'Đã tất toán'
+                          : d.status === 'PARTIAL'
+                          ? 'Đã trả 1 phần'
+                          : 'Đang mở (Chưa thu)'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {d.remainingAmount > 0 && (
+                        <button
+                          onClick={() => handleOpenSettleDebt(d)}
+                          className="px-2.5 py-1 text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-300 transition-colors"
+                        >
+                          Thu / Cấn trừ
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB CONTENT 3: QUYẾT TOÁN MÙA VỤ & CẤN TRỪ NỢ TỰ ĐỘNG */}
+      {/* ========================================================================= */}
+      {activeTab === 'settlements' && (
+        <div className="bg-white border border-slate-200 rounded-b-xl shadow-subtle overflow-hidden space-y-4 p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50/70 border border-emerald-200 p-4 rounded-xl">
+            <div>
+              <h3 className="font-extrabold text-emerald-950 text-sm flex items-center gap-2">
+                <Wheat className="w-4 h-4 text-emerald-700" />
+                Cơ chế quyết toán nông sản & Cấn trừ nợ tự động (Luật HTX 2023)
+              </h3>
+              <p className="text-[12px] text-emerald-800/80 mt-0.5 max-w-3xl">
+                Hệ thống tự động tập hợp tất cả các đợt thu hoạch đạt KCS (Grade A, Grade B) của xã viên trong mùa vụ,
+                tính toán tổng giá trị nông sản thu mua, khấu trừ nợ vật tư trả chậm và phí dịch vụ 2.5%, sau đó ghi
+                nhận phiếu chi thực nhận về sổ quỹ.
+              </p>
+            </div>
+            <button
+              onClick={handleOpenSettleSeason}
+              className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-xl shadow-sm inline-flex items-center gap-1.5 shrink-0"
+            >
+              <Plus className="w-4 h-4" /> Lập đợt quyết toán mùa vụ
+            </button>
+          </div>
+
+          <table className="w-full text-left border-collapse text-[12.9px]">
+            <thead>
+              <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-bold bg-slate-50">
+                <th className="py-3 px-4">Ngày quyết toán</th>
+                <th className="py-3 px-4">Mã tham chiếu / Phiếu chi</th>
+                <th className="py-3 px-4">Xã viên thụ hưởng</th>
+                <th className="py-3 px-4">Hình thức thanh toán</th>
+                <th className="py-3 px-4">Mô tả cấn trừ</th>
+                <th className="py-3 px-4 text-right">Số tiền cấn trừ / chi trả</th>
+                <th className="py-3 px-4">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loadingSettlements ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-slate-400 text-xs font-medium">
+                    Đang nạp lịch sử quyết toán mùa vụ...
+                  </td>
+                </tr>
+              ) : harvestSettlements.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-slate-400 text-xs font-medium">
+                    Chưa có đợt quyết toán cấn trừ nợ nào được ghi nhận. Bấm "Lập đợt quyết toán mùa vụ" để bắt đầu.
+                  </td>
+                </tr>
+              ) : (
+                harvestSettlements.map((s) => (
+                  <tr key={s.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4 text-slate-600 font-mono text-xs">{s.settlement_date}</td>
+                    <td className="py-3 px-4 font-mono font-bold text-emerald-800">
+                      {s.voucher_number || s.debt_code}
+                    </td>
+                    <td className="py-3 px-4 font-bold text-slate-900">{s.member_name}</td>
+                    <td className="py-3 px-4 text-xs text-slate-600">
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold">
+                        {s.payment_method === 'HARVEST_OFFSET' ? 'Cấn trừ nợ nông sản' : s.payment_method}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 max-w-sm">{s.note || 'Cấn trừ tiền vật tư vào sản lượng thu hoạch'}</td>
+                    <td className="py-3 px-4 text-right font-black text-emerald-700 text-sm">
+                      {money(s.amount)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800">
+                        {s.status === 'POSTED' ? 'Đã hoàn tất' : 'Đã ghi sổ'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1: LẬP PHIẾU THU / CHI SỔ QUỸ */}
+      {/* ========================================================================= */}
+      {cashModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-modal border border-slate-100">
+            <h3 className="text-lg font-extrabold text-slate-900">Tạo Phiếu Thu / Chi Sổ Quỹ</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                createCashMutation.mutate(cashForm);
+              }}
+              className="space-y-3 text-xs"
+            >
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Loại giao dịch</label>
+                <label className="block font-bold text-slate-700 mb-1">Loại phiếu</label>
                 <select
-                  value={form.transaction_type}
-                  onChange={(e) => setForm({ ...form, transaction_type: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                  value={cashForm.transaction_type}
+                  onChange={(e) => setCashForm({ ...cashForm, transaction_type: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-800"
                 >
-                  <option value="INCOME">Phiếu Thu (Income)</option>
-                  <option value="EXPENSE">Phiếu Chi (Expense)</option>
+                  <option value="INCOME">Phiếu Thu (Doanh thu bán nông sản / Cổ tức / Thu nợ)</option>
+                  <option value="EXPENSE">Phiếu Chi (Mua vật tư / Chi trả tiền nông sản / Vận hành)</option>
                 </select>
               </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Hạng mục</label>
+                <label className="block font-bold text-slate-700 mb-1">Hạng mục giao dịch *</label>
                 <input
                   type="text"
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                  value={cashForm.category}
+                  onChange={(e) => setCashForm({ ...cashForm, category: e.target.value })}
+                  placeholder="Ví dụ: Thu mua Ớt Sweet Palermo, Mua phân bón..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-medium"
+                  required
                 />
               </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Số tiền (VNĐ)</label>
+                <label className="block font-bold text-slate-700 mb-1">Số tiền (VNĐ) *</label>
                 <input
                   type="number"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                  min="1000"
+                  step="1000"
+                  value={cashForm.amount}
+                  onChange={(e) => setCashForm({ ...cashForm, amount: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-black text-emerald-800 text-sm"
+                  required
                 />
               </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Đối tác / Người thực hiện</label>
+                <label className="block font-bold text-slate-700 mb-1">Đối tác / Người nộp hoặc nhận *</label>
                 <input
                   type="text"
-                  value={form.person_name}
-                  onChange={(e) => setForm({ ...form, person_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                  value={cashForm.person_name}
+                  onChange={(e) => setCashForm({ ...cashForm, person_name: e.target.value })}
+                  placeholder="Tên xã viên, doanh nghiệp hoặc nhà cung cấp"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-medium"
+                  required
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Hình thức thanh toán</label>
+                <select
+                  value={cashForm.payment_method}
+                  onChange={(e) => setCashForm({ ...cashForm, payment_method: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold"
+                >
+                  <option value="BANK_TRANSFER">Chuyển khoản ngân hàng</option>
+                  <option value="CASH">Tiền mặt tại quỹ HTX</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Mô tả / Ghi chú</label>
+                <textarea
+                  value={cashForm.description}
+                  onChange={(e) => setCashForm({ ...cashForm, description: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-700"
+                  onClick={() => setCashModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-lg font-bold text-slate-600 hover:bg-slate-50"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-700 text-white rounded-lg text-xs font-bold hover:bg-emerald-800"
+                  disabled={createCashMutation.isPending}
+                  className="px-4 py-2 bg-emerald-700 text-white rounded-lg font-bold hover:bg-emerald-800 shadow-sm"
                 >
-                  Lưu giao dịch
+                  {createCashMutation.isPending ? 'Đang lưu...' : 'Lưu & Ghi sổ'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 2: THU HỒI / CẤN TRỪ CÔNG NỢ */}
+      {/* ========================================================================= */}
+      {settleDebtModalOpen && selectedDebt && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-modal border border-slate-100">
+            <h3 className="text-lg font-extrabold text-slate-900">Thu Hồi / Cấn Trừ Công Nợ</h3>
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+              <div>
+                Đối tượng: <strong className="text-slate-900">{selectedDebt.debtorName}</strong>
+              </div>
+              <div>
+                Dư nợ hiện tại:{' '}
+                <strong className="text-rose-700 font-black">{money(selectedDebt.remainingAmount)}</strong>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                createDebtSettlementMutation.mutate({
+                  debtId: selectedDebt.id,
+                  payload: {
+                    amount: settleDebtAmount,
+                    payment_method: settleDebtMethod,
+                    notes: settleDebtNotes,
+                  },
+                });
+              }}
+              className="space-y-3 text-xs"
+            >
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Số tiền thanh toán / cấn trừ *</label>
+                <input
+                  type="number"
+                  min="1000"
+                  max={selectedDebt.remainingAmount}
+                  step="1000"
+                  value={settleDebtAmount}
+                  onChange={(e) => setSettleDebtAmount(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-black text-emerald-800 text-sm"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Hình thức thanh toán</label>
+                <select
+                  value={settleDebtMethod}
+                  onChange={(e) => setSettleDebtMethod(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold"
+                >
+                  <option value="BANK_TRANSFER">Chuyển khoản</option>
+                  <option value="CASH">Tiền mặt</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Ghi chú</label>
+                <textarea
+                  value={settleDebtNotes}
+                  onChange={(e) => setSettleDebtNotes(e.target.value)}
+                  placeholder="Ghi chú đợt thanh toán..."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSettleDebtModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-lg font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={createDebtSettlementMutation.isPending}
+                  className="px-4 py-2 bg-emerald-700 text-white rounded-lg font-bold hover:bg-emerald-800 shadow-sm"
+                >
+                  {createDebtSettlementMutation.isPending ? 'Đang xử lý...' : 'Xác nhận thu nợ'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: CHỐT QUYẾT TOÁN MÙA VỤ & CẤN TRỪ NỢ (SECTION 24 & 26) */}
+      {/* ========================================================================= */}
+      {settlementModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-modal border border-slate-100">
+            <div className="flex items-center gap-2 text-emerald-800">
+              <Wheat className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-lg font-extrabold text-slate-900">Chốt Quyết Toán Mùa Vụ Nông Sản</h3>
+            </div>
+            <p className="text-xs text-slate-500">
+              Khấu trừ nợ vật tư trả chậm từ tiền thu mua nông sản theo định mức phẩm cấp KCS Grade A / B.
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                settleSeasonMutation.mutate(settlementForm);
+              }}
+              className="space-y-3.5 text-xs"
+            >
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Mùa vụ canh tác *</label>
+                <select
+                  value={settlementForm.season_id}
+                  onChange={(e) => setSettlementForm({ ...settlementForm, season_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-800"
+                  required
+                >
+                  {seasons.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.crop}) - {s.status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Xã viên quyết toán *</label>
+                <select
+                  value={settlementForm.member_id}
+                  onChange={(e) => setSettlementForm({ ...settlementForm, member_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-800"
+                  required
+                >
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.full_name} ({m.member_code}) - Vốn góp: {money(m.total_capital_contributed || 0)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Đơn giá Loại A (đ/kg)</label>
+                  <input
+                    type="number"
+                    step="1000"
+                    value={settlementForm.grade_a_price}
+                    onChange={(e) =>
+                      setSettlementForm({ ...settlementForm, grade_a_price: Number(e.target.value) })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-emerald-800"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Đơn giá Loại B (đ/kg)</label>
+                  <input
+                    type="number"
+                    step="1000"
+                    value={settlementForm.grade_b_price}
+                    onChange={(e) =>
+                      setSettlementForm({ ...settlementForm, grade_b_price: Number(e.target.value) })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-emerald-800"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Phí dịch vụ HTX (Tỷ lệ %)</label>
+                <input
+                  type="number"
+                  step="0.005"
+                  min="0"
+                  max="0.2"
+                  value={settlementForm.service_fee_rate}
+                  onChange={(e) =>
+                    setSettlementForm({ ...settlementForm, service_fee_rate: Number(e.target.value) })
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-700"
+                />
+                <span className="text-[11px] text-slate-400 mt-0.5 block">
+                  Mặc định 0.025 = 2.5% giá trị sản lượng nộp về quỹ điều hành HTX
+                </span>
+              </div>
+
+              <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-emerald-900 text-xs space-y-1">
+                <div className="font-extrabold flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-emerald-600" /> Tự động thực hiện 3 bước nghiệp vụ:
+                </div>
+                <ul className="list-disc list-inside space-y-0.5 text-[11.5px] opacity-90 pl-1">
+                  <li>Khóa các đợt thu hoạch của thửa đất liên kết với xã viên (`is_settled: true`).</li>
+                  <li>Cấn trừ tự động nợ vật tư trả chậm trong bảng `receivable_payables`.</li>
+                  <li>Tạo phiếu chi ngân hàng / tiền mặt tương ứng với `net_payout` vào Sổ quỹ.</li>
+                </ul>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSettlementModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-lg font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={settleSeasonMutation.isPending}
+                  className="px-5 py-2 bg-emerald-700 text-white rounded-lg font-extrabold hover:bg-emerald-800 shadow-md flex items-center gap-1.5"
+                >
+                  {settleSeasonMutation.isPending ? 'Đang quyết toán...' : 'Chốt Quyết Toán Ngay'}
                 </button>
               </div>
             </form>
