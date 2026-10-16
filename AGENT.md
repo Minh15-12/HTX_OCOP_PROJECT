@@ -318,6 +318,7 @@ Mật khẩu chung: `password123`
 | Feature phức tạp, nhiều bước | **`task-decomposition-and-atomic-workflow`** | Khi feature ảnh hưởng nhiều module, cần chia nhỏ thành micro-task và commit từng bước |
 | Viết code mới / Refactor code | **`clean-code-and-refactoring`** | Khi tạo file mới, refactor module, hoặc code review — đảm bảo DRY, SOLID, naming conventions |
 | Viết code mới (bổ sung) | **`karpathy-guidelines`** | Bổ trợ cho clean-code — ưu tiên đơn giản, suy nghĩ trước khi code, thay đổi phẫu thuật chính xác |
+| Đặc tả giao diện & Đồng bộ Backend | **`domain-driven-ui-spec`** | Soi backend contract (routes/requests/enums/resources), phân loại 5 archetypes, loại bỏ card thừa, xử lý backend gap, chốt đủ CRUD và data matrix |
 | Thiết kế / Chỉnh sửa giao diện | **`modern-ui-design`** | Khi tạo trang mới, sửa layout, styling component — áp dụng visual hierarchy, micro-animations |
 | Viết test / TDD workflow | **`test-driven-development`** | Khi viết unit test, integration test, hoặc áp dụng quy trình Red → Green → Refactor |
 | Debug lỗi, fix bug | **`systematic-debugging`** | Khi gặp lỗi runtime, logic bug, build failure — phân tích root cause có hệ thống |
@@ -335,9 +336,11 @@ Khi triển khai một feature mới trong dự án, nên áp dụng skill theo 
        ↓
 4. clean-code + karpathy-guidelines  → Viết code sạch, đơn giản, đúng chuẩn
        ↓
-5. modern-ui-design                  → Áp dụng cho phần giao diện (nếu có)
+5. domain-driven-ui-spec             → Soi backend, xác định archetype, CRUD, data matrix & states
        ↓
-6. systematic-debugging              → Khi gặp lỗi trong quá trình phát triển
+6. modern-ui-design                  → Hoàn thiện styling, visual hierarchy, responsive
+       ↓
+7. systematic-debugging              → Khi gặp lỗi trong quá trình phát triển
 ```
 
 ### Ví dụ Áp dụng Cụ thể trong Dự án
