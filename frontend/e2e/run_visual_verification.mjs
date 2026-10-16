@@ -39,12 +39,13 @@ async function runVisualTests() {
     // 1. ĐĂNG NHẬP
     console.log('1. Kiểm tra màn hình Đăng nhập & Xác thực hệ thống...');
     await page.goto('http://localhost:3000/login', { waitUntil: 'networkidle' });
+    await page.evaluate(() => localStorage.clear());
     await page.screenshot({ path: path.join(screenshotsDir, '01_login_page.png') });
     copyToArtifact('01_login_page.png');
 
     console.log('  -> Bấm Đăng nhập ngay...');
     await page.click('button:has-text("Đăng nhập ngay")');
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(3000);
 
     // 2. DASHBOARD
     console.log('2. Kiểm tra Dashboard & Menu Sidebar mới...');
@@ -102,19 +103,19 @@ async function runVisualTests() {
 
     // 5. GIAI ĐOẠN 3: SẢN PHẨM OCOP & LIÊN KẾT LÔ GS1
     console.log('5. Kiểm tra Danh mục Sản phẩm OCOP...');
-    await page.goto('http://localhost:3000/products', { waitUntil: 'networkidle' });
+    await page.goto('http://localhost:3000/inventory/products', { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
     await page.screenshot({ path: path.join(screenshotsDir, '08_products_page.png') });
     copyToArtifact('08_products_page.png');
 
-    // Mở modal liên kết lô
-    const linkLotBtn = await page.$('button:has-text("Liên kết Lô"), button:has-text("Gán Lô")');
-    if (linkLotBtn) {
-      console.log('  -> Mở Modal Liên kết Lô Thu Hoạch GS1...');
-      await linkLotBtn.click();
+    // Mở modal tạo sản phẩm
+    const createProductBtn = await page.$('button:has-text("Thêm sản phẩm mới"), button:has-text("Tạo sản phẩm")');
+    if (createProductBtn) {
+      console.log('  -> Mở Modal Tạo Sản Phẩm OCOP Mới...');
+      await createProductBtn.click();
       await page.waitForTimeout(1000);
-      await page.screenshot({ path: path.join(screenshotsDir, '09_products_link_lot_modal.png') });
-      copyToArtifact('09_products_link_lot_modal.png');
+      await page.screenshot({ path: path.join(screenshotsDir, '08b_create_product_modal.png') });
+      copyToArtifact('08b_create_product_modal.png');
 
       const closeModalBtn = await page.$('button:has-text("Hủy"), button:has-text("Đóng")');
       if (closeModalBtn) await closeModalBtn.click();
@@ -123,7 +124,7 @@ async function runVisualTests() {
 
     // 6. GIAI ĐOẠN 5: NHẬT KÝ CANH TÁC & READ-ONLY FREEZE GUARD
     console.log('6. Kiểm tra Nhật ký canh tác & Read-Only Freeze Guard...');
-    await page.goto('http://localhost:3000/farming-logs', { waitUntil: 'networkidle' });
+    await page.goto('http://localhost:3000/agriculture/logs', { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
     await page.screenshot({ path: path.join(screenshotsDir, '10_farming_logs_page.png') });
     copyToArtifact('10_farming_logs_page.png');
@@ -140,6 +141,12 @@ async function runVisualTests() {
     await page.waitForTimeout(2000);
     await page.screenshot({ path: path.join(screenshotsDir, '12_ocop_criteria_page.png') });
     copyToArtifact('12_ocop_criteria_page.png');
+
+    console.log('9. Kiểm tra Trang Vùng trồng & Thửa đất...');
+    await page.goto('http://localhost:3000/agriculture/plots', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: path.join(screenshotsDir, '13_farm_plots_page.png') });
+    copyToArtifact('13_farm_plots_page.png');
 
     console.log('\n===============================================================');
     console.log('🎉 KIỂM THỬ TRỰC QUAN HOÀN TẤT THÀNH CÔNG 100%!');

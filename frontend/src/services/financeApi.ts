@@ -125,10 +125,11 @@ export const financeApi = {
     const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
     return data.map((item: any) => ({
       id: item.id,
+      debtCode: item.debt_code || item.code || item.id,
       debtType: item.type || item.debt_type || 'RECEIVABLE',
-      debtorName: item.person_name || item.debtor_name || 'Xã viên HTX',
-      totalAmount: Number(item.total_amount || item.amount || 0),
-      remainingAmount: Number(item.remaining_amount || item.balance || 0),
+      debtorName: item.counterparty_name || item.person_name || item.debtor_name || 'Xã viên HTX',
+      totalAmount: Number(item.original_amount ?? item.total_amount ?? item.amount ?? 0),
+      remainingAmount: Number(item.outstanding_amount ?? item.remaining_amount ?? item.balance ?? 0),
       dueDate: item.due_date ? String(item.due_date).slice(0, 10) : '',
       status: item.status || 'PENDING',
       description: item.description || '',

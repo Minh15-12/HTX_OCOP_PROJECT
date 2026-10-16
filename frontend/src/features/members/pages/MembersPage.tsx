@@ -92,7 +92,7 @@ export const MembersPage: React.FC = () => {
       }
       return getStoredMembers() || mockMembersList;
     },
-    initialData: () => getStoredMembers() || mockMembersList,
+    staleTime: 0,
   });
 
   const [transactions, setTransactions] = useState<CapitalTransaction[]>(() => getStoredCapitalTransactions() || mockCapitalTransactions);

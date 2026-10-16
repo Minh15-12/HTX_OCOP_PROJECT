@@ -802,12 +802,16 @@ export const mapApiMemberToFrontend = (item: any): Member => {
     ? item.committed_capital
     : (info.committed_capital !== undefined ? Number(info.committed_capital) : 30000000);
 
-  const contributed = typeof item.contributed_capital === 'number'
+  const contributed = typeof item.contributed_capital === 'number' && item.contributed_capital > 0
     ? item.contributed_capital
-    : (info.contributed_capital !== undefined ? Number(info.contributed_capital) : committed);
+    : (info.contributed_capital !== undefined && Number(info.contributed_capital) > 0 ? Number(info.contributed_capital) : committed);
 
   const remaining = Math.max(0, committed - contributed);
   const status = contributed >= committed && committed > 0 ? 'DU_VON' : 'CHUA_DU';
+
+  const memberTypeMapped = item.member_type === 'OFFICIAL' || item.member_type === 'CHINH_THUC'
+    ? 'CHINH_THUC'
+    : 'LIEN_KET';
 
   return {
     id: String(item.id),
@@ -833,7 +837,7 @@ export const mapApiMemberToFrontend = (item: any): Member => {
     capital_form: info.capital_form || 'TIEN_MAT',
     contribution_date: item.admission_date || '2024-01-01',
     contribution_method: 'Góp một lần',
-    member_type: item.member_type || 'CHINH_THUC',
+    member_type: memberTypeMapped,
     is_foreign_investor: item.is_foreign_investor || false,
     committed_capital: committed,
     contributed_capital: contributed,
@@ -856,43 +860,32 @@ export const mapApiMemberToFrontend = (item: any): Member => {
   };
 };
 
-export const getMembersFromApi = async (filters?: { search?: string; status?: string; member_type?: string }): Promise<Member[]> => {
+export const getMembersFromApi = async (filters?: { search?: string; status?: string; member_type?: string; per_page?: number }): Promise<Member[]> => {
   let apiMembers: Member[] = [];
   try {
-    const res: any = await apiClient.get('/members', { params: filters });
-    if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
-      apiMembers = res.data.map(mapApiMemberToFrontend);
+    const params = { per_page: 100, ...filters };
+    const res: any = await apiClient.get('/members', { params });
+    const rawList = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    if (rawList.length > 0) {
+      apiMembers = rawList.map(mapApiMemberToFrontend);
     }
   } catch (error) {
     console.warn('Backend API connection warning, using local DB store:', error);
   }
 
-  const stored = getStoredMembers();
-  if (!stored || stored.length === 0) {
-    const initialList = deduplicateMembers(apiMembers.length > 0 ? apiMembers : mockMembersList);
-    saveMembersToStorage(initialList);
-    return initialList;
+  if (apiMembers.length > 0) {
+    const deduplicated = deduplicateMembers(apiMembers);
+    saveMembersToStorage(deduplicated);
+    return deduplicated;
   }
 
-  const getKey = (m: Member) =>
-    m.member_code && m.member_code.trim()
-      ? m.member_code.trim().toUpperCase()
-      : m.cccd && m.cccd.trim()
-      ? m.cccd.trim()
-      : String(m.id).trim();
+  const stored = getStoredMembers();
+  if (!stored || stored.length === 0) {
+    saveMembersToStorage(mockMembersList);
+    return mockMembersList;
+  }
 
-  // Merge API members and stored members, giving priority to user's updated local DB store
-  const mergedMap = new Map<string, Member>();
-  // 1. Add mock items first to ensure sample debt test data is present
-  mockMembersList.forEach((m) => mergedMap.set(getKey(m), m));
-  // 2. Overlay API items
-  apiMembers.forEach((m) => mergedMap.set(getKey(m), m));
-  // 3. Add stored items last so user's updates in localStorage take highest priority
-  stored.forEach((m) => mergedMap.set(getKey(m), m));
-
-  const mergedList = deduplicateMembers(Array.from(mergedMap.values()));
-  saveMembersToStorage(mergedList);
-  return mergedList;
+  return stored;
 };
 
 export const createMemberApi = async (memberData: Partial<Member>): Promise<Member> => {
