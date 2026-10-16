@@ -1,102 +1,58 @@
-# BÁO CÁO BÀN GIAO SENTINEL (SENTINEL HANDOFF REPORT)
+# Sentinel Handoff Report — Production, Farming Logs, Harvest, KCS & GS1 Traceability
 
-**Dự án:** Số hóa Hoàn chỉnh Quy trình Chuẩn bị Hồ sơ Đánh giá, Phân hạng OCOP theo Quyết định 148/QĐ-TTg (HTX Tân Tiến — Ớt Chuông Sweet Palermo)  
-**Vai trò:** Project Sentinel  
-**Thời gian hoàn tất:** 2026-10-12T08:33:00Z  
-**Phán quyết Kiểm toán Chiến thắng (Victory Audit Verdict):** **VICTORY CONFIRMED**  
+## Observation
+- **Yêu cầu ban đầu**: Số hóa toàn diện phân hệ Sản xuất & Nhật ký canh tác kết hợp phân hệ Thu hoạch & Truy xuất nguồn gốc cho HTX Nông nghiệp Tân Tiến (Ớt chuông Sweet Palermo Đỏ Đà Lạt) theo Thông tư 02/2024/TT-BNNPTNT, PHI Guard, KCS 3 cấp, Mã lô GS1, QR công khai.
+- **Tiến trình thực hiện**: Tuyến điều phối General path (`teamwork_preview_orchestrator`) đã triển khai nhóm swarm gồm 17 subagent (Explorers, Spec Miner, Workers, Test Writers, Reviewers, Challengers, Forensic Auditor) trải qua 2 vòng lặp (vòng 1 phát hiện 3 điểm cần khắc phục, vòng 2 khắc phục phẫu thuật và kiểm toán thành công 100%).
+- **Kiểm định Chiến thắng Độc lập**: Independent Victory Auditor (`57523419-450a-443d-9b66-7d7d18b45f08`) đã thực hiện kiểm định 3 giai đoạn độc lập (Timeline, Cheating Detection, Independent Test Execution) với quyền phủ quyết tuyệt đối (BINARY VETO) và ban hành phán quyết: **VICTORY CONFIRMED**.
 
----
+## Logic Chain
+1. **Phân hệ Sản xuất & Thửa đất (R1)**:
+   - Quản lý phân cấp: Hợp tác xã (`Cooperative`) → Vùng trồng (`ProductionUnit`, mã PUC) → Thửa đất (`FarmPlot`, mã chuẩn `PLOT-[HTX]-[MaXaVien]-[STT]`, GPS, diện tích) → Mùa vụ (`CropSeason`).
+   - Trạng thái trực quan thửa đất: Xanh (Đang canh tác), Đỏ/Cam (Cách ly PHI kèm đếm ngược ngày an toàn), Xám (Nghỉ vụ).
+2. **Nhật ký canh tác TT 02/2024 & PHI Guard (R1, R2)**:
+   - Lưu trữ đủ 10 trường theo Thông tư 02/2024/TT-BNNPTNT.
+   - Cơ chế bảo vệ PHI: Tự động tra cứu `phi_days` từ danh mục vật tư kho, tính `safe_harvest_date = spray_date + PHI_days`, tự động chuyển thửa đất sang `IN_QUARANTINE`.
+   - Chốt chặn an toàn: Backend chặn 100% lệnh thu hoạch trước `safe_harvest_date` bằng mã lỗi `ERR_HARVEST_PHI_VIOLATION` (HTTP 400), tuyệt đối không cho phép bypass hay bù trừ.
+3. **Thu hoạch & KCS 3 cấp (R2)**:
+   - Quy trình KCS: Gate Check → Quick Lab (`LAB_PASSED` / `LAB_REJECTED`) → Grading (Grade A: Premium $\ge 90\%$ đồng đều, Brix $\ge 7^\circ$; Grade B: Standard).
+   - Triệt tiêu hoàn toàn lỗ hổng nâng khống sản lượng Grade A ($gradeAKg = 0.0$ khi sub-par Brix/đồng đều).
+4. **Định danh GS1 & Tra cứu QR công khai (R3)**:
+   - Mã lô thu hoạch sinh tự động: `LOT-[CoopCode]-[PlotCode]-[YYYYMMDD]-[Seq]`.
+   - Mã QR SVG tạo theo chuẩn ISO/IEC 18004 Reed-Solomon Level M (không dùng fake SVG facade).
+   - Tuyến đường `/trace/:lotId` và `/public/trace/:lotId` hoạt động công khai, loại bỏ hoàn toàn mock fallback, không yêu cầu Sanctum Auth middleware.
+5. **Liên thông Toàn hệ thống (R4)**:
+   - Kho vật tư: Kiểm soát trần nợ vật tư đầu vụ (Credit Advance) và đối soát số lượng sử dụng thực tế.
+   - Tài chính: Tự động tính giá trị Grade A/B và cấn trừ công nợ vật tư, lập phiếu chi thanh toán thực trả.
+   - OCOP: Trích xuất tự động hồ sơ vùng trồng và nhật ký PHI làm minh chứng số SHA-256.
+6. **Frontend Farmer UX (R5)**:
+   - Nút bấm to rõ $\ge 48\text{px}$, hỗ trợ thao tác 1 chạm (Làm đất, Bón phân, Phun thuốc, Chăm sóc, Thu hoạch).
+   - Định vị GPS tự động qua HTML5 Geolocation API.
+   - Tối ưu camera: Tự động nén ảnh qua HTML5 Canvas (~80-130KB) triệt tiêu lỗi tràn bộ nhớ `QuotaExceededError`.
 
-## 1. OBSERVATION (Quan sát & Căn cứ Thực nghiệm)
+## Caveats & Technical Notes
+- **Dữ liệu thực địa**: Khi triển khai thực tế trên đồng ruộng có sóng yếu, tính năng chụp ảnh và lấy GPS đã được tối ưu nén ảnh trực tiếp tại client.
+- **Tính bất biến của dữ liệu**: Thửa đất đang trong tình trạng cách ly PHI sẽ bị khóa lệnh thu hoạch ở tầng Domain Service; không thể can thiệp bằng can thiệp thủ công từ API hay giao diện.
+- **Độc lập kiểm định**: Toàn bộ subagents và background monitoring crons đã được dọn dẹp sạch sẽ qua `manage_subagents(action="kill_all")` và `manage_task(action="kill")`.
 
-1. **Ghi nhận Yêu cầu & Điều phối Vòng đời:**
-   - Yêu cầu người dùng được ghi nhận nguyên văn tại `.agents/teamwork/ORIGINAL_REQUEST.md`.
-   - Sentinel đã định tuyến chính xác sang lộ trình **General** (`teamwork_preview_orchestrator`), khởi tạo và giám sát Project Orchestrator (`orchestrator_1`).
-   - Hai cron giám sát vận hành chuẩn mực: Cron 1 (Báo cáo tiến độ) và Cron 2 (Kiểm tra liveness) chạy đều đặn mỗi 8 và 10 phút, không phát sinh bất kỳ tác vụ treo hoặc lỗi liveness nào.
+## Conclusion
+- Dự án Số hóa phân hệ Sản xuất, Nhật ký canh tác, Thu hoạch KCS 3 cấp và GS1 QR Traceability cho HTX Tân Tiến đã hoàn thành trọn vẹn 100%, vượt qua tất cả các bài kiểm tra đối kháng khắt khe và kiểm định liêm chính mã nguồn.
+- Hệ thống sẵn sàng bàn giao và đưa vào vận hành thực tế.
 
-2. **Kết quả Thẩm định Độc lập từ Post-Victory Auditor (`victory_auditor_1`):**
-   - **Phase A (Timeline Reconstruction):** Đạt chuẩn (PASS). Chuỗi sự kiện phát triển diễn ra tự nhiên, tuần tự từ Khảo sát (07:35-07:47 UTC) -> Thi công (07:49-08:09 UTC) -> Thẩm định đối kháng & kiểm toán nội bộ (08:10-08:22 UTC) -> Bàn giao (08:24 UTC) -> Kiểm toán chiến thắng (08:25-08:31 UTC).
-   - **Phase B (Cheating Detection / Forensic Check):** Đạt chuẩn (PASS). Hoàn toàn không có mã giả (dummy facades), không có giá trị gán cứng (hardcoded bypass), không có tệp kết quả giả lập sẵn. Mã băm SHA-256 được tính toán động thật bằng `hash_file('sha256', ...)` và `hash('sha256', ...)`.
-   - **Phase C (Independent Test Execution):** Đạt chuẩn 100% qua CLI:
-     - Backend OCOP: `php artisan test --filter=Ocop` đạt **49/49 passed (389 assertions)** trong 2.90s.
-     - Backend Toàn diện: `php artisan test` đạt **122/122 passed (673 assertions)**, 0 regression.
-     - Frontend Build: `npm run build` thành công trong 7.06s (Exit code 0, 0 circular chunk warnings).
-     - Frontend Lint: `npm run lint` đạt Exit code 0 (0 errors, 0 warnings).
-     - Invariant Verification: `node frontend/e2e/empirical_math_and_ux_check.mjs` đạt **86/86 assertions passed**.
-     - Database Seeder: `php artisan db:seed --class=OcopSweetPalermoCriteriaSeeder` nạp sạch sẽ, có tính idempotent chạy lại an toàn.
-
----
-
-## 2. LOGIC CHAIN (Chuỗi Logic Thực thi & Đáp ứng Yêu cầu)
-
-1. **R1 — Cây Tiêu chí OCOP QĐ 148 & Cơ chế Quản lý Phiên bản:**
-   - Đã số hóa đầy đủ cấu trúc 3 phần theo Quyết định 148/QĐ-TTg cho Rau củ quả tươi (Ớt chuông Sweet Palermo Đỏ Đà Lạt): Phần A (40.0đ), Phần B (25.0đ), Phần C (35.0đ) = 100.0 điểm tuyệt đối.
-   - 11 tiêu chí, 11 chỉ tiêu, 11 scoring rules, 6 điều kiện khống chế bắt buộc (VietGAP 4 sao, BVMT, nguyên liệu địa phương, tem QR, tuân thủ PHI, đầy đủ hồ sơ).
-   - Phiên bản `OCOP-QD148-2023-FRESH` được phát hành sang trạng thái `PUBLISHED` (bất biến, không thể sửa đổi trái phép).
-
-2. **R2 — Biểu mẫu OCOP Chuẩn (Biểu 01, 02, 03) & Cơ chế Tự chấm điểm Thân thiện:**
-   - Số hóa chuẩn xác Biểu 01 (Phiếu đăng ký), Biểu 02 (Báo cáo tự đánh giá gồm 4 phần và phụ lục 14 minh chứng MC01-MC14), Biểu 03 (Báo cáo xác nhận UBND Phường 12 / TP. Đà Lạt).
-   - Nông dân hoàn toàn chủ động click chọn điểm theo thực tế; hệ thống cung cấp nút bấm "Gợi ý thông minh" phân tích tự động dữ liệu vùng trồng, sản lượng, VietGAP, nhật ký PHI để đề xuất mức điểm tối ưu (98.5đ).
-   - Tự động cộng tổng điểm, kiểm tra điều kiện cứng, dự báo hạng sao và tính toán thời gian thực % hoàn thiện hồ sơ.
-
-3. **R3 — Quản lý Kho Minh chứng Số hóa & Toàn vẹn Dữ liệu:**
-   - Tính toán và kiểm tra mã băm SHA-256 (64 hex characters) cho mọi tài liệu tải lên hoặc trích xuất tự động.
-   - Quản lý phiên bản minh chứng (v1.0 -> v1.1), chuyển bản cũ sang ARCHIVED khi có bản mới, không xóa cứng dữ liệu lịch sử.
-   - Trích xuất tự động dữ liệu HTX (vùng trồng 280 ha, danh sách 165 xã viên, nhật ký PHI) thành minh chứng số hóa có mã hash SHA-256.
-
-4. **R4 — Cải tiến Giao diện Frontend Thân thiện cho Nông dân (Farmer-Centric UX):**
-   - Thiết kế Wizard từng bước rõ ràng, thẻ chọn điểm dạng Card-based Radio to bản (touch target $\ge 52\text{px}$), loại bỏ select box nhỏ.
-   - Ngôn ngữ mộc mạc, chú thích dễ hiểu cho thuật ngữ hành chính; chỉ báo trạng thái 3 màu (Xanh, Vàng, Đỏ).
-   - Tích hợp modal xem trước và in ấn A4 chuẩn thể thức văn bản hành chính Việt Nam, hỗ trợ `@media print` in sạch không dính UI website.
-   - Sửa cấu hình ESLint flat config và khử hoàn toàn cảnh báo circular chunks.
-
----
-
-## 3. CAVEATS (Lưu ý Vận hành)
-
-- Cây tiêu chí sau khi phát hành mang trạng thái `PUBLISHED` bất biến. Khi có quyết định thay đổi quy chuẩn tiêu chí mới trong tương lai, cần tạo một bản ghi `criteria_versions` mới với mã phiên bản mới thay vì chỉnh sửa đè lên phiên bản hiện tại.
-- Để sử dụng tính năng in ấn sắc nét nhất cho Biểu 01, 02, 03, khuyến nghị người dùng chọn khổ giấy A4 và đánh dấu tùy chọn "Background graphics" trong hộp thoại in của trình duyệt.
-
----
-
-## 4. CONCLUSION (Kết luận & Quyết định Nghiệm thu)
-
-- Dự án số hóa quy trình hồ sơ OCOP theo Quyết định 148/QĐ-TTg đã hoàn thành 100% các tiêu chí và yêu cầu đề ra.
-- Quy trình kiểm toán độc lập đã xác nhận phán quyết cao nhất: **VICTORY CONFIRMED**.
-- Toàn bộ cron giám sát và các agent trực thuộc đã được thu hồi và dọn dẹp sạch sẽ theo đúng quy chế Sentinel.
-
----
-
-## 5. VERIFICATION METHOD (Phương pháp Kiểm chứng)
-
-Người dùng hoặc kiểm toán viên có thể tái hiện kiểm chứng độc lập bằng các lệnh sau:
-1. **Kiểm thử Backend OCOP:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\backend
-   php artisan test --filter=Ocop
-   ```
-2. **Kiểm thử Toàn diện Backend:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\backend
-   php artisan test
-   ```
-3. **Biên dịch Frontend:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\frontend
-   npm run build
-   ```
-4. **Kiểm tra Lint Frontend:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\frontend
-   npm run lint
-   ```
-5. **Kiểm thử Toán học & UX Đối kháng Frontend:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\frontend
-   node e2e/empirical_math_and_ux_check.mjs
-   ```
-6. **Kiểm tra Nạp Dữ liệu Tiêu chí:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\backend
-   php artisan db:seed --class=OcopSweetPalermoCriteriaSeeder
-   ```
+## Verification Method & Results
+- **Git Branch**: `feature/production-farming-harvest-traceability` (Working tree clean).
+- **Atomic Commits**:
+  - `0a16d92 feat(production): manage production hierarchy, standard plot codes, and visual plot status`
+  - `cb9b5b8 feat(farming-logs): implement TT02/2024 10-field farming logs, PHI guard quarantine, and quick mobile logging`
+  - `54fc7eb feat(harvest): enforce harvest PHI hard blocker and harvest management endpoints`
+  - `9247de8 feat(kcs): implement 3-tier KCS inspection, Grade A volume security, and finance debt offset`
+  - `84704a4 feat(traceability): integrate GS1 lot identifier, ISO/IEC 18004 QR code SVG, and public traceability view`
+  - `0b7acaa test(agriculture): add comprehensive 4-tier E2E tests, adversarial probes, and audit verification artifacts`
+- **Backend Test Suite**:
+  - `php artisan test --filter=Agriculture`: 50 passed (281 assertions)
+  - `php artisan test --filter=CropSeason`: 8 passed (29 assertions)
+  - Tổng số test nông nghiệp: 58/58 passed, 0 failures, 0 regressions.
+- **Frontend Test & Build**:
+  - `npm run build`: 2,375 modules transformed, exit code 0.
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `node scripts/verify_frontend_challenger_2.mjs`: 29/29 checks passed.
+- **Independent Victory Auditor Verdict**: **VICTORY CONFIRMED**.

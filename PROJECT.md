@@ -35,12 +35,12 @@
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | Production Hierarchy & Plot Status UI | Quản lý Cooperative, PUC, FarmPlot (`PLOT-[HTX]-[MaXaVien]-[STT]`), CropSeason; visual status 3 màu & đếm ngược PHI | none | IN_PROGRESS |
-| M2 | Farming Logs TT02 & PHI Guard | 10 trường TT02/2024, PHI calculation, chuyển plot `IN_QUARANTINE`, Quick Mobile Logging UI | M1 | PLANNED |
-| M3 | Harvest Hard Blocker & GS1 Lot Numbering | Chốt chặn an toàn `ERR_HARVEST_PHI_VIOLATION`, bộ sinh mã lô GS1 chuẩn | M1, M2 | PLANNED |
-| M4 | 3-Tier KCS & System Integration | Quy trình KCS 3 cấp (Gate, Lab, Grading), liên thông Kho vật tư, Tài chính thanh toán, OCOP SHA-256 | M2, M3 | PLANNED |
-| M5 | Public Traceability & QR Label Printing | API & Page `/public/trace/{lotId}` không Auth, modal in tem nhãn QR SVG | M3, M4 | PLANNED |
-| M6 | Full E2E Verification, Audit & Atomic Commits | Chạy 100% backend/frontend tests, Forensic Audit sạch, thực hiện atomic commits | M1, M2, M3, M4, M5 | PLANNED |
+| M1 | Production Hierarchy & Plot Status UI | Quản lý Cooperative, PUC, FarmPlot (`PLOT-[HTX]-[MaXaVien]-[STT]`), CropSeason; visual status 3 màu & đếm ngược PHI | none | DONE |
+| M2 | Farming Logs TT02 & PHI Guard | 10 trường TT02/2024, PHI calculation, chuyển plot `IN_QUARANTINE`, Quick Mobile Logging UI | M1 | DONE |
+| M3 | Harvest Hard Blocker & GS1 Lot Numbering | Chốt chặn an toàn `ERR_HARVEST_PHI_VIOLATION`, bộ sinh mã lô GS1 chuẩn | M1, M2 | DONE |
+| M4 | 3-Tier KCS & System Integration | Quy trình KCS 3 cấp (Gate, Lab, Grading), liên thông Kho vật tư, Tài chính thanh toán, OCOP SHA-256 | M2, M3 | DONE |
+| M5 | Public Traceability & QR Label Printing | API & Page `/public/trace/{lotId}` không Auth, modal in tem nhãn QR SVG ISO/IEC 18004 | M3, M4 | DONE |
+| M6 | Full E2E Verification, Audit & Atomic Commits | Chạy 100% backend/frontend tests, Forensic Audit CLEAN, thực hiện atomic commits | M1, M2, M3, M4, M5 | DONE |
 
 ## Interface Contracts
 ### Agriculture ↔ Warehouse (Kho Vật tư)
