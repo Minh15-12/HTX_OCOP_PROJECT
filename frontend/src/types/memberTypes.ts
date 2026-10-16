@@ -109,6 +109,7 @@ export interface Member {
   status: MemberStatus;
   join_date: string;
   current_debt: number; // Công nợ tồn đọng (vật tư, thủy nông)
+  credit_limit?: number; // Hạn mức nợ vật tư trả chậm cho phép (đ)
   annual_product_output_kg: number;
   notary_document_url?: string;
   deleted_at?: string; // For Soft Delete

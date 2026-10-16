@@ -63,6 +63,7 @@ export const MemberWizard: React.FC<MemberWizardProps> = ({
     bank_name: '',
     bank_account: '',
     account_holder: '',
+    credit_limit: 15000000,
     notes: '',
   });
 
@@ -104,6 +105,7 @@ export const MemberWizard: React.FC<MemberWizardProps> = ({
         bank_name: '',
         bank_account: '',
         account_holder: '',
+        credit_limit: 15000000,
         notes: '',
       });
     }
@@ -257,6 +259,7 @@ export const MemberWizard: React.FC<MemberWizardProps> = ({
       status: 'PENDING',
       join_date: new Date().toISOString().split('T')[0],
       current_debt: 0,
+      credit_limit: wizardForm.credit_limit || 15000000,
       annual_product_output_kg: 0,
       notary_document_url: wizardUploadedFile ? URL.createObjectURL(wizardUploadedFile) : undefined,
     };
@@ -807,6 +810,22 @@ export const MemberWizard: React.FC<MemberWizardProps> = ({
                   </div>
                 </>
               )}
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Hạn mức nợ vật tư trả chậm cho phép (VNĐ)
+                </label>
+                <input
+                  type="number"
+                  step="1000000"
+                  value={wizardForm.credit_limit}
+                  onChange={(e) => setWizardForm({ ...wizardForm, credit_limit: parseInt(e.target.value) || 0 })}
+                  className="w-full md:w-1/2 px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm font-black text-emerald-800"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Mặc định 15.000.000 ₫ (Theo Luật HTX 2023). Thủ kho sẽ cảnh báo và chặn xuất kho ứng trước nếu dư nợ hiện tại vượt quá hạn mức này.
+                </p>
+              </div>
 
               <div className="md:col-span-2 mt-4 p-5 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-100 flex items-start gap-3 shadow-sm">
                 <AlertTriangle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
