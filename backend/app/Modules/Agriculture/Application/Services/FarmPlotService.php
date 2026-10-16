@@ -132,4 +132,66 @@ class FarmPlotService
             ->orderBy('start_date', 'desc')
             ->get();
     }
+
+    public function updateFarmPlot(string $plotId, array $data): FarmPlotModel
+    {
+        $plot = $this->getPlotById($plotId);
+        $before = $plot->toArray();
+
+        $fillable = array_intersect_key($data, array_flip([
+            'plot_code', 'area', 'status', 'land_relation',
+        ]));
+
+        if (isset($fillable['plot_code']) && $fillable['plot_code'] !== $plot->plot_code) {
+            $exists = FarmPlotModel::where('production_unit_id', $plot->production_unit_id)
+                ->where('plot_code', $fillable['plot_code'])
+                ->where('id', '!=', $plot->id)
+                ->exists();
+            if ($exists) {
+                throw new DomainException("Mã thửa đất [{$fillable['plot_code']}] đã tồn tại trong Vùng sản xuất này", 'DUPLICATE_PLOT_CODE', null, 409);
+            }
+        }
+
+        $plot->update($fillable);
+
+        $this->auditService->log(
+            action: 'FARM_PLOT_UPDATED',
+            entityType: 'FarmPlot',
+            entityId: $plot->id,
+            before: $before,
+            after: $plot->toArray(),
+            cooperativeId: $plot->productionUnit->cooperative_id
+        );
+
+        return $plot->fresh(['productionUnit', 'assignments.member']);
+    }
+
+    public function deleteFarmPlot(string $plotId): bool
+    {
+        $plot = $this->getPlotById($plotId);
+
+        // Foreign Key Guard: Do not allow hard-delete if farming logs or harvests exist
+        $hasLogs = \Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel::where('plot_id', $plot->id)->exists();
+        $hasHarvests = \Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel::where('plot_id', $plot->id)->exists();
+
+        if ($hasLogs || $hasHarvests) {
+            throw new DomainException(
+                'Không thể xóa thửa đất đã có dữ liệu nhật ký canh tác hoặc sản lượng thu hoạch. Vui lòng chuyển trạng thái sang [NGƯNG CANH TÁC] hoặc [NGHỈ VỤ].',
+                'ERR_PLOT_HAS_ACTIVITY_RECORDS',
+                null,
+                422
+            );
+        }
+
+        $this->auditService->log(
+            action: 'FARM_PLOT_DELETED',
+            entityType: 'FarmPlot',
+            entityId: $plot->id,
+            before: $plot->toArray(),
+            cooperativeId: $plot->productionUnit->cooperative_id
+        );
+
+        return (bool) $plot->delete();
+    }
 }
+

@@ -4,6 +4,7 @@ namespace Modules\Ocop\Evaluation\Presentation\Http\Controllers;
 
 use App\Shared\Presentation\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Modules\Ocop\Evaluation\Application\DTOs\ApproveFinalDecisionDTO;
 use Modules\Ocop\Evaluation\Application\DTOs\RejectApplicationDTO;
 use Modules\Ocop\Evaluation\Application\Services\FinalDecisionService;
@@ -16,6 +17,16 @@ class FinalDecisionController extends BaseController
     public function __construct(
         private readonly FinalDecisionService $decisionService
     ) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $decisions = $this->decisionService->listDecisions($request->all());
+
+        return $this->success(
+            data: FinalDecisionResource::collection($decisions),
+            message: 'Tải danh sách quyết định công nhận OCOP thành công'
+        );
+    }
 
     public function show(string $applicationId): JsonResponse
     {

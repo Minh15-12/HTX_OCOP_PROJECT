@@ -132,4 +132,20 @@ class FinalDecisionService
 
         return $decision;
     }
+
+    public function listDecisions(array $filters = []): \Illuminate\Database\Eloquent\Collection
+    {
+        $query = FinalDecisionModel::with(['application.cooperative', 'application.product']);
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['final_classification'])) {
+            $query->where('final_classification', $filters['final_classification']);
+        }
+
+        return $query->orderBy('decision_date', 'desc')->get();
+    }
 }
+

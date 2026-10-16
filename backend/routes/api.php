@@ -120,6 +120,8 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::get('/production-units/{unit_id}/plots', [FarmPlotController::class, 'indexByUnit'])->name('api.production-units.plots.index');
     Route::post('/production-units/{unit_id}/plots', [FarmPlotController::class, 'storeInUnit'])->name('api.production-units.plots.store');
     Route::get('/farm-plots/{plot_id}', [FarmPlotController::class, 'show'])->name('api.farm-plots.show');
+    Route::patch('/farm-plots/{plot_id}', [FarmPlotController::class, 'update'])->name('api.farm-plots.update');
+    Route::delete('/farm-plots/{plot_id}', [FarmPlotController::class, 'destroy'])->name('api.farm-plots.destroy');
     Route::get('/farm-plots/{plot_id}/member-assignments', [FarmPlotController::class, 'listAssignments'])->name('api.farm-plots.assignments.index');
     Route::post('/farm-plots/{plot_id}/member-assignments', [FarmPlotController::class, 'assignMember'])->name('api.farm-plots.assignments.store');
 
@@ -149,12 +151,13 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     // Harvest & Lot APIs (Section 19 of 12_API_SPECIFICATION.md)
     Route::get('/harvests', [HarvestController::class, 'index'])->name('api.harvests.index');
     Route::post('/harvests', [HarvestController::class, 'store'])->name('api.harvests.store');
+    Route::post('/harvests/settle-season', [HarvestController::class, 'settleSeason'])->name('api.harvests.settle-season');
+    Route::get('/harvests/settlements', [HarvestController::class, 'listSettlements'])->name('api.harvests.settlements.index');
     Route::get('/harvests/{id}', [HarvestController::class, 'show'])->name('api.harvests.show');
     Route::patch('/harvests/{id}', [HarvestController::class, 'update'])->name('api.harvests.update');
     Route::post('/harvests/{id}/kcs/gate-check', [HarvestController::class, 'gateCheck'])->name('api.harvests.gate-check');
     Route::post('/harvests/{id}/kcs/quick-lab', [HarvestController::class, 'quickLab'])->name('api.harvests.quick-lab');
     Route::post('/harvests/{id}/kcs/grading', [HarvestController::class, 'grading'])->name('api.harvests.grading');
-    Route::post('/harvests/settle-season', [HarvestController::class, 'settleSeason'])->name('api.harvests.settle-season');
 
     Route::get('/lots', [LotController::class, 'index'])->name('api.lots.index');
     Route::post('/lots', [LotController::class, 'store'])->name('api.lots.store');
@@ -269,6 +272,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/ocop/evaluation-sessions/{sessionId}/scores', [EvaluatorScoreController::class, 'store'])->name('api.ocop.evaluation-sessions.scores.store');
     Route::post('/ocop/evaluation-scores/{id}/lock', [EvaluatorScoreController::class, 'lock'])->name('api.ocop.evaluation-scores.lock');
     Route::post('/ocop/evaluation-sessions/{id}/consolidate', [ConsolidatedResultController::class, 'consolidate'])->name('api.ocop.evaluation-sessions.consolidate');
+    Route::get('/ocop/decisions', [FinalDecisionController::class, 'index'])->name('api.ocop.decisions.index');
     Route::get('/ocop/applications/{applicationId}/decision', [FinalDecisionController::class, 'show'])->name('api.ocop.applications.decision.show');
     Route::post('/ocop/applications/{applicationId}/approve', [FinalDecisionController::class, 'approve'])->name('api.ocop.applications.approve');
     Route::post('/ocop/applications/{applicationId}/reject', [FinalDecisionController::class, 'reject'])->name('api.ocop.applications.reject');

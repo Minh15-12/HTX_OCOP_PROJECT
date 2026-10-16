@@ -140,4 +140,42 @@ class HarvestSettlementService
             ];
         });
     }
+
+    public function listSeasonSettlements(array $filters = []): array
+    {
+        $coopId = $this->tenantContext->hasTenant() ? $this->tenantContext->getCooperativeId() : null;
+
+        $query = \Modules\Finance\Infrastructure\Persistence\Models\DebtSettlementModel::with([
+            'debt',
+            'cashTransaction'
+        ])->where(function ($q) {
+            $q->where('payment_method', 'HARVEST_OFFSET')
+              ->orWhere('settlement_type', 'HARVEST_OFFSET');
+        });
+
+        if ($coopId) {
+            $query->where(function ($q) use ($coopId) {
+                $q->where('cooperative_id', $coopId)
+                  ->orWhereHas('debt', fn($dq) => $dq->where('cooperative_id', $coopId));
+            });
+        }
+
+        $settlements = $query->orderBy('settlement_date', 'desc')->get();
+
+        return $settlements->map(function ($s) {
+            return [
+                'id' => $s->id,
+                'settlement_date' => $s->settlement_date ? (is_string($s->settlement_date) ? $s->settlement_date : $s->settlement_date->format('Y-m-d')) : date('Y-m-d'),
+                'amount' => (float) $s->amount,
+                'payment_method' => $s->payment_method,
+                'note' => $s->note,
+                'debt_code' => $s->debt?->debt_code ?? 'CN-001',
+                'member_id' => $s->debt?->counterparty_id,
+                'member_name' => $s->debt?->counterparty_name ?? 'Xã viên HTX',
+                'voucher_number' => $s->cashTransaction?->voucher_number ?? 'PC-QT-001',
+                'status' => $s->status ?? 'POSTED',
+            ];
+        })->toArray();
+    }
 }
+

@@ -188,4 +188,19 @@ class HarvestController extends BaseController
             message: 'Quyết toán sản lượng thu hoạch và cấn trừ nợ thành công'
         );
     }
+
+    public function listSettlements(Request $request, \Modules\Agriculture\Application\Services\HarvestSettlementService $settlementService): JsonResponse
+    {
+        if (!Gate::allows('AGRICULTURE.READ') && !Gate::allows('FINANCE.READ')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem lịch sử quyết toán mùa vụ', status: 403);
+        }
+
+        $settlements = $settlementService->listSeasonSettlements($request->all());
+
+        return ApiResponse::success(
+            data: $settlements,
+            message: 'Lấy danh sách các đợt quyết toán mùa vụ thành công'
+        );
+    }
 }
+

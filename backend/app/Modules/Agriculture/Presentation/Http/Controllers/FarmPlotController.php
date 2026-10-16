@@ -104,4 +104,40 @@ class FarmPlotController extends BaseController
             status: 201
         );
     }
+
+    public function update(string $plotId, Request $request): JsonResponse
+    {
+        if (!Gate::allows('AGRICULTURE.UPDATE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền cập nhật thông tin thửa đất', status: 403);
+        }
+
+        $request->validate([
+            'plot_code' => ['sometimes', 'string', 'max:50'],
+            'area' => ['sometimes', 'numeric', 'min:0.01'],
+            'status' => ['sometimes', 'string'],
+            'land_relation' => ['sometimes', 'array'],
+        ]);
+
+        $plot = $this->plotService->updateFarmPlot($plotId, $request->all());
+
+        return ApiResponse::success(
+            data: new FarmPlotResource($plot),
+            message: 'Cập nhật thửa đất thành công'
+        );
+    }
+
+    public function destroy(string $plotId): JsonResponse
+    {
+        if (!Gate::allows('AGRICULTURE.DELETE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xóa thửa đất', status: 403);
+        }
+
+        $this->plotService->deleteFarmPlot($plotId);
+
+        return ApiResponse::success(
+            data: ['id' => $plotId],
+            message: 'Xóa thửa đất thành công'
+        );
+    }
 }
+
