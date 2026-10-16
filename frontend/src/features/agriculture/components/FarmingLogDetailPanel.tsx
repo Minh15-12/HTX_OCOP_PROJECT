@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { FarmingLog } from '@/types/agriculture';
 import { ACTIVITY_TYPES_META } from '@/types/agriculture';
+import { Lock } from 'lucide-react';
 
 interface FarmingLogDetailPanelProps {
   log: FarmingLog | null;
@@ -25,6 +26,7 @@ interface FarmingLogDetailPanelProps {
   onEdit: (log: FarmingLog) => void;
   onDelete: (log: FarmingLog) => void;
   onViewPhoto: (photoUrl: string) => void;
+  isReadOnly?: boolean;
 }
 
 export const FarmingLogDetailPanel: React.FC<FarmingLogDetailPanelProps> = ({
@@ -33,6 +35,7 @@ export const FarmingLogDetailPanel: React.FC<FarmingLogDetailPanelProps> = ({
   onEdit,
   onDelete,
   onViewPhoto,
+  isReadOnly = false,
 }) => {
   if (!log) {
     return (
@@ -80,21 +83,30 @@ export const FarmingLogDetailPanel: React.FC<FarmingLogDetailPanelProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={() => onEdit(log)}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50/50 transition cursor-pointer"
-              title="Chỉnh sửa lượt ghi này"
-            >
-              <Pencil className="h-3.5 w-3.5 text-slate-500" />
-              <span>Sửa</span>
-            </button>
-            <button
-              onClick={() => onDelete(log)}
-              className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 shadow-2xs transition cursor-pointer"
-              title="Xóa lượt ghi này"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            {isReadOnly ? (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                <Lock className="h-3.5 w-3.5 text-slate-500" />
+                <span>Khóa kiểm toán OCOP</span>
+              </span>
+            ) : (
+              <>
+                <button
+                  onClick={() => onEdit(log)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50/50 transition cursor-pointer"
+                  title="Chỉnh sửa lượt ghi này"
+                >
+                  <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                  <span>Sửa</span>
+                </button>
+                <button
+                  onClick={() => onDelete(log)}
+                  className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 shadow-2xs transition cursor-pointer"
+                  title="Xóa lượt ghi này"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
             {onClose && (
               <button
                 onClick={onClose}

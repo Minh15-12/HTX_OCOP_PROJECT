@@ -22,8 +22,11 @@ import {
   Columns2,
   Maximize2,
   Check,
+  Lock,
 } from 'lucide-react';
 import { fetchFarmingLogs, deleteFarmingLog } from '@/services/farmingLogApi';
+import { fetchCropSeasons, CropSeason } from '@/services/cropSeasonApi';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { QuickMobileLogModal } from '../components/QuickMobileLogModal';
 import { FarmingLogDetailModal } from '../components/FarmingLogDetailModal';
 import { FarmingLogDetailPanel } from '../components/FarmingLogDetailPanel';
@@ -39,6 +42,7 @@ export const FarmingLogsPage: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<string>('ALL');
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string>('ALL');
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
@@ -52,7 +56,18 @@ export const FarmingLogsPage: React.FC = () => {
   const [logToDelete, setLogToDelete] = useState<FarmingLog | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: logsList = [], isLoading } = useQuery<FarmingLog[]>({
+  const { data: seasonsData } = useQuery({
+    queryKey: ['cropSeasons'],
+    queryFn: () => fetchCropSeasons(),
+  });
+  const seasons: CropSeason[] = Array.isArray(seasonsData?.data)
+    ? seasonsData.data
+    : (seasonsData as any) || [];
+
+  const currentSeason = seasons.find((s) => s.id === selectedSeasonId);
+  const isSeasonReadOnly = currentSeason?.status === 'COMPLETED';
+
+  const { data: rawLogsList = [], isLoading } = useQuery<FarmingLog[]>({
     queryKey: ['farming-logs', search, selectedActivity],
     queryFn: async () => {
       return fetchFarmingLogs({
@@ -61,6 +76,11 @@ export const FarmingLogsPage: React.FC = () => {
       });
     },
   });
+
+  const logsList = useMemo(() => {
+    if (selectedSeasonId === 'ALL') return rawLogsList;
+    return rawLogsList.filter((l) => l.crop_season_id === selectedSeasonId);
+  }, [rawLogsList, selectedSeasonId]);
 
   // Automatically select first log if none selected
   const activeLog = useMemo(() => {
@@ -162,13 +182,23 @@ export const FarmingLogsPage: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsLogModalOpen(true)}
-          className="min-h-[48px] shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20 transition hover:-translate-y-0.5 hover:bg-emerald-700 active:translate-y-0 cursor-pointer"
-        >
-          <Plus className="w-5 h-5 stroke-[2.5]" />
-          <span>Ghi nhật ký mới (TT02)</span>
-        </button>
+        {isSeasonReadOnly ? (
+          <div
+            className="min-h-[48px] shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-100 border border-slate-300 px-5 py-3 text-sm font-extrabold text-slate-500 cursor-not-allowed shadow-2xs"
+            title="Mùa vụ đã hoàn tất và quyết toán - Dữ liệu đã đóng băng"
+          >
+            <Lock className="w-4 h-4 text-slate-500" />
+            <span>Mùa vụ đã khóa (Read-only)</span>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsLogModalOpen(true)}
+            className="min-h-[48px] shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20 transition hover:-translate-y-0.5 hover:bg-emerald-700 active:translate-y-0 cursor-pointer"
+          >
+            <Plus className="w-5 h-5 stroke-[2.5]" />
+            <span>Ghi nhật ký mới (TT02)</span>
+          </button>
+        )}
       </div>
 
       {/* 2. Top 4 KPI Metric Cards (Implements Hình 3: Balanced Overview) */}
@@ -250,6 +280,26 @@ export const FarmingLogsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Notice Banner: Season Frozen / Read-Only Guard */}
+      {isSeasonReadOnly && (
+        <div className="p-4 bg-slate-100 border border-slate-300 rounded-2xl text-slate-800 flex items-start gap-3.5 shadow-2xs animate-fade-in">
+          <Lock className="w-5 h-5 text-slate-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <h4 className="font-extrabold text-slate-900 text-sm">
+                Mùa vụ "{currentSeason?.name}" Đã Hoàn Tất Quyết Toán (Trạng thái: COMPLETED)
+              </h4>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-slate-200 text-slate-800 border border-slate-300">
+                ĐÃ ĐÓNG BĂNG DỮ LIỆU
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+              Dữ liệu canh tác của mùa vụ này đã được khóa cố định nhằm phục vụ thẩm định hồ sơ OCOP và kiểm toán VietGAP theo quy định pháp lý. Hệ thống tự động vô hiệu hóa các thao tác tạo mới, sửa đổi hoặc xóa nhật ký.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 3. Table Toolbar with Search, Filter, Excel Export, and View Mode Toggle */}
       <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-subtle flex flex-wrap items-center justify-between gap-3">
         <div className="relative flex-1 min-w-[280px]">
@@ -264,6 +314,23 @@ export const FarmingLogsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Season Filter Dropdown */}
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
+            <select
+              value={selectedSeasonId}
+              onChange={(e) => setSelectedSeasonId(e.target.value)}
+              className="min-h-[38px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-emerald-500"
+            >
+              <option value="ALL">Tất cả mùa vụ</option>
+              {seasons.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.status === 'COMPLETED' ? 'Đã đóng / Read-only' : s.status})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-500 shrink-0" />
             <select
@@ -324,8 +391,17 @@ export const FarmingLogsPage: React.FC = () => {
 
           <div className="overflow-x-auto">
             {isLoading ? (
-              <div className="p-12 text-center text-slate-400 text-xs font-medium">
-                Đang tải nhật ký canh tác...
+              <div className="p-4 space-y-3">
+                {Array.from({ length: 5 }).map((_, idx) => (
+                  <div key={idx} className="flex items-center gap-4 py-3 border-b border-slate-100 animate-pulse">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-16 ml-auto" />
+                  </div>
+                ))}
               </div>
             ) : logsList.length === 0 ? (
               <div className="p-12 text-center text-slate-400 text-xs font-medium">
@@ -431,20 +507,24 @@ export const FarmingLogsPage: React.FC = () => {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => setSelectedLogForEdit(log)}
-                              title="Chỉnh sửa nhật ký"
-                              className="p-1.5 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setLogToDelete(log)}
-                              title="Xóa nhật ký canh tác"
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {!isSeasonReadOnly && (
+                              <>
+                                <button
+                                  onClick={() => setSelectedLogForEdit(log)}
+                                  title="Chỉnh sửa nhật ký"
+                                  className="p-1.5 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => setLogToDelete(log)}
+                                  title="Xóa nhật ký canh tác"
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -463,6 +543,7 @@ export const FarmingLogsPage: React.FC = () => {
             onEdit={(log) => setSelectedLogForEdit(log)}
             onDelete={(log) => setLogToDelete(log)}
             onViewPhoto={(photoUrl) => setSelectedPhoto(photoUrl)}
+            isReadOnly={isSeasonReadOnly}
           />
         )}
       </div>
