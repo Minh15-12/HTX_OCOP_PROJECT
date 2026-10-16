@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { navigationConfig } from '@/router/navigation';
+import { navigationConfig, NavItem } from '@/router/navigation';
 import { useTenantContextStore } from '@/stores/tenantContextStore';
+import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/utils/cn';
 import { Sprout, Settings } from 'lucide-react';
 
@@ -86,6 +87,30 @@ export const Sidebar: React.FC = () => {
     return { line1: 'HTX NÔNG NGHIỆP', line2: uppercase || 'XANH PHÚ THỊNH' };
   };
 
+  const { user } = useAuthStore();
+  const userRoleNames = (user?.roles || []).map((r: any) =>
+    (typeof r === 'string' ? r : r?.name || '').toUpperCase()
+  );
+  const isAdmin = userRoleNames.some((r) =>
+    ['ADMIN', 'ROLE_ADMIN', 'SUPER_ADMIN', 'CHAIRMAN', 'HTX_MANAGER'].includes(r)
+  );
+
+  const isItemVisible = (item: NavItem) => {
+    if (!item.roles || item.roles.length === 0) return true;
+    if (isAdmin) return true;
+    return item.roles.some((role) => {
+      const upper = role.toUpperCase();
+      return userRoleNames.includes(upper) || userRoleNames.includes(`ROLE_${upper}`);
+    });
+  };
+
+  const visibleGroups = navigationConfig
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(isItemVisible),
+    }))
+    .filter((group) => group.items.length > 0);
+
   const brand = formatBrandHeader(currentName);
 
   return (
@@ -107,7 +132,7 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* Navigation Groups */}
-        {navigationConfig.map((group, idx) => (
+        {visibleGroups.map((group, idx) => (
           <div key={idx} className="flex flex-col gap-1">
             <h4 className="px-2 text-[10px] font-black tracking-wider text-emerald-300/70 uppercase">
               {group.groupTitle}

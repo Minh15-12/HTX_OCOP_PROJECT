@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Coins,
   Settings,
+  CheckSquare,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -42,70 +43,69 @@ export const navigationConfig: NavGroup[] = [
     groupTitle: 'TỔNG QUAN',
     items: [
       {
-        title: 'Tổng quan',
+        title: 'Bàn làm việc tổng quan',
         path: '/dashboard',
         icon: LayoutDashboard,
       },
     ],
   },
   {
-    groupTitle: 'QUẢN LÝ HTX',
+    groupTitle: 'QUẢN TRỊ HTX',
     items: [
       {
-        title: 'Hồ sơ HTX',
+        title: 'Hồ sơ pháp lý HTX',
         path: '/cooperative',
         icon: Building2,
       },
       {
-        title: 'Xã viên',
+        title: 'Xã viên HTX',
         path: '/members',
         icon: Users,
       },
       {
-        title: 'Vốn góp',
+        title: 'Sổ vốn điều lệ',
         path: '/capital',
         icon: Wallet,
       },
       {
-        title: 'Phân chia lợi nhuận',
+        title: 'Phân phối thặng dư',
         path: '/profit-distribution',
         icon: TrendingUp,
       },
     ],
   },
   {
-    groupTitle: 'QUẢN LÝ NGHIỆP VỤ',
+    groupTitle: 'SẢN XUẤT NÔNG NGHIỆP',
     items: [
       {
-        title: 'Vùng trồng',
+        title: 'Vùng trồng & Thửa đất',
         path: '/agriculture/plots',
         icon: Sprout,
       },
       {
-        title: 'Mùa vụ',
+        title: 'Kế hoạch Mùa vụ',
         path: '/agriculture/seasons',
         icon: Calendar,
       },
       {
-        title: 'Sản xuất & Nhật ký',
+        title: 'Nhật ký canh tác điện tử',
         path: '/agriculture/logs',
         icon: BookOpen,
       },
       {
-        title: 'Thu hoạch & Truy xuất',
+        title: 'Thu hoạch & Lô tem GS1',
         path: '/agriculture/harvests',
         icon: Wheat,
       },
     ],
   },
   {
-    groupTitle: 'KHO & SẢN PHẨM',
+    groupTitle: 'KHO VẬT TƯ & SẢN PHẨM',
     items: [
       {
-        title: 'Vật tư - Nông cụ',
+        title: 'Vật tư & Nông cụ',
         path: '/inventory/materials',
         icon: Warehouse,
-        badge: { text: '2', color: 'red' }, // 2 ít tồn
       },
       {
         title: 'Sản phẩm OCOP',
@@ -118,10 +118,15 @@ export const navigationConfig: NavGroup[] = [
     groupTitle: 'HỒ SƠ & ĐÁNH GIÁ OCOP (QĐ 148)',
     items: [
       {
-        title: 'Hồ sơ & Chấm điểm OCOP',
+        title: 'Bộ Tiêu chí OCOP',
+        path: '/ocop/criteria',
+        icon: CheckSquare,
+      },
+      {
+        title: 'Hồ sơ & Tự đánh giá',
         path: '/ocop/dossiers',
         icon: Award,
-        badge: { text: '4 hồ sơ', color: 'green' },
+        badge: { text: '1', color: 'green' },
       },
       {
         title: 'Kho Minh chứng số',
@@ -129,7 +134,18 @@ export const navigationConfig: NavGroup[] = [
         icon: FileCheck,
       },
       {
-        title: 'Báo cáo & Thống kê OCOP',
+        title: 'Hội đồng thẩm định',
+        path: '/ocop/evaluation',
+        icon: ClipboardCheck,
+        roles: ['ADMIN', 'COUNCIL_EVALUATOR', 'HTX_MANAGER', 'CHAIRMAN'],
+      },
+      {
+        title: 'Quyết định & Cấp sao',
+        path: '/ocop/decisions',
+        icon: ShieldCheck,
+      },
+      {
+        title: 'Báo cáo sẵn sàng OCOP',
         path: '/ocop/reports',
         icon: BarChart3,
       },
@@ -139,13 +155,12 @@ export const navigationConfig: NavGroup[] = [
     groupTitle: 'TÀI CHÍNH & HỆ THỐNG',
     items: [
       {
-        title: 'Nhật ký giao dịch',
+        title: 'Sổ quỹ & Quyết toán',
         path: '/finance',
         icon: Coins,
-        badge: { text: '1', color: 'amber' }, // 1 chờ duyệt
       },
       {
-        title: 'Báo cáo - Thống kê',
+        title: 'Báo cáo tổng hợp',
         path: '/reports',
         icon: BarChart3,
       },
@@ -162,3 +177,4 @@ export const navigationConfig: NavGroup[] = [
     ],
   },
 ];
+
