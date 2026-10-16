@@ -51,43 +51,43 @@ const PLOTS_STORAGE_KEY = 'htx_ocop_farm_plots_db';
 const initialProductionUnits: ProductionUnit[] = [
   {
     id: 'pu-01',
-    unit_code: 'VT-LAMHA-01',
-    name: 'Vùng trồng Cà phê Arabica Cầu Đất',
-    crop: 'Cà phê Arabica',
-    area: 12.5,
-    status: 'ACTIVE',
-    puc_code: 'PUC-49-012-8821',
-    puc_status: 'ACTIVE',
-  },
-  {
-    id: 'pu-02',
-    unit_code: 'VT-DALAT-02',
-    name: 'Vùng trồng Ớt Chuông Sweet Palermo',
-    crop: 'Ớt chuông Sweet Palermo',
-    area: 8.0,
+    unit_code: 'VT-DALAT-01',
+    name: 'Vùng trồng Ớt Chuông Sweet Palermo Hòn Bồ (Phường 12 - Đà Lạt)',
+    crop: 'Ớt chuông Sweet Palermo Đỏ',
+    area: 15.0,
     status: 'ACTIVE',
     puc_code: 'PUC-49-015-9923',
     puc_status: 'ACTIVE',
   },
   {
+    id: 'pu-02',
+    unit_code: 'VT-DASAR-02',
+    name: 'Vùng trồng Liên Kết Đạ Sar - Lạc Dương (HTX Tân Tiến)',
+    crop: 'Ớt chuông Sweet Palermo Đỏ & Vàng',
+    area: 12.5,
+    status: 'ACTIVE',
+    puc_code: 'PUC-49-015-9924',
+    puc_status: 'ACTIVE',
+  },
+  {
     id: 'pu-03',
-    unit_code: 'VT-TEAML-03',
-    name: 'Vùng Chè Shan Tuyết Cổ Thụ',
-    crop: 'Chè Shan Tuyết',
-    area: 5.5,
-    status: 'UNDER_PUC_REVIEW',
+    unit_code: 'VT-DANHIM-03',
+    name: 'Vùng Trồng Công Nghệ Cao Đơn Dương',
+    crop: 'Ớt chuông Sweet Palermo Đỏ Baby',
+    area: 8.5,
+    status: 'ACTIVE',
     puc_code: 'PUC-49-018-0045',
     puc_status: 'UNDER_PUC_REVIEW',
   },
 ];
 
 const initialPlots: FarmPlot[] = [
-  { id: 'plot-101', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV001-01', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9404° N, 108.4583° E' },
-  { id: 'plot-102', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV001-02', area: 4.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-15', gps_coordinates: '11.9412° N, 108.4590° E' },
-  { id: 'plot-103', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV002-01', area: 4.0, status: 'ACTIVE', gps_coordinates: '11.9420° N, 108.4601° E' },
-  { id: 'plot-201', production_unit_id: 'pu-02', plot_code: 'PLOT-TT-XV003-01', area: 5.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-20', gps_coordinates: '11.9501° N, 108.4712° E' },
-  { id: 'plot-202', production_unit_id: 'pu-02', plot_code: 'PLOT-TT-XV003-02', area: 3.0, status: 'ACTIVE', gps_coordinates: '11.9510° N, 108.4720° E' },
-  { id: 'plot-301', production_unit_id: 'pu-03', plot_code: 'PLOT-TT-XV004-01', area: 5.5, status: 'FALLOW', gps_coordinates: '11.9600° N, 108.4800° E' },
+  { id: 'plot-101', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV001-01', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9501° N, 108.4712° E', unit_name: 'Nhà kính Hòn Bồ 01' },
+  { id: 'plot-102', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV001-02', area: 4.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-20', gps_coordinates: '11.9510° N, 108.4720° E', unit_name: 'Nhà kính Hòn Bồ 02' },
+  { id: 'plot-103', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV002-01', area: 6.5, status: 'ACTIVE', gps_coordinates: '11.9525° N, 108.4735° E', unit_name: 'Nhà kính Hòn Bồ 03' },
+  { id: 'plot-201', production_unit_id: 'pu-02', plot_code: 'PLOT-TT-XV003-01', area: 5.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-18', gps_coordinates: '11.9404° N, 108.4583° E', unit_name: 'Thửa Đất Đạ Sar 01' },
+  { id: 'plot-202', production_unit_id: 'pu-02', plot_code: 'PLOT-TT-XV003-02', area: 7.5, status: 'ACTIVE', gps_coordinates: '11.9412° N, 108.4590° E', unit_name: 'Thửa Đất Đạ Sar 02' },
+  { id: 'plot-301', production_unit_id: 'pu-03', plot_code: 'PLOT-TT-XV004-01', area: 8.5, status: 'FALLOW', gps_coordinates: '11.9600° N, 108.4800° E', unit_name: 'Thửa Nghỉ Cải Tạo Đơn Dương' },
 ];
 
 export function getStoredProductionUnits(): ProductionUnit[] {
@@ -131,6 +131,8 @@ export function saveAllPlotsToStorage(plots: FarmPlot[]): void {
     console.error('Error saving farm plots to localStorage', e);
   }
 }
+
+export const savePlotsToStorage = saveAllPlotsToStorage;
 
 export function getStoredPlotsByUnit(unitId: string): FarmPlot[] {
   const all = getAllStoredPlots();
@@ -252,3 +254,45 @@ export async function assignMemberToPlot(plotId: string, payload: { member_id: s
     return { data: { id: `ma-${Date.now()}`, member_id: payload.member_id, role: payload.role, assigned_date: new Date().toISOString().slice(0, 10) } };
   }
 }
+
+export async function updatePlot(
+  unitId: string,
+  plotId: string,
+  payload: Partial<FarmPlot>
+): Promise<FarmPlot> {
+  const allPlots = getAllStoredPlots();
+  const index = allPlots.findIndex((p) => p.id === plotId);
+  if (index === -1) {
+    throw new Error('Không tìm thấy thửa đất để cập nhật');
+  }
+
+  const updated: FarmPlot = {
+    ...allPlots[index],
+    ...payload,
+    ...(payload.area !== undefined && { area: Number(payload.area) }),
+  };
+
+  try {
+    await apiClient.patch(`/farm-plots/${plotId}`, payload);
+  } catch (err) {
+    console.warn('API updatePlot notice, using local fallback:', err);
+  }
+
+  allPlots[index] = updated;
+  saveAllPlotsToStorage(allPlots);
+  return updated;
+}
+
+export async function deletePlot(unitId: string, plotId: string): Promise<boolean> {
+  try {
+    await apiClient.delete(`/farm-plots/${plotId}`);
+  } catch (err) {
+    console.warn('API deletePlot notice, using local fallback:', err);
+  }
+
+  const allPlots = getAllStoredPlots();
+  const filtered = allPlots.filter((p) => p.id !== plotId);
+  saveAllPlotsToStorage(filtered);
+  return true;
+}
+

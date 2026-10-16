@@ -49,4 +49,9 @@ class FarmPlotModel extends Model
     {
         return $this->hasMany(MemberPlotAssignmentModel::class, 'plot_id');
     }
+
+    public function memberAssignments(): HasMany
+    {
+        return $this->assignments();
+    }
 }

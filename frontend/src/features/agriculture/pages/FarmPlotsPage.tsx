@@ -14,13 +14,21 @@ import {
   Users,
   ShieldAlert,
   UserCheck,
+  Trash2,
+  FileSpreadsheet,
+  AlertOctagon,
 } from 'lucide-react';
+import { PhiCountdownBadge } from '../components/PhiCountdownBadge';
+import { EditFarmPlotModal } from '../components/EditFarmPlotModal';
+import { exportToExcel } from '@/utils/exportUtils';
+import { useToast } from '@/components/ui/ToastNotification';
 import {
   fetchProductionUnits,
   createProductionUnit,
   updateProductionUnit,
   fetchPlotsByUnit,
   createPlot,
+  deletePlot,
   fetchPlotMemberAssignments,
   assignMemberToPlot,
   type ProductionUnit,
@@ -31,19 +39,19 @@ import {
 const statusText: Record<string, string> = {
   ACTIVE: 'Đang canh tác',
   PREPARING: 'Chuẩn bị đất',
-  FALLOW: 'Đang nghỉ',
-  INACTIVE: 'Ngưng',
+  FALLOW: 'Đang nghỉ vụ',
+  INACTIVE: 'Ngưng canh tác',
   UNDER_PUC_REVIEW: 'Chờ đánh giá PUC ⚠️',
   IN_QUARANTINE: 'Cách ly PHI 🛑',
 };
 
 const statusClass: Record<string, string> = {
-  ACTIVE: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  ACTIVE: 'border-emerald-300 bg-emerald-50 text-emerald-800 font-bold',
   PREPARING: 'border-amber-200 bg-amber-50 text-amber-700',
-  FALLOW: 'border-slate-200 bg-slate-100 text-slate-600',
+  FALLOW: 'border-slate-300 bg-slate-100 text-slate-600 font-medium',
   INACTIVE: 'border-red-200 bg-red-50 text-red-600',
   UNDER_PUC_REVIEW: 'border-amber-300 bg-amber-100 text-amber-900 font-bold',
-  IN_QUARANTINE: 'border-rose-300 bg-rose-100 text-rose-800 font-bold animate-pulse',
+  IN_QUARANTINE: 'border-rose-400 bg-rose-100 text-rose-900 font-extrabold animate-pulse ring-2 ring-rose-200',
 };
 
 type UnitForm = {
@@ -71,31 +79,29 @@ const toList = (res: any): any[] => {
   return Array.isArray(list) ? list : [];
 };
 
-/** Mock data chuẩn hóa theo main */
+/** Mock data chuẩn hóa cho HTX Tân Tiến - Ớt Chuông Sweet Palermo Đỏ Đà Lạt */
 const MOCK_UNITS: ProductionUnit[] = [
-  { id: 'u1', unit_code: 'VT-ML-02', name: 'Thôn 2 - Mê Linh', crop: 'Cà phê Arabica', area: 32.5, status: 'ACTIVE', puc_code: 'PUC-49-012-8821', puc_status: 'ACTIVE' },
-  { id: 'u2', unit_code: 'VT-LH-03', name: 'Thôn 3 - Lâm Hà', crop: 'Tiêu', area: 15.0, status: 'ACTIVE', puc_code: 'PUC-49-015-9923', puc_status: 'ACTIVE' },
-  { id: 'u3', unit_code: 'VT-DT-01', name: 'Thôn 1 - Đạ Tẻh', crop: 'Cà phê Robusta', area: 18.5, status: 'ACTIVE', puc_code: 'PUC-49-018-0045', puc_status: 'UNDER_PUC_REVIEW' },
-  { id: 'u4', unit_code: 'VT-TH-04', name: 'Thôn 4 - Tân Hà', crop: 'Sầu riêng', area: 12.0, status: 'ACTIVE', puc_code: 'PUC-49-020-1122', puc_status: 'ACTIVE' },
-  { id: 'u5', unit_code: 'VT-DD-05', name: 'Thôn 5 - Đơn Dương', crop: 'Chè', area: 10.0, status: 'ACTIVE', puc_code: 'PUC-49-022-3344', puc_status: 'ACTIVE' },
-  { id: 'u6', unit_code: 'VT-LH-06', name: 'Thôn 6 - Lâm Hà', crop: 'Bơ', area: 8.5, status: 'ACTIVE', puc_code: 'PUC-49-025-5566', puc_status: 'ACTIVE' },
-  { id: 'u7', unit_code: 'VT-ML-07', name: 'Thôn 7 - Mê Linh', crop: 'Cà phê Arabica', area: 22.0, status: 'PREPARING', puc_code: 'PUC-49-027-7788', puc_status: 'ACTIVE' },
-  { id: 'u8', unit_code: 'VT-DT-08', name: 'Thôn 8 - Đạ Tẻh', crop: 'Cà phê Robusta', area: 14.0, status: 'FALLOW', puc_code: 'PUC-49-030-9900', puc_status: 'ACTIVE' },
+  { id: 'u1', unit_code: 'VT-DALAT-01', name: 'Vùng trồng Ớt Chuông Sweet Palermo Hòn Bồ (P12 - Đà Lạt)', crop: 'Ớt chuông Sweet Palermo Đỏ', area: 15.0, status: 'ACTIVE', puc_code: 'PUC-49-015-9923', puc_status: 'ACTIVE' },
+  { id: 'u2', unit_code: 'VT-DASAR-02', name: 'Vùng trồng Liên Kết Đạ Sar - Lạc Dương (HTX Tân Tiến)', crop: 'Ớt chuông Sweet Palermo Đỏ & Vàng', area: 12.5, status: 'ACTIVE', puc_code: 'PUC-49-015-9924', puc_status: 'ACTIVE' },
+  { id: 'u3', unit_code: 'VT-DANHIM-03', name: 'Vùng Trồng Công Nghệ Cao Đơn Dương', crop: 'Ớt chuông Sweet Palermo Đỏ Baby', area: 8.5, status: 'ACTIVE', puc_code: 'PUC-49-018-0045', puc_status: 'UNDER_PUC_REVIEW' },
+  { id: 'u4', unit_code: 'VT-LACDUONG-04', name: 'Vùng trồng Liên Kết Xã Đạ Chais', crop: 'Ớt chuông Sweet Palermo Đỏ', area: 10.0, status: 'ACTIVE', puc_code: 'PUC-49-020-1122', puc_status: 'ACTIVE' },
+  { id: 'u5', unit_code: 'VT-HONBO-05', name: 'Khu Nhà Kính Khảo Nghiệm Giống F1 Hòn Bồ', crop: 'Ớt chuông Sweet Palermo Sô-cô-la', area: 6.0, status: 'PREPARING', puc_code: 'PUC-49-022-3344', puc_status: 'ACTIVE' },
+  { id: 'u6', unit_code: 'VT-DONDUONG-06', name: 'Vùng Nghỉ Dưỡng Đất & Cải Tạo Hữu Cơ', crop: 'Cải tạo đất hữu cơ', area: 7.0, status: 'FALLOW', puc_code: 'PUC-49-025-5566', puc_status: 'ACTIVE' },
 ];
 
 const MOCK_PLOTS: Record<string, FarmPlot[]> = {
   u1: [
-    { id: 'p1', production_unit_id: 'u1', plot_code: 'TD-01', area: 8.5, status: 'ACTIVE', unit_name: 'Thôn 2 - Mê Linh' },
-    { id: 'p2', production_unit_id: 'u1', plot_code: 'TD-02', area: 12.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-15', unit_name: 'Thôn 2 - Mê Linh' },
-    { id: 'p3', production_unit_id: 'u1', plot_code: 'TD-03', area: 12.0, status: 'ACTIVE', unit_name: 'Thôn 2 - Mê Linh' },
+    { id: 'p1', production_unit_id: 'u1', plot_code: 'PLOT-TT-XV001-01', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9501° N, 108.4712° E', unit_name: 'Nhà kính Hòn Bồ 01' },
+    { id: 'p2', production_unit_id: 'u1', plot_code: 'PLOT-TT-XV001-02', area: 4.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-20', gps_coordinates: '11.9510° N, 108.4720° E', unit_name: 'Nhà kính Hòn Bồ 02' },
+    { id: 'p3', production_unit_id: 'u1', plot_code: 'PLOT-TT-XV002-01', area: 6.5, status: 'ACTIVE', gps_coordinates: '11.9525° N, 108.4735° E', unit_name: 'Nhà kính Hòn Bồ 03' },
   ],
   u2: [
-    { id: 'p4', production_unit_id: 'u2', plot_code: 'TD-04', area: 7.5, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-20', unit_name: 'Thôn 3 - Lâm Hà' },
-    { id: 'p5', production_unit_id: 'u2', plot_code: 'TD-05', area: 7.5, status: 'ACTIVE', unit_name: 'Thôn 3 - Lâm Hà' },
+    { id: 'p4', production_unit_id: 'u2', plot_code: 'PLOT-TT-XV003-01', area: 5.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-18', gps_coordinates: '11.9404° N, 108.4583° E', unit_name: 'Thửa Đất Đạ Sar 01' },
+    { id: 'p5', production_unit_id: 'u2', plot_code: 'PLOT-TT-XV003-02', area: 7.5, status: 'ACTIVE', gps_coordinates: '11.9412° N, 108.4590° E', unit_name: 'Thửa Đất Đạ Sar 02' },
   ],
   u3: [
-    { id: 'p6', production_unit_id: 'u3', plot_code: 'TD-06', area: 9.0, status: 'ACTIVE', unit_name: 'Thôn 1 - Đạ Tẻh' },
-    { id: 'p7', production_unit_id: 'u3', plot_code: 'TD-07', area: 9.5, status: 'ACTIVE', unit_name: 'Thôn 1 - Đạ Tẻh' },
+    { id: 'p6', production_unit_id: 'u3', plot_code: 'PLOT-TT-XV004-01', area: 4.0, status: 'ACTIVE', gps_coordinates: '11.9600° N, 108.4800° E', unit_name: 'Thửa Công Nghệ Cao 01' },
+    { id: 'p7', production_unit_id: 'u3', plot_code: 'PLOT-TT-XV004-02', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9610° N, 108.4810° E', unit_name: 'Thửa Công Nghệ Cao 02' },
   ],
 };
 
@@ -120,12 +126,18 @@ export const FarmPlotsPage: React.FC = () => {
   const [plotSaving, setPlotSaving] = useState(false);
   const [showPlotForm, setShowPlotForm] = useState(false);
 
+  const { showToast } = useToast();
+  const [editingPlot, setEditingPlot] = useState<FarmPlot | null>(null);
+  const [plotToDelete, setPlotToDelete] = useState<FarmPlot | null>(null);
+  const [isDeletingPlot, setIsDeletingPlot] = useState(false);
+
   // Member Assignment Modal State
   const [selectedPlotForAssignments, setSelectedPlotForAssignments] = useState<FarmPlot | null>(null);
   const [assignments, setAssignments] = useState<MemberAssignment[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [newMemberId, setNewMemberId] = useState('mem-001');
   const [newMemberRole, setNewMemberRole] = useState('Xã viên canh tác VietGAP');
+
 
   const loadUnits = async (keepId?: string) => {
     try {
@@ -180,6 +192,43 @@ export const FarmPlotsPage: React.FC = () => {
     const updated = await fetchPlotMemberAssignments(selectedPlotForAssignments.id);
     setAssignments(updated);
   };
+
+  const handleDeletePlot = async () => {
+    if (!plotToDelete || !selected) return;
+    try {
+      setIsDeletingPlot(true);
+      await deletePlot(selected.id, plotToDelete.id);
+      showToast(`Đã xóa / ngưng canh tác thửa đất [${plotToDelete.plot_code}] thành công`, 'success');
+      setPlotToDelete(null);
+      await loadPlots(selected.id);
+    } catch (err: any) {
+      showToast(err.message || 'Xóa thửa đất thất bại', 'error');
+    } finally {
+      setIsDeletingPlot(false);
+    }
+  };
+
+  const handleExportPlotsExcel = () => {
+    if (!plots || plots.length === 0) {
+      showToast('Không có dữ liệu thửa đất để xuất!', 'warning');
+      return;
+    }
+    const exportData = plots.map((p, idx) => ({
+      'STT': idx + 1,
+      'Mã thửa đất': p.plot_code,
+      'Vùng sản xuất': selected?.name || p.unit_name || '',
+      'Mã vùng': selected?.unit_code || '',
+      'Mã PUC': selected?.puc_code || '',
+      'Cây trồng': selected?.crop || '',
+      'Diện tích (ha)': p.area,
+      'Trạng thái': statusText[p.status] || p.status,
+      'Tọa độ GPS': p.gps_coordinates || '',
+      'Ngày an toàn PHI': p.safe_harvest_date || 'Không cách ly',
+    }));
+    exportToExcel(exportData, `Danh_Sach_Thua_Dat_${selected?.unit_code || 'HTX'}`, 'ThuaDat');
+    showToast('Xuất danh sách thửa đất sang Excel thành công!', 'success');
+  };
+
 
   useEffect(() => {
     loadUnits();
@@ -623,12 +672,21 @@ export const FarmPlotsPage: React.FC = () => {
                         <h4 className="text-sm font-extrabold text-slate-800">Thửa đất</h4>
                         <p className="mt-0.5 text-[11px] text-slate-400">{plots.length} thửa thuộc vùng này</p>
                       </div>
-                      <button
-                        onClick={() => setShowPlotForm((v) => !v)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Thêm thửa
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={handleExportPlotsExcel}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition cursor-pointer"
+                          title="Xuất Excel danh sách thửa đất"
+                        >
+                          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" /> Xuất Excel
+                        </button>
+                        <button
+                          onClick={() => setShowPlotForm((v) => !v)}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 cursor-pointer"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Thêm thửa
+                        </button>
+                      </div>
                     </div>
 
                     {showPlotForm && (
@@ -690,42 +748,81 @@ export const FarmPlotsPage: React.FC = () => {
                       <ul className="space-y-2.5">
                         {plots.map((p) => {
                           const isQuarantine = p.status === 'IN_QUARANTINE';
+                          const isFallow = p.status === 'FALLOW';
+                          const borderBgClass = isQuarantine
+                            ? 'border-rose-300 bg-rose-50/80 shadow-xs ring-1 ring-rose-200'
+                            : isFallow
+                            ? 'border-slate-200 bg-slate-50/80'
+                            : 'border-emerald-200 bg-emerald-50/30 hover:border-emerald-300 hover:bg-emerald-50/60';
+
                           return (
-                            <li key={p.id} className={`rounded-xl border p-3 transition ${isQuarantine ? 'border-rose-200 bg-rose-50/70' : 'border-slate-100 bg-slate-50/70 hover:border-emerald-100 hover:bg-emerald-50/40'}`}>
+                            <li key={p.id} className={`rounded-xl border p-3.5 transition ${borderBgClass}`}>
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm ${isQuarantine ? 'bg-rose-100 text-rose-600' : 'bg-white text-emerald-600'}`}>
+                                  <div
+                                    className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm ${
+                                      isQuarantine
+                                        ? 'bg-rose-100 text-rose-600 animate-pulse'
+                                        : isFallow
+                                        ? 'bg-slate-200 text-slate-600'
+                                        : 'bg-white text-emerald-600'
+                                    }`}
+                                  >
                                     {isQuarantine ? <ShieldAlert className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
                                   </div>
                                   <div>
-                                    <p className="text-xs font-bold text-slate-700">{p.plot_code}</p>
-                                    <span className={`text-[10px] font-bold ${isQuarantine ? 'text-rose-700' : 'text-slate-400'}`}>
-                                      {statusText[p.status] || p.status}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-xs font-bold text-slate-800">{p.plot_code}</p>
+                                      <span
+                                        className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold border ${
+                                          statusClass[p.status] || 'border-slate-200 bg-slate-100 text-slate-700'
+                                        }`}
+                                      >
+                                        {statusText[p.status] || p.status}
+                                      </span>
+                                    </div>
+                                    {p.gps_coordinates && (
+                                      <div className="mt-0.5 text-[10.5px] font-mono text-slate-500">
+                                        📍 {p.gps_coordinates}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-slate-600">{p.area} ha</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-slate-700 mr-1">{p.area} ha</span>
+                                  <button
+                                    onClick={() => setEditingPlot(p)}
+                                    className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-blue-600 hover:bg-blue-50 shadow-2xs transition cursor-pointer"
+                                    title="Chỉnh sửa thông tin thửa đất"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </button>
                                   <button
                                     onClick={() => openAssignmentsModal(p)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 shadow-xs hover:border-emerald-200 hover:text-emerald-700"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 shadow-xs hover:border-emerald-200 hover:text-emerald-700 cursor-pointer"
                                     title="Phân công xã viên"
                                   >
                                     <Users className="h-3 w-3 text-emerald-600" />
                                     Xã viên
                                   </button>
+                                  <button
+                                    onClick={() => setPlotToDelete(p)}
+                                    className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 shadow-2xs transition cursor-pointer"
+                                    title="Xóa / Ngưng canh tác thửa đất"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
                                 </div>
                               </div>
-                              {isQuarantine && (
-                                <div className="mt-2 rounded-lg border border-rose-200 bg-rose-100/80 px-2.5 py-1.5 text-[11px] font-bold text-rose-800">
-                                  🛑 Cách ly PHI đến: {p.safe_harvest_date || '15/10/2026'}
-                                </div>
-                              )}
+                              <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                                <PhiCountdownBadge safeHarvestDate={p.safe_harvest_date} status={p.status} />
+                              </div>
                             </li>
                           );
                         })}
                       </ul>
                     )}
+
                   </div>
                 </div>
               </div>
@@ -889,6 +986,61 @@ export const FarmPlotsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Edit Farm Plot Modal */}
+      {selected && (
+        <EditFarmPlotModal
+          isOpen={!!editingPlot}
+          onClose={() => setEditingPlot(null)}
+          plot={editingPlot}
+          unitId={selected.id}
+          onSuccess={() => {
+            if (selected) loadPlots(selected.id);
+          }}
+        />
+      )}
+
+      {/* Delete Plot Confirmation Modal */}
+      {plotToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in text-[13px]">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-3 bg-rose-100 rounded-2xl">
+                <AlertOctagon className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-900 text-base">Xóa / Ngưng Canh Tác Thửa Đất</h3>
+                <p className="text-xs text-slate-500">Mã thửa: {plotToDelete.plot_code}</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-rose-50/80 rounded-2xl border border-rose-200 text-xs text-rose-900 leading-relaxed">
+              Bạn có chắc chắn muốn xóa thửa đất <strong>[{plotToDelete.plot_code}]</strong> (Diện tích: {plotToDelete.area} ha) khỏi danh sách quản lý vùng trồng <strong>{selected?.name}</strong>?
+              <br />
+              <span className="text-[11px] text-rose-700 italic mt-1 block">
+                * Thao tác này sẽ cập nhật trạng thái hoặc gỡ bỏ phân công xã viên trên thửa đất này.
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setPlotToDelete(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleDeletePlot}
+                disabled={isDeletingPlot}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition disabled:opacity-60 cursor-pointer"
+              >
+                {isDeletingPlot ? 'Đang xử lý...' : 'Xác nhận Xóa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

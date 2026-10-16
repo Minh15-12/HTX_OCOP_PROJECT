@@ -10,6 +10,7 @@ use Modules\Agriculture\Presentation\Http\Controllers\LotController;
 use Modules\Agriculture\Presentation\Http\Controllers\MaterialUsageController;
 use Modules\Agriculture\Presentation\Http\Controllers\PhiCalculationController;
 use Modules\Agriculture\Presentation\Http\Controllers\ProductionUnitController;
+use Modules\Agriculture\Presentation\Http\Controllers\PublicTraceabilityController;
 use Modules\Cooperative\Presentation\Http\Controllers\CapitalContributionController;
 use Modules\Cooperative\Presentation\Http\Controllers\CooperativeController;
 use Modules\Cooperative\Presentation\Http\Controllers\MemberController;
@@ -43,6 +44,7 @@ use Modules\Ocop\Evaluation\Presentation\Http\Controllers\FinalDecisionControlle
 use Modules\Product\Presentation\Http\Controllers\ProductController;
 use Modules\Report\Presentation\Http\Controllers\DocumentController;
 use Modules\Report\Presentation\Http\Controllers\ReportController;
+use Modules\Notification\Presentation\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,6 +54,10 @@ use Modules\Report\Presentation\Http\Controllers\ReportController;
 
 // Health Check Endpoint (Public)
 Route::get('/health', [HealthController::class, 'check'])->name('api.health');
+
+// Public Traceability Routes (Public, outside auth:sanctum)
+Route::get('/public/trace/{lotId}', [PublicTraceabilityController::class, 'show'])->name('api.public.trace');
+Route::get('/trace/{lotId}', [PublicTraceabilityController::class, 'show'])->name('api.trace');
 
 // Authentication Routes (Public / Protected)
 Route::prefix('auth')->group(function () {
@@ -145,6 +151,10 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/harvests', [HarvestController::class, 'store'])->name('api.harvests.store');
     Route::get('/harvests/{id}', [HarvestController::class, 'show'])->name('api.harvests.show');
     Route::patch('/harvests/{id}', [HarvestController::class, 'update'])->name('api.harvests.update');
+    Route::post('/harvests/{id}/kcs/gate-check', [HarvestController::class, 'gateCheck'])->name('api.harvests.gate-check');
+    Route::post('/harvests/{id}/kcs/quick-lab', [HarvestController::class, 'quickLab'])->name('api.harvests.quick-lab');
+    Route::post('/harvests/{id}/kcs/grading', [HarvestController::class, 'grading'])->name('api.harvests.grading');
+    Route::post('/harvests/settle-season', [HarvestController::class, 'settleSeason'])->name('api.harvests.settle-season');
 
     Route::get('/lots', [LotController::class, 'index'])->name('api.lots.index');
     Route::post('/lots', [LotController::class, 'store'])->name('api.lots.store');
@@ -231,6 +241,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/ocop/applications', [OcopApplicationController::class, 'store'])->name('api.ocop.applications.store');
     Route::get('/ocop/applications/{id}', [OcopApplicationController::class, 'show'])->name('api.ocop.applications.show');
     Route::patch('/ocop/applications/{id}', [OcopApplicationController::class, 'update'])->name('api.ocop.applications.update');
+    Route::get('/ocop/applications/{id}/score-suggestions', [OcopApplicationController::class, 'scoreSuggestions'])->name('api.ocop.applications.score-suggestions');
     Route::get('/ocop/applications/{id}/self-assessments', [SelfAssessmentController::class, 'index'])->name('api.ocop.applications.self-assessments.index');
     Route::post('/ocop/applications/{id}/self-assessments', [SelfAssessmentController::class, 'store'])->name('api.ocop.applications.self-assessments.store');
     Route::post('/ocop/applications/{id}/ready-for-submission', [OcopApplicationController::class, 'readyForSubmission'])->name('api.ocop.applications.ready-for-submission');
@@ -239,6 +250,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     // OCOP Evidence Management APIs (Section 31 of 12_API_SPECIFICATION.md)
     Route::get('/ocop/applications/{applicationId}/evidences', [EvidenceController::class, 'indexByApplication'])->name('api.ocop.applications.evidences.index');
     Route::post('/ocop/applications/{applicationId}/evidences', [EvidenceController::class, 'storeInApplication'])->name('api.ocop.applications.evidences.store');
+    Route::post('/ocop/applications/{applicationId}/extract-evidence', [EvidenceController::class, 'extractInternal'])->name('api.ocop.applications.evidences.extract');
     Route::get('/ocop/evidences/{id}', [EvidenceController::class, 'show'])->name('api.ocop.evidences.show');
     Route::get('/ocop/evidences/{id}/download', [EvidenceController::class, 'downloadUrl'])->name('api.ocop.evidences.download');
     Route::get('/ocop/evidences/{id}/file-stream', [EvidenceController::class, 'fileStream'])->name('api.ocop.evidences.file-stream');
@@ -273,6 +285,15 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     // Document Generation & Certificate APIs (Section 35 of 12_API_SPECIFICATION.md)
     Route::post('/documents/generate/ocop-dossier/{applicationId}', [DocumentController::class, 'generateDossier'])->name('api.documents.generate.dossier');
     Route::post('/documents/generate/certificate/{applicationId}', [DocumentController::class, 'generateCertificate'])->name('api.documents.generate.certificate');
+    Route::get('/documents/preview/form-01/{applicationId}', [DocumentController::class, 'previewForm01'])->name('api.documents.preview.form-01');
+    Route::get('/documents/preview/form-02/{applicationId}', [DocumentController::class, 'previewForm02'])->name('api.documents.preview.form-02');
+    Route::get('/documents/preview/form-03/{applicationId}', [DocumentController::class, 'previewForm03'])->name('api.documents.preview.form-03');
+    Route::post('/documents/generate/form-01/{applicationId}', [DocumentController::class, 'generateForm01'])->name('api.documents.generate.form-01');
+    Route::post('/documents/generate/form-02/{applicationId}', [DocumentController::class, 'generateForm02'])->name('api.documents.generate.form-02');
+    Route::post('/documents/generate/form-03/{applicationId}', [DocumentController::class, 'generateForm03'])->name('api.documents.generate.form-03');
+    Route::get('/documents/generate/form-01/{applicationId}', [DocumentController::class, 'generateForm01'])->name('api.documents.generate.form-01.get');
+    Route::get('/documents/generate/form-02/{applicationId}', [DocumentController::class, 'generateForm02'])->name('api.documents.generate.form-02.get');
+    Route::get('/documents/generate/form-03/{applicationId}', [DocumentController::class, 'generateForm03'])->name('api.documents.generate.form-03.get');
     Route::get('/documents/{id}/download', [DocumentController::class, 'download'])->name('api.documents.download');
 
     // Notifications

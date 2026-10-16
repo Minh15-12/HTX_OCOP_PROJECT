@@ -4,12 +4,14 @@ namespace Modules\Ocop\Evidence\Presentation\Http\Controllers;
 
 use App\Shared\Presentation\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Modules\Ocop\Evidence\Application\DTOs\UploadEvidenceDTO;
 use Modules\Ocop\Evidence\Application\DTOs\VerifyEvidenceDTO;
 use Modules\Ocop\Evidence\Application\Services\EvidenceDownloadService;
 use Modules\Ocop\Evidence\Application\Services\EvidenceUploadService;
 use Modules\Ocop\Evidence\Application\Services\EvidenceVerificationService;
 use Modules\Ocop\Evidence\Application\Services\EvidenceVersionService;
+use Modules\Ocop\Evidence\Application\Services\OcopEvidenceAutoExtractionService;
 use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel;
 use Modules\Ocop\Evidence\Presentation\Http\Requests\UploadEvidenceRequest;
 use Modules\Ocop\Evidence\Presentation\Http\Requests\VerifyEvidenceRequest;
@@ -22,7 +24,8 @@ class EvidenceController extends BaseController
         private readonly EvidenceUploadService $uploadService,
         private readonly EvidenceVersionService $versionService,
         private readonly EvidenceVerificationService $verificationService,
-        private readonly EvidenceDownloadService $downloadService
+        private readonly EvidenceDownloadService $downloadService,
+        private readonly OcopEvidenceAutoExtractionService $autoExtractionService
     ) {}
 
     public function indexByApplication(string $applicationId): JsonResponse
@@ -46,6 +49,31 @@ class EvidenceController extends BaseController
         return $this->success(
             data: new EvidenceDetailResource($evidence),
             message: 'Tải lên minh chứng thành công',
+            status: 201
+        );
+    }
+
+    public function extractInternal(string $applicationId, Request $request): JsonResponse
+    {
+        $type = $request->input('extraction_type', 'ALL');
+        $requestedBy = auth()->id() ?: 'SYSTEM';
+        $result = $this->autoExtractionService->extractInternalEvidence($applicationId, $type, $requestedBy);
+
+        if (is_array($result)) {
+            $data = [
+                'farm_plot' => new EvidenceDetailResource($result['farm_plot']),
+                'member_list' => new EvidenceDetailResource($result['member_list']),
+                'phi_journal' => new EvidenceDetailResource($result['phi_journal']),
+            ];
+            $msg = 'Trích xuất tự động toàn bộ minh chứng nội bộ HTX thành công';
+        } else {
+            $data = new EvidenceDetailResource($result);
+            $msg = 'Trích xuất tự động minh chứng nội bộ HTX thành công';
+        }
+
+        return $this->success(
+            data: $data,
+            message: $msg,
             status: 201
         );
     }

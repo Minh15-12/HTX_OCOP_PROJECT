@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   PackageCheck,
   ArrowLeft,
+  ExternalLink,
 } from 'lucide-react';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -32,39 +33,39 @@ export const LotTraceabilityPage: React.FC = () => {
         return res.data || res;
       } catch {
         return {
-          lot_code: 'LOT-SHAN-20260306-01',
-          created_at: '2026-03-06T10:00:00Z',
+          lot_code: id && id.startsWith('LOT-') ? id : 'LOT-TT-XV003-01-20261015-01',
+          created_at: '2026-10-15T09:30:00Z',
           harvest: {
-            harvest_code: 'TH-2026-001',
-            quantity_kg: 1200,
-            harvest_date: '2026-03-06',
-            quality_grade: 'Loại 1 (Đạt OCOP)',
+            harvest_code: 'TH-2026-002',
+            quantity_kg: 2400,
+            harvest_date: '2026-10-15',
+            quality_grade: 'Grade A (Ớt chuông Sweet Palermo Đỏ - OCOP 4 Sao)',
             is_phi_cleared: true,
           },
           plot: {
-            plot_code: 'TD-VT1-01',
-            plot_name: 'Thửa Đất Chè Shan Tuyết A1',
-            area_ha: 3.5,
-            assigned_member: 'Nguyễn Văn Minh (XV-2026-001)',
+            plot_code: 'PLOT-TT-XV003-01',
+            plot_name: 'Nhà Kính 01 - Vùng Trồng Hòn Bồ P12 Đà Lạt',
+            area_ha: 0.5,
+            assigned_member: 'Nguyễn Văn An (Xã viên Đội 1 - HTX Tân Tiến)',
           },
           crop_season: {
-            season_code: 'MV-2026-XUAN',
-            name: 'Mùa Vụ Xuân Hè 2026',
-            main_crop: 'Chè Shan Tuyết cổ thụ',
+            season_code: 'MV-PALERMO-2026',
+            name: 'Mùa Vụ Ớt Chuông Sweet Palermo Thu Đông 2026',
+            main_crop: 'Ớt chuông Sweet Palermo Đỏ Đà Lạt (Rijk Zwaan)',
           },
           farming_logs: [
             {
-              activity_date: '2026-02-20',
-              activity_type: 'Phun thuốc sinh học (PEST_CONTROL)',
-              description: 'Phun chế phẩm thảo mộc phòng trừ rầy xanh đợt 1',
-              material_used: 'Chế phẩm vi sinh Bio-Clean (2.5 lít)',
+              activity_date: '2026-10-01',
+              activity_type: 'Phun chế phẩm sinh học (SPRAYING)',
+              description: 'Phun chế phẩm sinh học Bio-Tricho phòng bọ phấn trắng đợt cuối, khóa an toàn PHI 14 ngày',
+              material_used: 'Chế phẩm Sinh học Bio-Tricho (Lô LOT-BIO-2026-88)',
               phi_days: 14,
             },
             {
-              activity_date: '2026-02-10',
-              activity_type: 'Bón phân (FERTILIZATION)',
-              description: 'Bón phân hữu cơ khoáng vi sinh kích rễ',
-              material_used: 'Phân hữu cơ Sông Ranh (500 kg)',
+              activity_date: '2026-09-15',
+              activity_type: 'Bón phân hữu cơ vi lượng (FERTILIZATION)',
+              description: 'Châm phân sinh học Ca-B Haifa Israel qua hệ thống tưới nhỏ giọt tăng độ ngọt Brix 8.2°',
+              material_used: 'Phân bón sinh học Ca-B Bo-Kẽm Israel (Lô LOT-NPK-2026-12)',
               phi_days: 0,
             },
           ],
@@ -79,13 +80,22 @@ export const LotTraceabilityPage: React.FC = () => {
         title="Truy Xuất Nguồn Gốc Lô Hàng (Data Lineage Tree)"
         subtitle="Cây phả hệ dữ liệu truy xuất minh bạch từ Lô hàng thương mại ngược về Thửa đất, Xã viên và Vật tư canh tác"
         action={
-          <Button
-            variant="outline"
-            onClick={() => navigate('/agriculture/harvests')}
-            leftIcon={<ArrowLeft className="w-4 h-4" />}
-          >
-            Quay Lại Thu Hoạch
-          </Button>
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/agriculture/harvests')}
+              leftIcon={<ArrowLeft className="w-4 h-4" />}
+            >
+              Quay Lại Thu Hoạch
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => window.open(`/trace/${traceData?.lot_code || id}`, '_blank')}
+              leftIcon={<ExternalLink className="w-4 h-4" />}
+            >
+              Trang Quét QR Công Khai
+            </Button>
+          </div>
         }
       />
 
