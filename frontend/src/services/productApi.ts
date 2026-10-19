@@ -141,6 +141,7 @@ export const productApi = {
           id: item.id,
           product_code: item.product_code || item.code || item.id,
           product_name: item.product_name || item.name || 'Sản phẩm OCOP',
+          category: item.category || item.quality_information?.category || 'Nông sản OCOP',
           specification: typeof item.specification === 'string'
             ? item.specification
             : (item.specification?.package || item.specification?.packaging || (item.specification ? Object.values(item.specification).join(' • ') : '')),

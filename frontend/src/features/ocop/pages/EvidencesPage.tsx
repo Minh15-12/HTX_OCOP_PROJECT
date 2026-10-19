@@ -5,6 +5,7 @@ import {
   AlertTriangle, RefreshCw, Eye, Plus, Link, Clock, FileWarning, ShieldAlert
 } from 'lucide-react';
 import { apiClient } from '@/services/apiClient';
+import { Pagination } from '@/components/ui/Pagination';
 
 export interface EvidenceRecord {
   stt: number;
@@ -25,6 +26,8 @@ export const EvidencesPage: React.FC = () => {
   const [search, setSearch] = useState<string>('');
   const [activeTabCategory, setActiveTabCategory] = useState<string>('ALL');
   const [selectedFile, setSelectedFile] = useState<EvidenceRecord | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(5);
 
   const { data: apiEvidencesData, isLoading, refetch } = useQuery({
     queryKey: ['ocop-evidences-list'],
@@ -193,6 +196,11 @@ export const EvidencesPage: React.FC = () => {
   const pendingCount = displayEvidences.filter(e => e.status === 'PENDING').length;
   const rejectedCount = displayEvidences.filter(e => e.status === 'REJECTED').length;
 
+  const paginatedEvidences = filteredEvidences.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className="space-y-5 pb-20 animate-fade-in text-slate-800">
       {/* Header Banner (Matching Image 2) */}
@@ -336,7 +344,7 @@ export const EvidencesPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                  {filteredEvidences.map((item) => (
+                  {paginatedEvidences.map((item) => (
                     <tr
                       key={item.id}
                       onClick={() => setSelectedFile(item)}
@@ -375,6 +383,22 @@ export const EvidencesPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Component */}
+            {filteredEvidences.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalItems={filteredEvidences.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(newSize) => {
+                  setPageSize(newSize);
+                  setCurrentPage(1);
+                }}
+                pageSizeOptions={[5, 10, 20]}
+                className="border-t border-slate-100 px-0 pt-3"
+              />
+            )}
           </div>
 
           {/* Bottom 4 Feature Cards (Matching Image 2 Bottom) */}

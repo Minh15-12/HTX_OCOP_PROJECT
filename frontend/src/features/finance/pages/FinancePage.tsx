@@ -35,6 +35,7 @@ import {
 import { fetchCropSeasons, CropSeason } from '@/services/cropSeasonApi';
 import { getMembersFromApi } from '@/services/memberService';
 import { Member } from '@/types/memberTypes';
+import { Pagination } from '@/components/ui/Pagination';
 
 const money = (n: number) => (n || 0).toLocaleString('vi-VN') + ' ₫';
 
@@ -70,6 +71,15 @@ export const FinancePage: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<FinanceTab>('cashbook');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
+
+  const [cashbookPage, setCashbookPage] = useState<number>(1);
+  const [cashbookPageSize, setCashbookPageSize] = useState<number>(10);
+
+  const [debtsPage, setDebtsPage] = useState<number>(1);
+  const [debtsPageSize, setDebtsPageSize] = useState<number>(10);
+
+  const [settlePage, setSettlePage] = useState<number>(1);
+  const [settlePageSize, setSettlePageSize] = useState<number>(10);
 
   const showToast = (message: string, type: 'success' | 'danger' = 'success') => {
     setToast({ message, type });
@@ -503,7 +513,9 @@ export const FinancePage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredCash.map((t) => (
+                filteredCash
+                  .slice((cashbookPage - 1) * cashbookPageSize, cashbookPage * cashbookPageSize)
+                  .map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-3 px-4 font-mono font-bold text-slate-700">{t.voucherNumber}</td>
                     <td className="py-3 px-4 text-slate-600">{t.transactionDate}</td>
@@ -546,6 +558,18 @@ export const FinancePage: React.FC = () => {
               )}
             </tbody>
           </table>
+          {filteredCash.length > 0 && (
+            <Pagination
+              currentPage={cashbookPage}
+              totalItems={filteredCash.length}
+              pageSize={cashbookPageSize}
+              onPageChange={setCashbookPage}
+              onPageSizeChange={(newSize) => {
+                setCashbookPageSize(newSize);
+                setCashbookPage(1);
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -618,7 +642,9 @@ export const FinancePage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredDebts.map((d) => (
+                filteredDebts
+                  .slice((debtsPage - 1) * debtsPageSize, debtsPage * debtsPageSize)
+                  .map((d) => (
                   <tr key={d.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-3 px-4">
                       <div className="font-extrabold text-slate-900">{d.debtorName}</div>
@@ -673,6 +699,18 @@ export const FinancePage: React.FC = () => {
               )}
             </tbody>
           </table>
+          {filteredDebts.length > 0 && (
+            <Pagination
+              currentPage={debtsPage}
+              totalItems={filteredDebts.length}
+              pageSize={debtsPageSize}
+              onPageChange={setDebtsPage}
+              onPageSizeChange={(newSize) => {
+                setDebtsPageSize(newSize);
+                setDebtsPage(1);
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -735,7 +773,9 @@ export const FinancePage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                harvestSettlements.map((s) => (
+                harvestSettlements
+                  .slice((settlePage - 1) * settlePageSize, settlePage * settlePageSize)
+                  .map((s) => (
                   <tr key={s.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-3 px-4 text-slate-600 font-mono text-xs">{s.settlement_date}</td>
                     <td className="py-3 px-4 font-mono font-bold text-emerald-800">
@@ -752,7 +792,9 @@ export const FinancePage: React.FC = () => {
                       {money(s.amount)}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800`}
+                      >
                         {s.status === 'POSTED' ? 'Đã hoàn tất' : 'Đã ghi sổ'}
                       </span>
                     </td>
@@ -761,6 +803,18 @@ export const FinancePage: React.FC = () => {
               )}
             </tbody>
           </table>
+          {harvestSettlements.length > 0 && (
+            <Pagination
+              currentPage={settlePage}
+              totalItems={harvestSettlements.length}
+              pageSize={settlePageSize}
+              onPageChange={setSettlePage}
+              onPageSizeChange={(newSize) => {
+                setSettlePageSize(newSize);
+                setSettlePage(1);
+              }}
+            />
+          )}
         </div>
       )}
 

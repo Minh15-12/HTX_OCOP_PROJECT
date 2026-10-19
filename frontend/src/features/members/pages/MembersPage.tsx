@@ -49,6 +49,7 @@ import {
 import { MemberWizard } from '../components/MemberWizard';
 import { MemberDrawer } from '../components/MemberDrawer';
 import { MemberEditModal } from '../components/MemberEditModal';
+import { Pagination } from '@/components/ui/Pagination';
 import {
   mockMembersList,
   mockCapitalTransactions,
@@ -1379,65 +1380,19 @@ export const MembersPage: React.FC = () => {
               </table>
             </div>
 
-            {/* Pagination Controls Bar */}
-            <div className="px-4 py-3 border-t border-[#e7e9ec] bg-slate-50/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-slate-500 font-medium">
-                <span>Hiển thị</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="px-2 py-1 bg-white border border-slate-300 rounded-md font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
-                >
-                  <option value={5}>5 xã viên / trang</option>
-                  <option value={6}>6 xã viên / trang</option>
-                  <option value={8}>8 xã viên / trang</option>
-                  <option value={10}>10 xã viên / trang</option>
-                  <option value={20}>20 xã viên / trang</option>
-                </select>
-                <span>
-                  ({filteredMembersTab1.length > 0 ? (safeCurrentPageTab1 - 1) * pageSize + 1 : 0} -{' '}
-                  {Math.min(safeCurrentPageTab1 * pageSize, filteredMembersTab1.length)} trên tổng số{' '}
-                  <strong className="text-slate-800 font-extrabold">{filteredMembersTab1.length}</strong> xã viên)
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  disabled={safeCurrentPageTab1 <= 1}
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Trước
-                </button>
-
-                <div className="flex items-center gap-1 px-1">
-                  {Array.from({ length: totalPagesTab1 }, (_, i) => i + 1).map((pageNum) => (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        safeCurrentPageTab1 === pageNum
-                          ? 'bg-emerald-600 text-white shadow-2xs'
-                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  disabled={safeCurrentPageTab1 >= totalPagesTab1}
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPagesTab1))}
-                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
-                >
-                  Sau <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+            {filteredMembersTab1.length > 0 && (
+              <Pagination
+                currentPage={safeCurrentPageTab1}
+                totalItems={filteredMembersTab1.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(newSize) => {
+                  setPageSize(newSize);
+                  setCurrentPage(1);
+                }}
+                pageSizeOptions={[5, 10, 20, 50]}
+              />
+            )}
           </div>
 
           {/* Drawer Details Member - COMPREHENSIVE VIEW MATCHING ALL WIZARD FIELDS */}

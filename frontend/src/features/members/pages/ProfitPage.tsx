@@ -40,6 +40,7 @@ import {
   mockSurplusItems,
 } from '@/services/memberService';
 import { SurplusDistributionPlan, SurplusDistributionItem } from '@/types/memberTypes';
+import { Pagination } from '@/components/ui/Pagination';
 
 const PIE_COLORS = ['#059669', '#9333ea', '#2563eb', '#f59e0b'];
 
@@ -50,6 +51,9 @@ export const ProfitPage: React.FC = () => {
   const [profitStatusFilter, setProfitStatusFilter] = useState<string>('ALL');
   const [selectedSurplusItem, setSelectedSurplusItem] = useState<SurplusDistributionItem | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
+
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -478,14 +482,20 @@ export const ProfitPage: React.FC = () => {
                   type="text"
                   placeholder="Tìm tên xã viên..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs outline-none"
                 />
               </div>
 
               <select
                 value={profitStatusFilter}
-                onChange={(e) => setProfitStatusFilter(e.target.value)}
+                onChange={(e) => {
+                  setProfitStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium outline-none"
               >
                 <option value="ALL">Trạng thái: Tất cả</option>
@@ -511,7 +521,10 @@ export const ProfitPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredSurplusItems.map((item, idx) => {
+                {filteredSurplusItems
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((item, idx) => {
+                  const itemIndex = (currentPage - 1) * pageSize + idx + 1;
                   const serviceShare = item.service_share_amount || Math.round(item.total_payout_amount * 0.55);
                   const capitalShare = item.capital_share_amount || (item.total_payout_amount - serviceShare);
 
@@ -523,7 +536,7 @@ export const ProfitPage: React.FC = () => {
                         selectedSurplusItem?.id === item.id ? 'bg-emerald-50/60 font-semibold' : ''
                       }`}
                     >
-                      <td className="py-3 px-3.5 text-slate-400 font-medium">{idx + 1}</td>
+                      <td className="py-3 px-3.5 text-slate-400 font-medium">{itemIndex}</td>
                       <td className="py-3 px-3.5">
                         <strong className="text-slate-900 block">{item.member_name}</strong>
                         <span className="text-[10.5px] font-mono text-slate-400">{item.member_code}</span>
@@ -581,6 +594,19 @@ export const ProfitPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {filteredSurplusItems.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredSurplusItems.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setCurrentPage(1);
+              }}
+            />
+          )}
         </div>
 
         {/* Selected Surplus Item Detail Drawer */}
