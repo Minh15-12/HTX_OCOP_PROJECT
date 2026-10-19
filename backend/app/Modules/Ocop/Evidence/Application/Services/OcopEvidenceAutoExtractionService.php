@@ -98,10 +98,11 @@ class OcopEvidenceAutoExtractionService
         $checksum = hash('sha256', $pdfContent);
         $fileSize = strlen($pdfContent);
 
-        // Store into local disk storage under evidences/{application_id}/
+        // Store into configured disk storage under evidences/{application_id}/
         $fileName = "{$config['file_prefix']}_{$application->id}_" . Str::random(6) . '.pdf';
         $storagePath = "evidences/{$application->id}/{$fileName}";
-        Storage::disk('local')->put($storagePath, $pdfContent);
+        $disk = config('filesystems.evidence_disk', 'local');
+        Storage::disk($disk)->put($storagePath, $pdfContent);
 
         // Check if an existing evidence of this title/type exists to prevent redundant duplicates
         $evidenceModel = EvidenceModel::where('application_id', $application->id)

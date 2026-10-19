@@ -79,10 +79,11 @@ class EvidenceVersionService
         // Calculate SHA-256 checksum
         $checksum = hash_file('sha256', $file->getRealPath());
 
-        // Store file in private storage disk (under evideces/{application_id}/)
+        // Store file in private storage disk (under evidences/{application_id}/)
         $extension = $file->getClientOriginalExtension() ?: 'bin';
         $storagePath = "evidences/{$app->id}/" . (string) Str::uuid() . ".{$extension}";
-        Storage::disk('local')->put($storagePath, file_get_contents($file->getRealPath()));
+        $disk = config('filesystems.evidence_disk', 'local');
+        Storage::disk($disk)->put($storagePath, file_get_contents($file->getRealPath()));
 
         $newVersion = EvidenceVersionModel::create([
             'id' => (string) Str::uuid(),

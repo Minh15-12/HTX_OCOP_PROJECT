@@ -44,12 +44,18 @@ class EvidenceDownloadService
     {
         $evidence = $this->versionService->getEvidenceById($evidenceId);
         $version = $evidence->currentVersion;
+        $disk = config('filesystems.evidence_disk', 'local');
 
-        if (!$version || !Storage::disk('local')->exists($version->file_reference)) {
-            throw new DomainException('File vật lý không tồn tại trên hệ thống lưu trữ', 'FILE_NOT_FOUND', null, 404);
+        if (!$version || !Storage::disk($disk)->exists($version->file_reference)) {
+            // Check fallback on local disk if previously stored locally
+            if ($version && Storage::disk('local')->exists($version->file_reference)) {
+                $disk = 'local';
+            } else {
+                throw new DomainException('File vật lý không tồn tại trên hệ thống lưu trữ', 'FILE_NOT_FOUND', null, 404);
+            }
         }
 
-        return Storage::disk('local')->response(
+        return Storage::disk($disk)->response(
             $version->file_reference,
             $version->file_name,
             ['Content-Type' => $version->mime_type]
