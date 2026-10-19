@@ -16,7 +16,7 @@ class CreateFarmingLogRequest extends FormRequest
         return [
             'crop_season_id' => ['required', 'uuid', 'exists:crop_seasons,id'],
             'plot_id' => ['required', 'uuid', 'exists:farm_plots,id'],
-            'activity_type' => ['required', 'string', 'in:SPRAYING,FERTILIZING,PLOWING,WEEDING,HARVESTING,IRRIGATION,PRUNING'],
+            'activity_type' => ['required', 'string', 'in:SPRAYING,FERTILIZING,FERTILIZATION,PLOWING,LAND_PREPARATION,WEEDING,HARVESTING,HARVEST,IRRIGATION,PRUNING,CARE,MONITORING,PLANTING,PEST_CONTROL,SOWING,OTHER'],
             'activity_date' => ['required', 'date'],
             'description' => ['nullable', 'string', 'max:2000'],
             'performed_by' => ['nullable', 'uuid', 'exists:users,id'],

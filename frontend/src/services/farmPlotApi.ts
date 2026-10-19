@@ -82,12 +82,12 @@ const initialProductionUnits: ProductionUnit[] = [
 ];
 
 const initialPlots: FarmPlot[] = [
-  { id: 'plot-101', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV001-01', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9501° N, 108.4712° E', unit_name: 'Nhà kính Hòn Bồ 01' },
-  { id: 'plot-102', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV001-02', area: 4.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-20', gps_coordinates: '11.9510° N, 108.4720° E', unit_name: 'Nhà kính Hòn Bồ 02' },
-  { id: 'plot-103', production_unit_id: 'pu-01', plot_code: 'PLOT-TT-XV002-01', area: 6.5, status: 'ACTIVE', gps_coordinates: '11.9525° N, 108.4735° E', unit_name: 'Nhà kính Hòn Bồ 03' },
-  { id: 'plot-201', production_unit_id: 'pu-02', plot_code: 'PLOT-TT-XV003-01', area: 5.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-18', gps_coordinates: '11.9404° N, 108.4583° E', unit_name: 'Thửa Đất Đạ Sar 01' },
-  { id: 'plot-202', production_unit_id: 'pu-02', plot_code: 'PLOT-TT-XV003-02', area: 7.5, status: 'ACTIVE', gps_coordinates: '11.9412° N, 108.4590° E', unit_name: 'Thửa Đất Đạ Sar 02' },
-  { id: 'plot-301', production_unit_id: 'pu-03', plot_code: 'PLOT-TT-XV004-01', area: 8.5, status: 'FALLOW', gps_coordinates: '11.9600° N, 108.4800° E', unit_name: 'Thửa Nghỉ Cải Tạo Đơn Dương' },
+  { id: '935f3083-a8c0-44c3-ab40-ed673553c2e9', production_unit_id: 'ac1b4829-763c-4c48-8d53-1a03a842a3fc', plot_code: 'PLOT-TT-XV001-01', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9515° N, 108.4712° E', unit_name: 'Nhà kính Hòn Bồ 01' },
+  { id: 'b9f60eb1-c5f6-46cf-b1ee-afc6b7573228', production_unit_id: 'ac1b4829-763c-4c48-8d53-1a03a842a3fc', plot_code: 'PLOT-TT-XV001-02', area: 4.0, status: 'ACTIVE', gps_coordinates: '11.9530° N, 108.4724° E', unit_name: 'Nhà kính Hòn Bồ 02' },
+  { id: '13d1d49a-4a13-4fa8-92c6-e9f3cc764153', production_unit_id: 'ac1b4829-763c-4c48-8d53-1a03a842a3fc', plot_code: 'PLOT-TT-XV003-01', area: 3.5, status: 'ACTIVE', gps_coordinates: '11.9560° N, 108.4748° E', unit_name: 'Nhà kính Hòn Bồ 03' },
+  { id: '625faf7a-2c78-43bd-8c25-470a44466e12', production_unit_id: 'ac1b4829-763c-4c48-8d53-1a03a842a3fc', plot_code: 'PLOT-TT-XV006-01', area: 3.0, status: 'ACTIVE', gps_coordinates: '11.9605° N, 108.4784° E', unit_name: 'Thửa Đất Đạ Sar 01' },
+  { id: '05da5294-a6e0-484a-afbb-0f2535de0a77', production_unit_id: 'ac1b4829-763c-4c48-8d53-1a03a842a3fc', plot_code: 'PLOT-TT-XV011-01', area: 4.0, status: 'ACTIVE', gps_coordinates: '11.9635° N, 108.4808° E', unit_name: 'Thửa Đất Đạ Sar 02' },
+  { id: '5e94a3d9-d9e2-4727-b257-bec9c10b6fd2', production_unit_id: 'ac1b4829-763c-4c48-8d53-1a03a842a3fc', plot_code: 'PLOT-TT-XV012-01', area: 3.5, status: 'ACTIVE', gps_coordinates: '11.9650° N, 108.4820° E', unit_name: 'Thửa Nghỉ Cải Tạo Đơn Dương' },
 ];
 
 export function getStoredProductionUnits(): ProductionUnit[] {

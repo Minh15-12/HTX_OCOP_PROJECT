@@ -141,9 +141,9 @@ export const productApi = {
           id: item.id,
           product_code: item.product_code || item.code || item.id,
           product_name: item.product_name || item.name || 'Sản phẩm OCOP',
-          category: item.category || 'Nông sản HTX',
-          specification: item.specification || '',
-          brand: item.brand || 'HTX Tân Tiến',
+          specification: typeof item.specification === 'string'
+            ? item.specification
+            : (item.specification?.package || item.specification?.packaging || (item.specification ? Object.values(item.specification).join(' • ') : '')),
           quality_information: item.quality_information || {},
           star_rating: item.quality_information?.star_rating || item.star_rating || 4,
           price: Number(item.quality_information?.price || item.price || 50000),
@@ -162,65 +162,62 @@ export const productApi = {
   },
 
   async createProduct(payload: CreateProductPayload): Promise<ProductItem> {
-    try {
-      const res: any = await apiClient.post('/products', {
-        ...payload,
-        quality_information: {
-          ...(payload.quality_information || {}),
-          star_rating: payload.star_rating || 4,
-          price: payload.price || 50000,
-          unit: payload.unit || 'Kg',
-        },
-      });
-      const data = res.data?.data || res.data || res;
-      return data;
-    } catch (err) {
-      console.warn('API createProduct notice, using local storage:', err);
-      const list = getStoredProducts();
-      const newProd: ProductItem = {
-        id: `prd-${Date.now()}`,
-        product_code: payload.product_code,
-        product_name: payload.product_name,
-        category: payload.category,
-        specification: payload.specification,
-        brand: payload.brand || 'HTX Tân Tiến',
+    const spec = typeof payload.specification === 'string'
+      ? { package: payload.specification, packaging: payload.specification }
+      : (payload.specification || { package: 'Chuẩn OCOP', packaging: 'Túi/Hộp' });
+
+    const backendPayload = {
+      product_code: payload.product_code,
+      product_name: payload.product_name,
+      category: payload.category,
+      specification: spec,
+      brand: payload.brand || 'HTX Tân Tiến',
+      quality_information: {
+        ...(payload.quality_information || {}),
         star_rating: payload.star_rating || 4,
         price: payload.price || 50000,
         unit: payload.unit || 'Kg',
-        quality_information: {
-          star_rating: payload.star_rating || 4,
-          price: payload.price || 50000,
-          unit: payload.unit || 'Kg',
-        },
-        status: 'ACTIVE',
-        lots_count: 0,
-      };
-      const updated = [newProd, ...list];
-      saveProductsToStorage(updated);
-      return newProd;
-    }
+      },
+    };
+
+    const res: any = await apiClient.post('/products', backendPayload);
+    const data = res.data?.data || res.data || res;
+
+    const formatted: ProductItem = {
+      id: data.id || `prd-${Date.now()}`,
+      product_code: data.product_code || payload.product_code,
+      product_name: data.product_name || payload.product_name,
+      category: data.category || payload.category,
+      specification: typeof data.specification === 'object' ? data.specification?.package || JSON.stringify(data.specification) : data.specification,
+      brand: data.brand || payload.brand,
+      star_rating: payload.star_rating || 4,
+      price: payload.price || 50000,
+      unit: payload.unit || 'Kg',
+      quality_information: data.quality_information || backendPayload.quality_information,
+      status: data.status || 'ACTIVE',
+      lots_count: 0,
+    };
+
+    const list = getStoredProducts();
+    saveProductsToStorage([formatted, ...list]);
+    return formatted;
   },
 
   async attachLotToProduct(productId: string, payload: AttachProductLotPayload): Promise<any> {
-    try {
-      const res = await apiClient.post(`/products/${productId}/lots`, payload);
-      return res.data;
-    } catch (err) {
-      console.warn('API attachLotToProduct notice, updating locally:', err);
-      const list = getStoredProducts();
-      const updated = list.map((p) => {
-        if (p.id === productId) {
-          return {
-            ...p,
-            lots_count: (p.lots_count || 0) + 1,
-            lots: [...(p.lots || []), { lot_id: payload.lot_id, quantity: payload.quantity }],
-          };
-        }
-        return p;
-      });
-      saveProductsToStorage(updated);
-      return { success: true };
-    }
+    const res = await apiClient.post(`/products/${productId}/lots`, payload);
+    const list = getStoredProducts();
+    const updated = list.map((p) => {
+      if (p.id === productId) {
+        return {
+          ...p,
+          lots_count: (p.lots_count || 0) + 1,
+          lots: [...(p.lots || []), { lot_id: payload.lot_id, quantity: payload.quantity }],
+        };
+      }
+      return p;
+    });
+    saveProductsToStorage(updated);
+    return res.data;
   },
 
   async getProductLots(productId: string): Promise<any[]> {

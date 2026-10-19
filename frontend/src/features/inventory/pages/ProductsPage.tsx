@@ -14,6 +14,7 @@ import {
   Calendar,
   AlertCircle,
   Link as LinkIcon,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -24,6 +25,7 @@ import {
 } from '@/services/productApi';
 import { fetchHarvests } from '@/services/harvestApi';
 import type { HarvestItem } from '@/types/agriculture';
+import { exportToExcel } from '@/utils/exportUtils';
 
 const money = (n?: number) => (n || 0).toLocaleString('vi-VN') + ' ₫';
 
@@ -119,6 +121,32 @@ export const ProductsPage: React.FC = () => {
     setAttachModalOpen(true);
   };
 
+  const handleExportProductsExcel = () => {
+    if (!products || products.length === 0) {
+      showToast('Không có sản phẩm nào để xuất Excel!', 'danger');
+      return;
+    }
+
+    const exportRows = products.map((p, index) => {
+      const star = p.star_rating || p.quality_information?.star_rating || 4;
+      return {
+        'STT': index + 1,
+        'Mã sản phẩm': p.product_code,
+        'Tên sản phẩm OCOP': p.product_name,
+        'Phân hạng OCOP': `${star} sao`,
+        'Danh mục': p.category,
+        'Thương hiệu': p.brand || 'HTX Nông nghiệp Tân Tiến',
+        'Quy cách đóng gói': p.specification || '',
+        'Giá bán tham chiếu': p.price ? `${p.price.toLocaleString('vi-VN')} đ` : '-',
+        'Đơn vị tính': p.unit || 'Kg',
+        'Trạng thái': p.status === 'ACTIVE' ? 'Đang lưu hành' : 'Tạm ngưng',
+      };
+    });
+
+    exportToExcel(exportRows, 'Danh_Muc_San_Pham_OCOP_HTX_Tan_Tien', 'SanPhamOCOP');
+    showToast('Xuất danh mục sản phẩm OCOP sang file Excel (.xlsx) thành công!');
+  };
+
   return (
     <div className="space-y-4 pb-12 animate-fade-in font-sans">
       {/* Toast Notification */}
@@ -147,6 +175,13 @@ export const ProductsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => handleExportProductsExcel()}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-[12.5px] border border-slate-300 transition-all cursor-pointer shadow-xs"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+            Xuất Excel Sản Phẩm
+          </button>
           <button
             onClick={() => handleOpenAttachLot()}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-[12.5px] border border-slate-300 transition-all cursor-pointer shadow-xs"
@@ -295,7 +330,11 @@ export const ProductsPage: React.FC = () => {
                     </h3>
                     <p className="text-[12px] text-slate-500 mt-0.5">{p.category}</p>
                     {p.specification && (
-                      <p className="text-[11.5px] text-slate-400 italic mt-0.5 truncate">{p.specification}</p>
+                      <p className="text-[11.5px] text-slate-400 italic mt-0.5 truncate">
+                        {typeof p.specification === 'string'
+                          ? p.specification
+                          : ((p.specification as any)?.package || (p.specification as any)?.packaging || JSON.stringify(p.specification))}
+                      </p>
                     )}
                   </div>
 

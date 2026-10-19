@@ -20,6 +20,7 @@ import type { ActivityType, FarmingLogPayload } from '@/types/agriculture';
 import { ACTIVITY_TYPES_META } from '@/types/agriculture';
 import { createFarmingLog, calculateSafeHarvestDate } from '@/services/farmingLogApi';
 import { getAllStoredPlots } from '@/services/farmPlotApi';
+import { getStoredSeasons, CropSeason } from '@/services/cropSeasonApi';
 import { useToast } from '@/components/ui/ToastNotification';
 
 interface QuickMobileLogModalProps {
@@ -35,6 +36,7 @@ interface PredefinedMaterial {
   batchNumber: string;
   defaultPhi: number;
   unit: string;
+  materialId?: string;
 }
 
 const PREDEFINED_MATERIALS: PredefinedMaterial[] = [
@@ -45,6 +47,7 @@ const PREDEFINED_MATERIALS: PredefinedMaterial[] = [
     batchNumber: 'LOT-BIO-2026-88',
     defaultPhi: 7,
     unit: 'Lít',
+    materialId: '32ceda6a-e7b2-4f57-ac6a-e3cc98f6ff8b',
   },
   {
     key: 'fert-cabo',
@@ -53,6 +56,7 @@ const PREDEFINED_MATERIALS: PredefinedMaterial[] = [
     batchNumber: 'LOT-NPK-2026-12',
     defaultPhi: 0,
     unit: 'Kg',
+    materialId: '2ff08c4b-133f-4268-b5bb-45bf2f19e9a9',
   },
   {
     key: 'bio-neem',
@@ -61,6 +65,7 @@ const PREDEFINED_MATERIALS: PredefinedMaterial[] = [
     batchNumber: 'LOT-NEEM-2026-05',
     defaultPhi: 3,
     unit: 'Lít',
+    materialId: '32ceda6a-e7b2-4f57-ac6a-e3cc98f6ff8b',
   },
   {
     key: 'fert-seaweed',
@@ -69,6 +74,7 @@ const PREDEFINED_MATERIALS: PredefinedMaterial[] = [
     batchNumber: 'LOT-SW-2026-03',
     defaultPhi: 0,
     unit: 'Kg',
+    materialId: '6ee4616f-8f54-4d20-9eb9-d2f148e536cd',
   },
   {
     key: 'lime-clean',
@@ -77,6 +83,7 @@ const PREDEFINED_MATERIALS: PredefinedMaterial[] = [
     batchNumber: 'LOT-VOI-2026-01',
     defaultPhi: 0,
     unit: 'Kg',
+    materialId: 'caccd604-ba17-4338-95c0-5bc361d8ec4e',
   },
   {
     key: 'other',
@@ -160,6 +167,8 @@ export const QuickMobileLogModal: React.FC<QuickMobileLogModalProps> = ({
   const { showToast } = useToast();
 
   const [plots, setPlots] = useState<{ id: string; plot_code: string; name: string }[]>([]);
+  const [seasons, setSeasons] = useState<CropSeason[]>([]);
+  const [cropSeasonId, setCropSeasonId] = useState<string>('c05e8db9-6fb6-4fe6-8110-b73cc109fab3');
   const [activityType, setActivityType] = useState<ActivityType>('SPRAYING');
   const [plotId, setPlotId] = useState<string>('');
   const [activityDate, setActivityDate] = useState<string>(
@@ -167,6 +176,7 @@ export const QuickMobileLogModal: React.FC<QuickMobileLogModalProps> = ({
   );
   const [description, setDescription] = useState<string>('');
   const [materialKey, setMaterialKey] = useState<string>('bio-tricho');
+  const [materialId, setMaterialId] = useState<string | undefined>('32ceda6a-e7b2-4f57-ac6a-e3cc98f6ff8b');
   const [materialName, setMaterialName] = useState<string>('Chế phẩm Sinh học Nấm Đối kháng Bio-Tricho');
   const [materialSku, setMaterialSku] = useState<string>('SKU-BIO-TRICHO-500ML');
   const [materialBatchNumber, setMaterialBatchNumber] = useState<string>('LOT-BIO-2026-88');
@@ -203,6 +213,12 @@ export const QuickMobileLogModal: React.FC<QuickMobileLogModalProps> = ({
       if (plotOptions.length > 0 && !plotId) {
         setPlotId(plotOptions[0].id);
       }
+
+      const storedSeasons = getStoredSeasons();
+      setSeasons(storedSeasons);
+      if (storedSeasons.length > 0 && !cropSeasonId) {
+        setCropSeasonId(storedSeasons[0].id);
+      }
       setValidationError(null);
     }
   }, [isOpen]);
@@ -212,12 +228,14 @@ export const QuickMobileLogModal: React.FC<QuickMobileLogModalProps> = ({
     setMaterialKey(key);
     const found = PREDEFINED_MATERIALS.find((m) => m.key === key);
     if (found && key !== 'other') {
+      setMaterialId(found.materialId);
       setMaterialName(found.name);
       setMaterialSku(found.sku);
       setMaterialBatchNumber(found.batchNumber);
       setPhiDays(found.defaultPhi);
       setUnit(found.unit);
     } else if (key === 'other') {
+      setMaterialId(undefined);
       setMaterialName('');
       setMaterialSku('');
       setMaterialBatchNumber('');
@@ -315,11 +333,12 @@ export const QuickMobileLogModal: React.FC<QuickMobileLogModalProps> = ({
 
     try {
       const payload: FarmingLogPayload = {
-        crop_season_id: 'season-palermo-01',
+        crop_season_id: cropSeasonId || 'c05e8db9-6fb6-4fe6-8110-b73cc109fab3',
         plot_id: plotId,
         activity_type: activityType,
         activity_date: activityDate,
         description: description || `Ghi nhận ${ACTIVITY_TYPES_META[activityType].label} tại nhà kính Sweet Palermo`,
+        material_id: materialId,
         material_name: materialName || undefined,
         material_sku: materialSku || undefined,
         material_batch_number: materialBatchNumber || undefined,
@@ -441,11 +460,28 @@ export const QuickMobileLogModal: React.FC<QuickMobileLogModalProps> = ({
             </div>
           </div>
 
-          {/* Plot & Date Selection */}
+          {/* Season, Plot & Date Selection */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              2. Mùa vụ canh tác <span className="text-rose-500">*</span>
+            </label>
+            <select
+              value={cropSeasonId}
+              onChange={(e) => setCropSeasonId(e.target.value)}
+              className="w-full min-h-[48px] rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-200"
+            >
+              {seasons.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.crop})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                2. Thửa đất canh tác <span className="text-rose-500">*</span>
+                3. Thửa đất canh tác <span className="text-rose-500">*</span>
               </label>
               <select
                 value={plotId}
@@ -462,7 +498,7 @@ export const QuickMobileLogModal: React.FC<QuickMobileLogModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                3. Ngày thực hiện <span className="text-rose-500">*</span>
+                4. Ngày thực hiện <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <input

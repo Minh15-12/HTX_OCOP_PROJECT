@@ -19,6 +19,10 @@ import {
   FileSpreadsheet,
   Layers,
   Sparkles,
+  Printer,
+  Download,
+  X,
+  Building,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -33,6 +37,32 @@ import { getMembersFromApi } from '@/services/memberService';
 import { Member } from '@/types/memberTypes';
 
 const money = (n: number) => (n || 0).toLocaleString('vi-VN') + ' ₫';
+
+function exportToCsv(filename: string, headers: string[], rows: (string | number | undefined | null)[][]) {
+  const csvContent =
+    '\uFEFF' +
+    [
+      headers.join(','),
+      ...rows.map((row) =>
+        row
+          .map((field) => {
+            const str = String(field ?? '').replace(/"/g, '""');
+            return `"${str}"`;
+          })
+          .join(',')
+      ),
+    ].join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 type FinanceTab = 'cashbook' | 'debts' | 'settlements';
 
@@ -49,15 +79,18 @@ export const FinancePage: React.FC = () => {
   // ==========================================
   // TAB 1: SỔ QUỸ THU - CHI (CASH TRANSACTIONS)
   // ==========================================
+  const [selectedVoucherForPrint, setSelectedVoucherForPrint] = useState<CashTransaction | null>(null);
   const [cashModalOpen, setCashModalOpen] = useState(false);
   const [cashFilterType, setCashFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
   const [cashSearch, setCashSearch] = useState('');
   const [cashForm, setCashForm] = useState({
     transaction_type: 'INCOME' as 'INCOME' | 'EXPENSE',
+    transaction_date: new Date().toISOString().slice(0, 10),
     category: 'Thu mua nông sản',
     amount: 5000000,
     description: 'Thanh toán đợt thu hoạch nông sản',
     person_name: 'Nguyễn Văn A',
+    member_id: '',
     payment_method: 'BANK_TRANSFER' as 'CASH' | 'BANK_TRANSFER',
   });
 
@@ -98,6 +131,23 @@ export const FinancePage: React.FC = () => {
 
   const netBalance = totalIncome - totalExpense;
 
+  const handleExportCashbook = () => {
+    const headers = ['Mã phiếu', 'Ngày giao dịch', 'Loại phiếu', 'Hạng mục', 'Đối tác / Xã viên', 'Số tiền (VNĐ)', 'Hình thức', 'Trạng thái', 'Nội dung'];
+    const rows = filteredCash.map((t) => [
+      t.voucherNumber,
+      t.transactionDate,
+      t.transactionType === 'INCOME' ? 'Phiếu Thu' : 'Phiếu Chi',
+      t.category,
+      t.personName,
+      t.amount,
+      t.paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản' : 'Tiền mặt',
+      t.status === 'POSTED' ? 'Đã ghi sổ' : 'Đã duyệt',
+      t.description,
+    ]);
+    exportToCsv(`So_Quy_HTX_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+    showToast('Đã xuất file Excel / CSV Sổ Quỹ thành công!');
+  };
+
   // ==========================================
   // TAB 2: CÔNG NỢ XÃ VIÊN & ĐỐI TÁC (RECEIVABLES/PAYABLES)
   // ==========================================
@@ -105,6 +155,7 @@ export const FinancePage: React.FC = () => {
   const [debtSearch, setDebtSearch] = useState('');
   const [settleDebtModalOpen, setSettleDebtModalOpen] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<ReceivablePayable | null>(null);
+  const [settleDebtDate, setSettleDebtDate] = useState(new Date().toISOString().slice(0, 10));
   const [settleDebtAmount, setSettleDebtAmount] = useState(0);
   const [settleDebtMethod, setSettleDebtMethod] = useState<'CASH' | 'BANK_TRANSFER'>('BANK_TRANSFER');
   const [settleDebtNotes, setSettleDebtNotes] = useState('');
@@ -113,6 +164,21 @@ export const FinancePage: React.FC = () => {
     queryKey: ['receivablePayables'],
     queryFn: () => financeApi.getReceivablePayables().catch(() => []),
   });
+
+  const handleExportDebts = () => {
+    const headers = ['Đối tượng', 'Phân loại', 'Tổng nợ ban đầu (VNĐ)', 'Dư nợ còn lại (VNĐ)', 'Hạn tất toán', 'Trạng thái', 'Mô tả'];
+    const rows = filteredDebts.map((d) => [
+      d.debtorName,
+      d.debtType === 'RECEIVABLE' ? 'Phải thu (Vật tư)' : 'Phải trả',
+      d.totalAmount,
+      d.remainingAmount,
+      d.dueDate || 'Theo vụ',
+      d.status === 'SETTLED' ? 'Đã tất toán' : d.status === 'PARTIAL' ? 'Đã trả 1 phần' : 'Đang mở',
+      d.description,
+    ]);
+    exportToCsv(`Cong_No_HTX_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+    showToast('Đã xuất file Excel / CSV Công Nợ thành công!');
+  };
 
   const createDebtSettlementMutation = useMutation({
     mutationFn: ({ debtId, payload }: { debtId: string; payload: any }) =>
@@ -204,11 +270,28 @@ export const FinancePage: React.FC = () => {
 
   const handleOpenSettleDebt = (debt: ReceivablePayable) => {
     setSelectedDebt(debt);
+    setSettleDebtDate(new Date().toISOString().slice(0, 10));
     setSettleDebtAmount(debt.remainingAmount);
+    setSettleDebtNotes(`Thanh toán cấn trừ nợ cho ${debt.debtorName}`);
     setSettleDebtModalOpen(true);
   };
 
   const totalSettledAmount = harvestSettlements.reduce((sum, s) => sum + s.amount, 0);
+
+  const handleExportSettlements = () => {
+    const headers = ['Ngày quyết toán', 'Mã phiếu / Tham chiếu', 'Xã viên thụ hưởng', 'Hình thức thanh toán', 'Số tiền cấn trừ (VNĐ)', 'Trạng thái', 'Mô tả'];
+    const rows = harvestSettlements.map((s) => [
+      s.settlement_date,
+      s.voucher_number || s.debt_code,
+      s.member_name,
+      s.payment_method === 'HARVEST_OFFSET' ? 'Cấn trừ nợ nông sản' : s.payment_method,
+      s.amount,
+      s.status === 'POSTED' ? 'Đã hoàn tất' : 'Đã ghi sổ',
+      s.note,
+    ]);
+    exportToCsv(`Quyet_Toan_Mua_Vu_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+    showToast('Đã xuất file Excel / CSV Quyết Toán Mùa Vụ thành công!');
+  };
 
   return (
     <div className="space-y-4 pb-12 animate-fade-in font-sans">
@@ -268,7 +351,7 @@ export const FinancePage: React.FC = () => {
               TIỀN MẶT
             </span>
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-2">{money(netBalance > 0 ? netBalance : 485000000)}</div>
+          <div className="text-2xl font-black text-slate-900 mt-2">{money(netBalance)}</div>
           <div className="text-[11px] text-slate-400 mt-1">Đã đối chiếu sổ tiền mặt & ngân hàng</div>
         </div>
 
@@ -281,7 +364,7 @@ export const FinancePage: React.FC = () => {
               THU QUỸ
             </span>
           </div>
-          <div className="text-2xl font-black text-emerald-700 mt-2">{money(totalIncome || 320500000)}</div>
+          <div className="text-2xl font-black text-emerald-700 mt-2">{money(totalIncome)}</div>
           <div className="text-[11px] text-emerald-600 mt-1 font-semibold">Bao gồm thu bán nông sản & cổ tức</div>
         </div>
 
@@ -294,7 +377,7 @@ export const FinancePage: React.FC = () => {
               PHẢI THU
             </span>
           </div>
-          <div className="text-2xl font-black text-amber-700 mt-2">{money(totalReceivable || 7500000)}</div>
+          <div className="text-2xl font-black text-amber-700 mt-2">{money(totalReceivable)}</div>
           <div className="text-[11px] text-slate-500 mt-1">Xã viên nợ phân bón, giống trả chậm</div>
         </div>
 
@@ -307,7 +390,7 @@ export const FinancePage: React.FC = () => {
               QUYẾT TOÁN
             </span>
           </div>
-          <div className="text-2xl font-black text-sky-700 mt-2">{money(totalSettledAmount || 43750000)}</div>
+          <div className="text-2xl font-black text-sky-700 mt-2">{money(totalSettledAmount)}</div>
           <div className="text-[11px] text-slate-500 mt-1">Tự động cấn trừ qua sản lượng thu hoạch</div>
         </div>
       </div>
@@ -371,7 +454,16 @@ export const FinancePage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500">Loại phiếu:</span>
+              <button
+                onClick={handleExportCashbook}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                title="Xuất dữ liệu Sổ Quỹ ra Excel/CSV"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Xuất Excel Sổ Quỹ</span>
+              </button>
+
+              <span className="text-xs font-bold text-slate-500 ml-2">Loại phiếu:</span>
               <select
                 value={cashFilterType}
                 onChange={(e) => setCashFilterType(e.target.value as any)}
@@ -394,18 +486,19 @@ export const FinancePage: React.FC = () => {
                 <th className="py-3 px-4">Hình thức</th>
                 <th className="py-3 px-4 text-right">Số tiền</th>
                 <th className="py-3 px-4">Trạng thái</th>
+                <th className="py-3 px-4 text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loadingCash ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-slate-400 text-xs font-medium">
+                  <td colSpan={8} className="text-center py-8 text-slate-400 text-xs font-medium">
                     Đang nạp dữ liệu sổ quỹ...
                   </td>
                 </tr>
               ) : filteredCash.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-slate-400 text-xs font-medium">
+                  <td colSpan={8} className="text-center py-8 text-slate-400 text-xs font-medium">
                     Chưa có giao dịch thu chi nào phù hợp điều kiện tìm kiếm.
                   </td>
                 </tr>
@@ -439,6 +532,15 @@ export const FinancePage: React.FC = () => {
                         {t.status === 'POSTED' ? 'Đã ghi sổ' : 'Đã duyệt'}
                       </span>
                     </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => setSelectedVoucherForPrint(t)}
+                        className="px-2.5 py-1 text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-300 transition-colors cursor-pointer inline-flex items-center gap-1"
+                        title="In phiếu Thu/Chi theo mẫu chuẩn"
+                      >
+                        <Printer className="w-3.5 h-3.5" /> In phiếu
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -467,7 +569,16 @@ export const FinancePage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500">Phân loại nợ:</span>
+              <button
+                onClick={handleExportDebts}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                title="Xuất dữ liệu Công Nợ ra Excel/CSV"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Xuất Excel Công Nợ</span>
+              </button>
+
+              <span className="text-xs font-bold text-slate-500 ml-2">Phân loại nợ:</span>
               <select
                 value={debtFilterType}
                 onChange={(e) => setDebtFilterType(e.target.value as any)}
@@ -582,12 +693,20 @@ export const FinancePage: React.FC = () => {
                 nhận phiếu chi thực nhận về sổ quỹ.
               </p>
             </div>
-            <button
-              onClick={handleOpenSettleSeason}
-              className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-xl shadow-sm inline-flex items-center gap-1.5 shrink-0"
-            >
-              <Plus className="w-4 h-4" /> Lập đợt quyết toán mùa vụ
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleExportSettlements}
+                className="px-3.5 py-2.5 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 font-extrabold text-xs rounded-xl shadow-xs inline-flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Xuất Excel Quyết Toán
+              </button>
+              <button
+                onClick={handleOpenSettleSeason}
+                className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-xl shadow-sm inline-flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Lập đợt quyết toán mùa vụ
+              </button>
+            </div>
           </div>
 
           <table className="w-full text-left border-collapse text-[12.9px]">
@@ -659,15 +778,52 @@ export const FinancePage: React.FC = () => {
               }}
               className="space-y-3 text-xs"
             >
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Loại phiếu *</label>
+                  <select
+                    value={cashForm.transaction_type}
+                    onChange={(e) => setCashForm({ ...cashForm, transaction_type: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-800"
+                  >
+                    <option value="INCOME">Phiếu Thu (+)</option>
+                    <option value="EXPENSE">Phiếu Chi (-)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Ngày giao dịch *</label>
+                  <input
+                    type="date"
+                    value={cashForm.transaction_date}
+                    onChange={(e) => setCashForm({ ...cashForm, transaction_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-800"
+                    required
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Loại phiếu</label>
+                <label className="block font-bold text-slate-700 mb-1">Chọn nhanh Xã viên (tùy chọn)</label>
                 <select
-                  value={cashForm.transaction_type}
-                  onChange={(e) => setCashForm({ ...cashForm, transaction_type: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-800"
+                  value={cashForm.member_id}
+                  onChange={(e) => {
+                    const mId = e.target.value;
+                    const found = members.find((m) => m.id === mId);
+                    setCashForm({
+                      ...cashForm,
+                      member_id: mId,
+                      person_name: found ? `${found.full_name} (${found.member_code})` : cashForm.person_name,
+                    });
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-700 bg-slate-50"
                 >
-                  <option value="INCOME">Phiếu Thu (Doanh thu bán nông sản / Cổ tức / Thu nợ)</option>
-                  <option value="EXPENSE">Phiếu Chi (Mua vật tư / Chi trả tiền nông sản / Vận hành)</option>
+                  <option value="">-- Chọn xã viên nếu có --</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.full_name} ({m.member_code})
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -775,13 +931,25 @@ export const FinancePage: React.FC = () => {
                   debtId: selectedDebt.id,
                   payload: {
                     amount: settleDebtAmount,
+                    settlement_date: settleDebtDate,
                     payment_method: settleDebtMethod,
-                    notes: settleDebtNotes,
+                    note: settleDebtNotes,
                   },
                 });
               }}
               className="space-y-3 text-xs"
             >
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Ngày thanh toán / cấn trừ *</label>
+                <input
+                  type="date"
+                  value={settleDebtDate}
+                  onChange={(e) => setSettleDebtDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-slate-800"
+                  required
+                />
+              </div>
+
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Số tiền thanh toán / cấn trừ *</label>
                 <input
@@ -966,6 +1134,146 @@ export const FinancePage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: IN CHỨNG TỪ THU / CHI KẾ TOÁN (VOUCHER PRINT PREVIEW) */}
+      {/* ========================================================================= */}
+      {selectedVoucherForPrint && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 text-slate-800">
+            {/* Action Bar (Top) */}
+            <div className="flex items-center justify-between border-b pb-3 border-slate-200">
+              <div className="flex items-center gap-2">
+                <Printer className="w-5 h-5 text-emerald-700" />
+                <span className="font-extrabold text-sm text-slate-900">
+                  Xem & In Chứng Từ Kế Toán HTX
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-sm transition-all"
+                >
+                  <Printer className="w-4 h-4" /> In Phiếu (Print)
+                </button>
+                <button
+                  onClick={() => setSelectedVoucherForPrint(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Voucher Paper */}
+            <div className="border border-slate-300 rounded-xl p-6 bg-slate-50/50 space-y-4 font-serif text-xs">
+              <div className="flex justify-between items-start border-b border-dashed border-slate-300 pb-4">
+                <div>
+                  <div className="font-bold text-[11px] uppercase tracking-wide text-slate-700">
+                    HỢP TÁC XÃ NÔNG NGHIỆP CÔNG NGHỆ CAO
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    Hệ thống Quản trị HTX & Nông sản OCOP
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-[11px] text-slate-700">
+                    Mẫu số: {selectedVoucherForPrint.transactionType === 'INCOME' ? '01-TT' : '02-TT'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 italic">
+                    (Ban hành theo Thông tư 200/2014/TT-BTC)
+                  </div>
+                  <div className="font-mono font-bold text-emerald-800 mt-1">
+                    Số: {selectedVoucherForPrint.voucherNumber}
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center py-2">
+                <h2 className="text-xl font-black uppercase tracking-wider text-slate-900 font-sans">
+                  {selectedVoucherForPrint.transactionType === 'INCOME' ? 'PHIẾU THU' : 'PHIẾU CHI'}
+                </h2>
+                <div className="text-slate-500 italic text-[11px] mt-0.5">
+                  Ngày {selectedVoucherForPrint.transactionDate.split('-')[2] || '...'} tháng {selectedVoucherForPrint.transactionDate.split('-')[1] || '...'} năm {selectedVoucherForPrint.transactionDate.split('-')[0] || '...'}
+                </div>
+              </div>
+
+              <div className="space-y-2 text-slate-800 font-sans leading-relaxed text-[12.5px]">
+                <div className="flex">
+                  <span className="w-44 text-slate-600">
+                    {selectedVoucherForPrint.transactionType === 'INCOME' ? 'Họ tên người nộp tiền:' : 'Họ tên người nhận tiền:'}
+                  </span>
+                  <span className="font-bold flex-1">{selectedVoucherForPrint.personName}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-44 text-slate-600">Hạng mục thu / chi:</span>
+                  <span className="font-medium flex-1">{selectedVoucherForPrint.category}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-44 text-slate-600">Lý do / Nội dung:</span>
+                  <span className="flex-1 italic">{selectedVoucherForPrint.description || 'Thanh toán nghiệp vụ HTX'}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-44 text-slate-600">Số tiền:</span>
+                  <span className="font-black text-emerald-800 text-sm flex-1">
+                    {money(selectedVoucherForPrint.amount)}
+                  </span>
+                </div>
+                <div className="flex">
+                  <span className="w-44 text-slate-600">Hình thức thanh toán:</span>
+                  <span className="font-medium flex-1">
+                    {selectedVoucherForPrint.paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản qua ngân hàng' : 'Tiền mặt tại quỹ HTX'}
+                  </span>
+                </div>
+                <div className="flex">
+                  <span className="w-44 text-slate-600">Chứng từ gốc kèm theo:</span>
+                  <span className="italic text-slate-500 flex-1">01 chứng từ giao dịch</span>
+                </div>
+              </div>
+
+              {/* Signatures */}
+              <div className="grid grid-cols-4 gap-2 pt-6 text-center font-sans">
+                <div>
+                  <div className="font-bold text-[11px]">Giám đốc HTX</div>
+                  <div className="text-[10px] text-slate-400 italic">(Ký, họ tên, đóng dấu)</div>
+                  <div className="h-16"></div>
+                  <div className="font-bold text-[11px] text-slate-700">Ban Giám Đốc</div>
+                </div>
+                <div>
+                  <div className="font-bold text-[11px]">Kế toán trưởng</div>
+                  <div className="text-[10px] text-slate-400 italic">(Ký, họ tên)</div>
+                  <div className="h-16"></div>
+                  <div className="font-bold text-[11px] text-slate-700">Kế toán HTX</div>
+                </div>
+                <div>
+                  <div className="font-bold text-[11px]">Thủ quỹ</div>
+                  <div className="text-[10px] text-slate-400 italic">(Ký, họ tên)</div>
+                  <div className="h-16"></div>
+                  <div className="font-bold text-[11px] text-slate-700">Thủ quỹ HTX</div>
+                </div>
+                <div>
+                  <div className="font-bold text-[11px]">
+                    {selectedVoucherForPrint.transactionType === 'INCOME' ? 'Người nộp tiền' : 'Người nhận tiền'}
+                  </div>
+                  <div className="text-[10px] text-slate-400 italic">(Ký, họ tên)</div>
+                  <div className="h-16"></div>
+                  <div className="font-bold text-[11px] text-slate-700">{selectedVoucherForPrint.personName}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Close Button */}
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setSelectedVoucherForPrint(null)}
+                className="px-4 py-2 border border-slate-300 rounded-lg font-bold text-xs text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -38,6 +38,46 @@ class AuthServiceProvider extends ServiceProvider
                     // SYSTEM_ADMIN gets technical administration access automatically
                     return true;
                 }
+
+                // HTX_OWNER (Cooperative Executive / Legal Representative)
+                if ($user->hasRole('HTX_OWNER')) {
+                    $htxOwnerAbilities = [
+                        'FINANCE.CREATE',
+                        'FINANCE.READ',
+                        'FINANCE.UPDATE',
+                        'FINANCE.DELETE',
+                        'FINANCE.TRANSACTION.CREATE',
+                        'FINANCE.TRANSACTION.APPROVE',
+                        'FINANCE.POST',
+                        'DEBT.CREATE',
+                        'DEBT.SETTLE',
+                        'AGRICULTURE.CREATE',
+                        'AGRICULTURE.READ',
+                        'AGRICULTURE.UPDATE',
+                        'AGRICULTURE.DELETE',
+                        'AGRICULTURE.LOG.CREATE',
+                        'AGRICULTURE.LOG.UPDATE',
+                        'AGRICULTURE.LOG.DELETE',
+                        'AGRICULTURE.LOG.READ',
+                        'AGRICULTURE.PLOT.CREATE',
+                        'AGRICULTURE.PLOT.READ',
+                        'AGRICULTURE.PLOT.UPDATE',
+                        'AGRICULTURE.SEASON.CREATE',
+                        'AGRICULTURE.SEASON.READ',
+                        'AGRICULTURE.SEASON.UPDATE',
+                        'PRODUCT.CREATE',
+                        'PRODUCT.READ',
+                        'PRODUCT.UPDATE',
+                        'PRODUCT.DELETE',
+                        'OCOP.CREATE',
+                        'OCOP.READ',
+                        'OCOP.UPDATE',
+                        'OCOP.DELETE',
+                    ];
+                    if (in_array($ability, $htxOwnerAbilities, true)) {
+                        return true;
+                    }
+                }
             }
             return null;
         });
@@ -49,7 +89,13 @@ class AuthServiceProvider extends ServiceProvider
             }
 
             if ($user instanceof UserModel && $user->status === 'ACTIVE') {
-                return $user->hasPermission($ability);
+                if ($user->hasPermission($ability)) {
+                    return true;
+                }
+                // Handle aliases (e.g. FINANCE.CREATE -> FINANCE.TRANSACTION.CREATE)
+                if ($ability === 'FINANCE.CREATE' && $user->hasPermission('FINANCE.TRANSACTION.CREATE')) {
+                    return true;
+                }
             }
 
             return false;

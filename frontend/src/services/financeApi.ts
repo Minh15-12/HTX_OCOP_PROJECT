@@ -101,11 +101,23 @@ export const financeApi = {
     transaction_type: 'INCOME' | 'EXPENSE';
     category: string;
     amount: number;
-    description: string;
-    person_name: string;
-    payment_method: 'CASH' | 'BANK_TRANSFER';
+    transaction_date?: string;
+    description?: string;
+    payer_payee?: string;
+    person_name?: string;
+    payment_method?: 'CASH' | 'BANK_TRANSFER';
+    member_id?: string;
   }): Promise<CashTransaction> {
-    const res = await apiClient.post<any>('/cash-transactions', payload);
+    const backendPayload = {
+      transaction_type: payload.transaction_type,
+      category: payload.category,
+      amount: Number(payload.amount),
+      transaction_date: payload.transaction_date || new Date().toISOString().slice(0, 10),
+      description: payload.description,
+      payer_payee: payload.payer_payee || payload.person_name,
+      member_id: payload.member_id || undefined,
+    };
+    const res = await apiClient.post<any>('/cash-transactions', backendPayload);
     return mapApiCashTransactionToFrontend(res.data?.data || res.data || res);
   },
 
@@ -174,8 +186,23 @@ export const financeApi = {
     return res.data?.data || res.data || res;
   },
 
-  async createDebtSettlement(debtId: string, payload: { amount: number; payment_method: string; notes?: string }): Promise<any> {
-    const res = await apiClient.post<any>(`/receivable-payables/${debtId}/settlements`, payload);
+  async createDebtSettlement(
+    debtId: string,
+    payload: {
+      amount: number;
+      payment_method?: string;
+      settlement_date?: string;
+      note?: string;
+      notes?: string;
+    }
+  ): Promise<any> {
+    const backendPayload = {
+      amount: Number(payload.amount),
+      payment_method: payload.payment_method || 'CASH',
+      settlement_date: payload.settlement_date || new Date().toISOString().slice(0, 10),
+      note: payload.note || payload.notes || 'Thanh toán cấn trừ nợ',
+    };
+    const res = await apiClient.post<any>(`/receivable-payables/${debtId}/settlements`, backendPayload);
     return res.data?.data || res.data || res;
   },
 };

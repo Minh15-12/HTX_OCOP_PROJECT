@@ -65,11 +65,16 @@ class ProductController extends BaseController
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền tạo mới sản phẩm', status: 403);
         }
 
+        $spec = $request->input('specification');
+        if (is_string($spec)) {
+            $spec = ['package' => $spec, 'packaging' => $spec];
+        }
+
         $dto = new CreateProductDTO(
             productCode: $request->input('product_code'),
             productName: $request->input('product_name'),
             category: $request->input('category'),
-            specification: $request->input('specification'),
+            specification: $spec,
             brand: $request->input('brand'),
             qualityInformation: $request->input('quality_information'),
             cooperativeId: $request->input('cooperative_id')

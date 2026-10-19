@@ -1,4 +1,4 @@
-export type MemberType = 'CHINH_THUC' | 'LIEN_KET_GOP_VON' | 'LIEN_KET_KHONG_GOP_VON';
+export type MemberType = 'CHINH_THUC' | 'LIEN_KET_GOP_VON' | 'LIEN_KET_KHONG_GOP_VON' | 'LIEN_KET' | 'OFFICIAL' | 'ASSOCIATED';
 export type MemberStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'REJECTED' | 'SUSPENDED' | 'PENDING_TERMINATION' | 'TERMINATED';
 export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'LAND' | 'ASSET';
 export type CapitalForm = 'TIEN_MAT' | 'HIEN_VAT' | 'QUYEN_SU_DUNG_DAT';
@@ -7,6 +7,9 @@ export const MEMBER_TYPE_LABELS: Record<MemberType, string> = {
   CHINH_THUC: 'Chính thức',
   LIEN_KET_GOP_VON: 'Liên kết góp vốn',
   LIEN_KET_KHONG_GOP_VON: 'Liên kết không góp vốn',
+  LIEN_KET: 'Liên kết',
+  OFFICIAL: 'Chính thức',
+  ASSOCIATED: 'Liên kết',
 };
 
 export interface LandContribution {
