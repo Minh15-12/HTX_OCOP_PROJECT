@@ -95,12 +95,22 @@ export const ProductsPage: React.FC = () => {
     },
   });
 
+  const normalizeSearch = (s: string) =>
+    (s || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+
   const filteredProducts = products.filter((p) => {
+    const term = normalizeSearch(search);
     const matchSearch =
-      p.product_name.toLowerCase().includes(search.toLowerCase()) ||
-      p.product_code.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase());
-    const matchStar = starFilter === 'ALL' || (p.star_rating || p.quality_information?.star_rating) === starFilter;
+      !term ||
+      normalizeSearch(p.product_name).includes(term) ||
+      normalizeSearch(p.product_code).includes(term) ||
+      normalizeSearch(p.category).includes(term);
+    const star = p.star_rating || p.quality_information?.star_rating || 4;
+    const matchStar = starFilter === 'ALL' || star === starFilter;
     return matchSearch && matchStar;
   });
 
