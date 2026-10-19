@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { 
   FileCheck, Upload, Download, ShieldCheck, FileText, Check, Trash2, Search, 
   AlertTriangle, RefreshCw, Eye, Plus, Link, Clock, FileWarning, ShieldAlert
 } from 'lucide-react';
+import { apiClient } from '@/services/apiClient';
 
 export interface EvidenceRecord {
   stt: number;
@@ -23,6 +25,19 @@ export const EvidencesPage: React.FC = () => {
   const [search, setSearch] = useState<string>('');
   const [activeTabCategory, setActiveTabCategory] = useState<string>('ALL');
   const [selectedFile, setSelectedFile] = useState<EvidenceRecord | null>(null);
+
+  const { data: apiEvidencesData, isLoading, refetch } = useQuery({
+    queryKey: ['ocop-evidences-list'],
+    queryFn: async () => {
+      try {
+        const res: any = await apiClient.get('/ocop/evidences');
+        return res.data?.data || res.data || [];
+      } catch (err) {
+        console.warn('Cannot fetch evidences from API, falling back to mock:', err);
+        return [];
+      }
+    },
+  });
 
   const mockEvidences: EvidenceRecord[] = [
     {
@@ -125,13 +140,58 @@ export const EvidencesPage: React.FC = () => {
     },
   ];
 
-  const activeRecord = selectedFile || mockEvidences[0];
+  // Map API evidences or fallback to mock
+  const displayEvidences: EvidenceRecord[] = (apiEvidencesData && apiEvidencesData.length > 0)
+    ? apiEvidencesData.map((e: any, index: number) => {
+        const currentVer = e.current_version;
+        const sizeBytes = currentVer?.file_size || 0;
+        const sizeStr = sizeBytes > 1024 * 1024
+          ? (sizeBytes / (1024 * 1024)).toFixed(1) + ' MB'
+          : (sizeBytes / 1024).toFixed(0) + ' KB';
 
-  const filteredEvidences = mockEvidences.filter((e) => {
+        let category = 'Pháp lý chủ thể';
+        if (e.evidence_type === 'LAB_REPORT' || e.title?.includes('QUATEST') || e.title?.includes('Pasteur')) {
+          category = 'Chất lượng & ATTP';
+        } else if (e.evidence_type === 'PROCESS_PHOTO' || e.title?.includes('Bao bì') || e.title?.includes('WinMart')) {
+          category = 'Bao bì & Truy xuất';
+        } else if (e.title?.includes('Hợp đồng') || e.title?.includes('bao tiêu') || e.title?.includes('Phân phối')) {
+          category = 'Thị trường tiêu thụ';
+        } else if (e.evidence_type === 'CERTIFICATE') {
+          category = 'Chứng nhận tiêu chuẩn';
+        }
+
+        const isVerified = e.status === 'VERIFIED';
+        const isRejected = e.status === 'REJECTED';
+
+        return {
+          stt: index + 1,
+          id: e.id,
+          name: currentVer?.file_name || e.title,
+          category,
+          dossierCode: 'OCOP-2026-DALAT-001',
+          size: sizeStr,
+          format: (currentVer?.mime_type === 'image/jpeg' ? 'JPG' : 'PDF') as 'PDF' | 'JPG' | 'PNG' | 'DOCX',
+          checksum: currentVer?.checksum || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+          status: (isVerified ? 'VALID' : (isRejected ? 'REJECTED' : 'PENDING')) as 'VALID' | 'PENDING' | 'EXPIRING' | 'REJECTED',
+          statusLabel: isVerified ? 'Đã thẩm định' : (isRejected ? 'Bị từ chối' : 'Chờ duyệt'),
+          uploadDate: currentVer?.uploaded_at ? new Date(currentVer.uploaded_at).toLocaleString('vi-VN') : '12/01/2026 10:15',
+          uploader: 'Quản Trị Viên HTX',
+        };
+      })
+    : mockEvidences;
+
+  const activeRecord = selectedFile || displayEvidences[0];
+
+  const filteredEvidences = displayEvidences.filter((e) => {
     const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase()) || e.dossierCode.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = activeTabCategory === 'ALL' || e.category.includes(activeTabCategory);
     return matchesSearch && matchesCategory;
   });
+
+  const totalCount = displayEvidences.length;
+  const validCount = displayEvidences.filter(e => e.status === 'VALID').length;
+  const pendingCount = displayEvidences.filter(e => e.status === 'PENDING').length;
+  const rejectedCount = displayEvidences.filter(e => e.status === 'REJECTED').length;
 
   return (
     <div className="space-y-5 pb-20 animate-fade-in text-slate-800">
@@ -146,21 +206,29 @@ export const EvidencesPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => alert('Chọn tệp minh chứng từ máy tính để tải lên kho bảo mật SHA-256.')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs shadow-sm transition-all shrink-0 active:scale-98"
-        >
-          <Plus className="w-4 h-4 stroke-[3]" /> Tải lên tài liệu
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-xs transition-all active:scale-98"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} /> Làm mới
+          </button>
+          <button
+            onClick={() => alert('Chọn tệp minh chứng từ máy tính để tải lên kho bảo mật SHA-256.')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs shadow-sm transition-all shrink-0 active:scale-98"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" /> Tải lên tài liệu
+          </button>
+        </div>
       </div>
 
-      {/* 4 KPI Top Stat Cards (Matching Image 2) */}
+      {/* 4 KPI Top Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <div className="text-[11.5px] text-slate-500 font-bold">Tổng số tài liệu</div>
-            <div className="text-2xl font-black text-slate-900">156</div>
-            <div className="text-[10.5px] text-emerald-600 font-bold">&uarr; 12% <span className="text-slate-400 font-normal">so với tháng trước</span></div>
+            <div className="text-2xl font-black text-slate-900">{totalCount}</div>
+            <div className="text-[10.5px] text-emerald-600 font-bold">&uarr; 100% <span className="text-slate-400 font-normal">hồ sơ số hóa</span></div>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-black">
             <FileText className="w-5 h-5" />
@@ -170,8 +238,8 @@ export const EvidencesPage: React.FC = () => {
         <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <div className="text-[11.5px] text-slate-500 font-bold">Tài liệu hợp lệ</div>
-            <div className="text-2xl font-black text-slate-900">142</div>
-            <div className="text-[10.5px] text-emerald-600 font-bold">&uarr; 91,0%</div>
+            <div className="text-2xl font-black text-slate-900">{validCount}</div>
+            <div className="text-[10.5px] text-emerald-600 font-bold">&uarr; {totalCount > 0 ? ((validCount / totalCount) * 100).toFixed(0) : 0}%</div>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center font-black">
             <Check className="w-5 h-5 stroke-[3]" />
@@ -180,9 +248,9 @@ export const EvidencesPage: React.FC = () => {
 
         <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
-            <div className="text-[11.5px] text-slate-500 font-bold">Sắp hết hạn</div>
-            <div className="text-2xl font-black text-slate-900">8</div>
-            <div className="text-[10.5px] text-amber-600 font-bold">&uarr; 5,1%</div>
+            <div className="text-[11.5px] text-slate-500 font-bold">Chờ duyệt / Thiếu</div>
+            <div className="text-2xl font-black text-slate-900">{pendingCount}</div>
+            <div className="text-[10.5px] text-amber-600 font-bold">&uarr; {pendingCount} hồ sơ</div>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center font-black">
             <Clock className="w-5 h-5" />
@@ -192,8 +260,8 @@ export const EvidencesPage: React.FC = () => {
         <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <div className="text-[11.5px] text-slate-500 font-bold">Bị từ chối</div>
-            <div className="text-2xl font-black text-slate-900">2</div>
-            <div className="text-[10.5px] text-rose-600 font-bold">&darr; 1,3%</div>
+            <div className="text-2xl font-black text-slate-900">{rejectedCount}</div>
+            <div className="text-[10.5px] text-rose-600 font-bold">&darr; {rejectedCount} hồ sơ</div>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center font-black">
             <FileWarning className="w-5 h-5" />
@@ -230,12 +298,12 @@ export const EvidencesPage: React.FC = () => {
               {/* Category Pills */}
               <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-bold pb-1">
                 {[
-                  { id: 'ALL', label: 'Tất cả (156)' },
-                  { id: 'Pháp lý', label: 'Pháp lý chủ thể (28)' },
-                  { id: 'Chất lượng', label: 'Chất lượng & ATTP (64)' },
-                  { id: 'Bao bì', label: 'Bao bì & Truy xuất (32)' },
-                  { id: 'Thị trường', label: 'Thị trường tiêu thụ (18)' },
-                  { id: 'Khác', label: 'Khác (14)' },
+                  { id: 'ALL', label: `Tất cả (${displayEvidences.length})` },
+                  { id: 'Pháp lý', label: `Pháp lý (${displayEvidences.filter(e => e.category.includes('Pháp lý')).length})` },
+                  { id: 'Chất lượng', label: `Chất lượng & ATTP (${displayEvidences.filter(e => e.category.includes('Chất lượng')).length})` },
+                  { id: 'Chứng nhận', label: `Chứng nhận (${displayEvidences.filter(e => e.category.includes('Chứng nhận')).length})` },
+                  { id: 'Bao bì', label: `Bao bì & QR (${displayEvidences.filter(e => e.category.includes('Bao bì')).length})` },
+                  { id: 'Thị trường', label: `Tiêu thụ (${displayEvidences.filter(e => e.category.includes('Thị trường')).length})` },
                 ].map((pill) => (
                   <button
                     key={pill.id}

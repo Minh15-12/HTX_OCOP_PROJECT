@@ -161,10 +161,10 @@ export const EvaluationsPage: React.FC = () => {
     {
       key: 'session_name',
       header: 'Tên Phiên Đánh Giá',
-      render: (item: EvaluationSession) => (
+      render: (item: any) => (
         <div>
           <div className="font-medium text-gray-900">{item.session_name}</div>
-          <div className="text-xs text-gray-500">Cấp đánh giá: {item.council_level === 'PROVINCIAL' ? 'Cấp Tỉnh' : 'Cấp Trung Ương'}</div>
+          <div className="text-xs text-gray-500">Cấp đánh giá: {typeof item.council_level === 'object' ? item.council_level?.name : (item.council_level === 'CENTRAL' ? 'Cấp Trung Ương' : 'Cấp Tỉnh')}</div>
         </div>
       ),
     },
@@ -255,7 +255,7 @@ export const EvaluationsPage: React.FC = () => {
       {activeTab === 'SESSIONS' && (
         <Card title="Danh Sách Các Phiên Đánh Giá Hội Đồng OCOP">
           <DataTable
-            data={sessionsData?.data || []}
+            data={Array.isArray(sessionsData) ? sessionsData : (sessionsData?.data || [])}
             columns={sessionColumns}
             isLoading={isLoadingSessions}
           />

@@ -251,6 +251,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/ocop/applications/{id}/submit', [OcopApplicationController::class, 'submit'])->name('api.ocop.applications.submit');
 
     // OCOP Evidence Management APIs (Section 31 of 12_API_SPECIFICATION.md)
+    Route::get('/ocop/evidences', [EvidenceController::class, 'index'])->name('api.ocop.evidences.index');
     Route::get('/ocop/applications/{applicationId}/evidences', [EvidenceController::class, 'indexByApplication'])->name('api.ocop.applications.evidences.index');
     Route::post('/ocop/applications/{applicationId}/evidences', [EvidenceController::class, 'storeInApplication'])->name('api.ocop.applications.evidences.store');
     Route::post('/ocop/applications/{applicationId}/extract-evidence', [EvidenceController::class, 'extractInternal'])->name('api.ocop.applications.evidences.extract');
@@ -272,6 +273,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/ocop/evaluation-sessions/{sessionId}/scores', [EvaluatorScoreController::class, 'store'])->name('api.ocop.evaluation-sessions.scores.store');
     Route::post('/ocop/evaluation-scores/{id}/lock', [EvaluatorScoreController::class, 'lock'])->name('api.ocop.evaluation-scores.lock');
     Route::post('/ocop/evaluation-sessions/{id}/consolidate', [ConsolidatedResultController::class, 'consolidate'])->name('api.ocop.evaluation-sessions.consolidate');
+    Route::get('/ocop/evaluation-sessions/{id}/consolidation', [ConsolidatedResultController::class, 'show'])->name('api.ocop.evaluation-sessions.consolidation');
     Route::get('/ocop/decisions', [FinalDecisionController::class, 'index'])->name('api.ocop.decisions.index');
     Route::get('/ocop/applications/{applicationId}/decision', [FinalDecisionController::class, 'show'])->name('api.ocop.applications.decision.show');
     Route::post('/ocop/applications/{applicationId}/approve', [FinalDecisionController::class, 'approve'])->name('api.ocop.applications.approve');

@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             MemberSeeder::class,
             OcopSweetPalermoCriteriaSeeder::class,
             HtxTanTienFullSystemSeeder::class,
+            OcopEvidenceAndEvaluationSeeder::class,
         ]);
     }
 }

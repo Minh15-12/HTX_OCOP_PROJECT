@@ -28,6 +28,30 @@ class EvidenceController extends BaseController
         private readonly OcopEvidenceAutoExtractionService $autoExtractionService
     ) {}
 
+    public function index(Request $request): JsonResponse
+    {
+        $query = EvidenceModel::with(['currentVersion', 'indicators', 'application']);
+
+        if ($request->filled('application_id')) {
+            $query->where('application_id', $request->query('application_id'));
+        }
+
+        if ($request->filled('evidence_type')) {
+            $query->where('evidence_type', $request->query('evidence_type'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->query('status'));
+        }
+
+        $evidences = $query->orderBy('created_at', 'desc')->get();
+
+        return $this->success(
+            data: EvidenceResource::collection($evidences),
+            message: 'Tải danh sách kho minh chứng số thành công'
+        );
+    }
+
     public function indexByApplication(string $applicationId): JsonResponse
     {
         $evidences = EvidenceModel::with(['currentVersion', 'indicators'])
