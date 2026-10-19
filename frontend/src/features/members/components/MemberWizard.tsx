@@ -203,7 +203,7 @@ export const MemberWizard: React.FC<MemberWizardProps> = ({
       triggerToast('Vui lòng hoàn tất các bước thông tin bị thiếu trước khi lưu!', 'danger');
       return;
     }
-    const newCode = `TV00${nextMemberNumber}`;
+    const newCode = `TV${String(nextMemberNumber).padStart(3, '0')}`;
     const committedCap = wizardForm.committed_capital || 50000000;
     const contributedCap = wizardForm.contribution_method === 'Góp một lần'
       ? committedCap

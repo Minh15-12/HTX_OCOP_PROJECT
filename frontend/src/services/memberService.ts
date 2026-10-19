@@ -890,36 +890,49 @@ export const getMembersFromApi = async (filters?: { search?: string; status?: st
 
 export const createMemberApi = async (memberData: Partial<Member>): Promise<Member> => {
   let createdMember: Member | null = null;
+  const normalizedMemberType =
+    memberData.member_type === 'LIEN_KET' || memberData.member_type === 'ASSOCIATED'
+      ? 'ASSOCIATED'
+      : 'OFFICIAL';
+
+  const payload = {
+    member_code: memberData.member_code,
+    member_type: normalizedMemberType,
+    admission_date: memberData.join_date || new Date().toISOString().split('T')[0],
+    committed_capital: Number(memberData.committed_capital ?? 0),
+    credit_limit: Number((memberData as any).credit_limit ?? 0),
+    identity_information: {
+      full_name: memberData.full_name,
+      gender: memberData.gender,
+      dob: memberData.dob,
+      citizen_id: memberData.cccd,
+      cccd_issue_date: memberData.cccd_issue_date,
+      cccd_issue_place: memberData.cccd_issue_place,
+      education_level: (memberData as any).education_level,
+      occupation: (memberData as any).occupation,
+      phone_number: memberData.phone,
+      email: memberData.email,
+      province: memberData.province,
+      district: memberData.district,
+      ward: memberData.ward,
+      detail_address: memberData.detail_address,
+      address: memberData.address,
+      bank_name: memberData.bank_name,
+      bank_account: memberData.bank_account,
+      account_holder: memberData.account_holder,
+      committed_capital: Number(memberData.committed_capital ?? 0),
+      contributed_capital: Number(memberData.contributed_capital ?? 0),
+    },
+  };
+
   try {
-    const payload = {
-      member_code: memberData.member_code,
-      member_type: memberData.member_type || 'CHINH_THUC',
-      admission_date: memberData.join_date || new Date().toISOString().split('T')[0],
-      identity_information: {
-        full_name: memberData.full_name,
-        gender: memberData.gender,
-        dob: memberData.dob,
-        citizen_id: memberData.cccd,
-        cccd_issue_date: memberData.cccd_issue_date,
-        cccd_issue_place: memberData.cccd_issue_place,
-        phone_number: memberData.phone,
-        email: memberData.email,
-        province: memberData.province,
-        district: memberData.district,
-        ward: memberData.ward,
-        detail_address: memberData.detail_address,
-        address: memberData.address,
-        bank_name: memberData.bank_name,
-        bank_account: memberData.bank_account,
-        account_holder: memberData.account_holder,
-      },
-    };
     const res: any = await apiClient.post('/members', payload);
     if (res && res.data) {
       createdMember = mapApiMemberToFrontend(res.data);
     }
   } catch (error) {
     console.warn('API create notice, creating local persistent DB entry:', error);
+    throw error;
   }
 
   if (!createdMember) {
