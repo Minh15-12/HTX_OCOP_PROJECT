@@ -89,10 +89,10 @@ export const Sidebar: React.FC = () => {
 
   const { user } = useAuthStore();
   const userRoleNames = (user?.roles || []).map((r: any) =>
-    (typeof r === 'string' ? r : r?.name || '').toUpperCase()
+    (typeof r === 'string' ? r : r?.code || r?.name || '').toUpperCase()
   );
   const isAdmin = userRoleNames.some((r) =>
-    ['ADMIN', 'ROLE_ADMIN', 'SUPER_ADMIN', 'CHAIRMAN', 'HTX_MANAGER'].includes(r)
+    ['SYSTEM_ADMIN', 'ADMIN', 'ROLE_ADMIN', 'SUPER_ADMIN', 'HTX_OWNER', 'HTX_DIRECTOR', 'CHAIRMAN'].includes(r)
   );
 
   const isItemVisible = (item: NavItem) => {

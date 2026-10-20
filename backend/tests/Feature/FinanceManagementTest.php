@@ -112,7 +112,7 @@ class FinanceManagementTest extends TestCase
     public function test_cash_transaction_idempotency_for_approve_and_post(): void
     {
         $coop = $this->createCooperative();
-        $user = $this->createUserWithPermissions($coop, ['FINANCE.CREATE', 'FINANCE.READ', 'FINANCE.UPDATE']);
+        $user = $this->createUserWithPermissions($coop, ['FINANCE.CREATE', 'FINANCE.READ', 'FINANCE.UPDATE', 'FINANCE.TRANSACTION.APPROVE']);
 
         $tx = CashTransactionModel::create([
             'id' => (string) Str::uuid(),

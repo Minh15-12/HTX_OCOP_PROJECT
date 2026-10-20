@@ -86,7 +86,7 @@ class CashTransactionController extends BaseController
 
     public function approve(string $id): JsonResponse
     {
-        if (!Gate::allows('FINANCE.UPDATE')) {
+        if (!Gate::allows('FINANCE.TRANSACTION.APPROVE')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền phê duyệt phiếu thu/chi', status: 403);
         }
 

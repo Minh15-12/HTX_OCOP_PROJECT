@@ -73,8 +73,79 @@ class AuthServiceProvider extends ServiceProvider
                         'OCOP.READ',
                         'OCOP.UPDATE',
                         'OCOP.DELETE',
+                        'OCOP_APPLICATION.READ',
+                        'OCOP_APPLICATION.CREATE',
+                        'OCOP_APPLICATION.UPDATE',
+                        'OCOP_APPLICATION.SUBMIT',
+                        'ROLE.READ',
                     ];
                     if (in_array($ability, $htxOwnerAbilities, true)) {
+                        return true;
+                    }
+                }
+
+                // CHAIRMAN / COUNCIL_CHAIR / ADMIN (OCOP Council Authority)
+                if ($user->hasRole('CHAIRMAN') || $user->hasRole('COUNCIL_CHAIR') || $user->hasRole('ADMIN')) {
+                    $chairAbilities = [
+                        'OCOP_DECISION.APPROVE',
+                        'OCOP_DECISION.RECORD',
+                        'OCOP_DECISION.READ',
+                        'OCOP_EVALUATION.SCORE',
+                        'OCOP_EVALUATION.LOCK',
+                        'OCOP_EVALUATION.CONSOLIDATE',
+                        'OCOP_EVALUATION.READ',
+                        'OCOP_APPLICATION.READ',
+                        'OCOP.APPLICATION.VIEW',
+                    ];
+                    if (in_array($ability, $chairAbilities, true)) {
+                        return true;
+                    }
+                }
+
+                // EVALUATOR / COUNCIL_MEMBER (Independent OCOP Reviewer)
+                if ($user->hasRole('EVALUATOR') || $user->hasRole('COUNCIL_MEMBER')) {
+                    $evaluatorAbilities = [
+                        'OCOP_EVALUATION.SCORE',
+                        'OCOP_EVALUATION.LOCK',
+                        'OCOP_EVALUATION.READ',
+                        'OCOP_APPLICATION.READ',
+                        'OCOP.APPLICATION.VIEW',
+                    ];
+                    if (in_array($ability, $evaluatorAbilities, true)) {
+                        return true;
+                    }
+                }
+
+                // ACCOUNTANT (HTX Finance Manager - SoD: No self-approval, no OCOP scoring)
+                if ($user->hasRole('ACCOUNTANT')) {
+                    $accountantAbilities = [
+                        'FINANCE.READ',
+                        'FINANCE.VIEW',
+                        'FINANCE.CREATE',
+                        'FINANCE.TRANSACTION.CREATE',
+                        'FINANCE.TRANSACTION.UPDATE',
+                        'FINANCE.POST',
+                        'CAPITAL.READ',
+                        'CAPITAL.CREATE',
+                    ];
+                    if (in_array($ability, $accountantAbilities, true)) {
+                        return true;
+                    }
+                }
+
+                // STOREKEEPER (HTX Inventory Manager - SoD: No financial disbursements)
+                if ($user->hasRole('STOREKEEPER')) {
+                    $storekeeperAbilities = [
+                        'INVENTORY.READ',
+                        'INVENTORY.VIEW',
+                        'INVENTORY.CREATE',
+                        'INVENTORY.UPDATE',
+                        'STOCK.READ',
+                        'STOCK.CREATE',
+                        'STOCK.UPDATE',
+                        'STOCK.APPROVE',
+                    ];
+                    if (in_array($ability, $storekeeperAbilities, true)) {
                         return true;
                     }
                 }

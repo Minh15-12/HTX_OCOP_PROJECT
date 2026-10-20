@@ -40,6 +40,10 @@ class FinalDecisionController extends BaseController
 
     public function approve(string $applicationId, ApproveFinalDecisionRequest $request): JsonResponse
     {
+        if (!\Illuminate\Support\Facades\Gate::allows('OCOP_DECISION.APPROVE')) {
+            return \App\Shared\Application\Responses\ApiResponse::error('FORBIDDEN', 'Bạn không có quyền phê duyệt quyết định OCOP', status: 403);
+        }
+
         $dto = ApproveFinalDecisionDTO::fromArray($request->validated());
         $decision = $this->decisionService->approve($applicationId, $dto);
 
