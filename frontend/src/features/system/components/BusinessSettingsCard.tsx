@@ -65,10 +65,13 @@ export const BusinessSettingsCard: React.FC<BusinessSettingsCardProps> = ({
               <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Tỷ lệ cho Xã viên (%)</label>
               <input
                 type="number"
+                min="0"
+                max="100"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 font-medium focus:bg-white focus:outline-none focus:border-emerald-500 transition-colors"
-                value={settings.profit_share_member_rate || 70}
+                value={settings.profit_share_member_rate ?? 70}
                 onChange={(e) => {
-                  const val = Number(e.target.value);
+                  const num = Number(e.target.value);
+                  const val = isNaN(num) ? 0 : Math.max(0, Math.min(100, num));
                   onChange('profit_share_member_rate', val);
                   onChange('profit_share_coop_rate', 100 - val);
                 }}

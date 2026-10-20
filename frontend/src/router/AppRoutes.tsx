@@ -95,6 +95,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/audit" element={<AuditPage />} />
             <Route path="/system/settings" element={<SystemSettingsPage />} />
+            <Route path="/settings" element={<Navigate to="/system/settings" replace />} />
           </Route>
         </Route>
 
