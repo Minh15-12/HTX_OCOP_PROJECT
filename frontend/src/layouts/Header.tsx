@@ -1,11 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Bell, HelpCircle, LogOut, ChevronDown, Calendar, Check, ArrowRight, Wallet, FileText, Sprout, Users, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { useTaskNotificationStore } from '@/stores/taskNotificationStore';
 import { useNavigate } from 'react-router-dom';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const {
+    tasks,
+    pendingTasks,
+    completedTasks,
+    pendingCount,
+    completeTask,
+    markAllAsRead,
+  } = useTaskNotificationStore();
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'tasks' | 'notifs'>('all');
@@ -27,73 +37,47 @@ export const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const notifications = [
-    {
-      id: 1,
-      title: 'Cần duyệt giao dịch vốn góp',
-      desc: 'Xã viên Trần Văn B vừa nộp 10.000.000đ góp vốn.',
-      time: '2 giờ trước',
-      type: 'tasks',
-      badge: 'Chờ duyệt',
-      badgeClass: 'bg-amber-100 text-amber-800',
-      icon: <Wallet className="w-4 h-4 text-rose-500" />,
-      iconBg: 'bg-rose-50',
-      link: '/members',
-    },
-    {
-      id: 2,
-      title: 'Bổ sung minh chứng hồ sơ OCOP',
-      desc: 'Hồ sơ OCOP sản phẩm Cà phê Arabica Mê Linh cần bổ sung Phiếu kiểm nghiệm.',
-      time: '4 giờ trước',
-      type: 'tasks',
-      badge: 'Cần xử lý',
-      badgeClass: 'bg-rose-100 text-rose-800',
-      icon: <FileText className="w-4 h-4 text-blue-500" />,
-      iconBg: 'bg-blue-50',
-      link: '/ocop/dossiers',
-    },
-    {
-      id: 3,
-      title: 'Nhắc lịch thu hoạch',
-      desc: 'Mùa vụ Hè Thu 2025 đến thời gian thu hoạch (dự kiến).',
-      time: '6 giờ trước',
-      type: 'tasks',
-      badge: 'Nhắc việc',
-      badgeClass: 'bg-blue-100 text-blue-800',
-      icon: <Sprout className="w-4 h-4 text-emerald-500" />,
-      iconBg: 'bg-emerald-50',
-      link: '/dashboard',
-    },
-    {
-      id: 4,
-      title: 'Xã viên chưa hoàn thành vốn góp',
-      desc: 'Có 23 xã viên còn thiếu vốn góp theo kế hoạch.',
-      time: '1 ngày trước',
-      type: 'tasks',
-      badge: 'Quan trọng',
-      badgeClass: 'bg-rose-100 text-rose-800 font-bold',
-      icon: <Users className="w-4 h-4 text-purple-500" />,
-      iconBg: 'bg-purple-50',
-      link: '/members',
-    },
-    {
-      id: 5,
-      title: 'Đến hạn báo cáo',
-      desc: 'Báo cáo tài chính quý II/2025 cần được hoàn thành trước ngày 30/06/2025.',
-      time: '1 ngày trước',
-      type: 'notifs',
-      badge: 'Nhắc việc',
-      badgeClass: 'bg-blue-100 text-blue-800',
-      icon: <AlertCircle className="w-4 h-4 text-cyan-500" />,
-      iconBg: 'bg-cyan-50',
-      link: '/dashboard',
-    },
-  ];
+  const notifications = tasks.map((t) => {
+    let icon = <FileText className="w-4 h-4 text-blue-500" />;
+    let iconBg = 'bg-blue-50';
+    if (t.category === 'FINANCE') {
+      icon = <Wallet className="w-4 h-4 text-emerald-600" />;
+      iconBg = 'bg-emerald-50';
+    } else if (t.category === 'MEMBER') {
+      icon = <Users className="w-4 h-4 text-purple-600" />;
+      iconBg = 'bg-purple-50';
+    } else if (t.category === 'INVENTORY') {
+      icon = <AlertCircle className="w-4 h-4 text-amber-600" />;
+      iconBg = 'bg-amber-50';
+    } else if (t.category === 'AGRICULTURE') {
+      icon = <Sprout className="w-4 h-4 text-emerald-600" />;
+      iconBg = 'bg-emerald-50';
+    }
+
+    return {
+      id: t.id,
+      title: t.title,
+      desc: t.description,
+      time: t.timeAgo,
+      type: t.priority === 'INFO' ? 'notifs' : 'tasks',
+      badge: t.priorityLabel,
+      badgeClass:
+        t.priority === 'CRITICAL'
+          ? 'bg-rose-100 text-rose-800'
+          : t.priority === 'HIGH'
+          ? 'bg-amber-100 text-amber-800'
+          : 'bg-blue-100 text-blue-800',
+      icon,
+      iconBg,
+      link: t.link,
+      status: t.status,
+    };
+  });
 
   const filteredNotifs = notifications.filter((n) => {
-    if (activeTab === 'tasks') return n.type === 'tasks';
+    if (activeTab === 'tasks') return n.type === 'tasks' && n.status === 'PENDING';
     if (activeTab === 'notifs') return n.type === 'notifs';
-    return true;
+    return n.status === 'PENDING';
   });
 
   return (
@@ -137,9 +121,11 @@ export const Header: React.FC = () => {
             title="Thông báo hệ thống & Nhắc việc"
           >
             <Bell className="w-4.5 h-4.5" />
-            <span className="absolute -top-1 -right-1 bg-rose-600 text-white font-extrabold text-[9.5px] rounded-full px-1.5 py-0.2 min-w-[16px] text-center leading-normal shadow-xs">
-              5
-            </span>
+            {pendingCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-600 text-white font-extrabold text-[9.5px] rounded-full px-1.5 py-0.2 min-w-[16px] text-center leading-normal shadow-xs animate-pulse">
+                {pendingCount}
+              </span>
+            )}
           </button>
 
           {/* Popover Dropdown (Hình 2 Match) */}
@@ -150,12 +136,14 @@ export const Header: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-slate-700" />
                   <h3 className="font-extrabold text-[13.5px] text-slate-900">Thông báo & Nhắc việc</h3>
-                  <span className="bg-rose-600 text-white font-extrabold text-[10px] px-1.5 py-0.5 rounded-full">
-                    5
-                  </span>
+                  {pendingCount > 0 && (
+                    <span className="bg-rose-600 text-white font-extrabold text-[10px] px-1.5 py-0.5 rounded-full">
+                      {pendingCount}
+                    </span>
+                  )}
                 </div>
                 <button
-                  onClick={() => alert('Đã đánh dấu tất cả thông báo là đã đọc')}
+                  onClick={() => markAllAsRead()}
                   className="text-[11.5px] text-blue-600 hover:underline font-semibold cursor-pointer"
                 >
                   Đánh dấu tất cả đã đọc
@@ -170,7 +158,7 @@ export const Header: React.FC = () => {
                     activeTab === 'all' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Tất cả (5)
+                  Cần xử lý ({pendingCount})
                 </button>
                 <button
                   onClick={() => setActiveTab('tasks')}
@@ -178,7 +166,7 @@ export const Header: React.FC = () => {
                     activeTab === 'tasks' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Nhắc việc (4)
+                  Tác vụ ({pendingTasks.filter(t => t.priority === 'CRITICAL' || t.priority === 'HIGH').length})
                 </button>
                 <button
                   onClick={() => setActiveTab('notifs')}
@@ -186,42 +174,63 @@ export const Header: React.FC = () => {
                     activeTab === 'notifs' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Thông báo (1)
+                  Đã xong ({completedTasks.length})
                 </button>
               </div>
 
               {/* List */}
               <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
-                {filteredNotifs.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => {
-                      setNotificationOpen(false);
-                      navigate(item.link);
-                    }}
-                    className="p-3 hover:bg-slate-50 transition-colors flex items-start gap-3 cursor-pointer group"
-                  >
-                    <div className={`w-8 h-8 rounded-full ${item.iconBg} flex items-center justify-center shrink-0 mt-0.5`}>
-                      {item.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <h4 className="text-[12.5px] font-bold text-slate-900 truncate group-hover:text-emerald-700 transition-colors">
-                          {item.title}
-                        </h4>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md shrink-0 font-bold ${item.badgeClass}`}>
-                          {item.badge}
-                        </span>
-                      </div>
-                      <p className="text-[11.5px] text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">
-                        {item.desc}
-                      </p>
-                      <span className="text-[10.5px] text-slate-400 mt-1 block font-medium">
-                        {item.time}
-                      </span>
-                    </div>
+                {filteredNotifs.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 space-y-1">
+                    <Check className="w-8 h-8 text-emerald-500 mx-auto" />
+                    <p className="text-xs font-bold text-slate-700">Đã hoàn thành mọi việc!</p>
+                    <p className="text-[11px] text-slate-400">Không còn thông báo hay nhắc việc cần xử lý.</p>
                   </div>
-                ))}
+                ) : (
+                  filteredNotifs.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        setNotificationOpen(false);
+                        navigate(item.link);
+                      }}
+                      className="p-3 hover:bg-slate-50 transition-colors flex items-start gap-2.5 cursor-pointer group"
+                    >
+                      <div className={`w-8 h-8 rounded-full ${item.iconBg} flex items-center justify-center shrink-0 mt-0.5`}>
+                        {item.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <h4 className="text-[12px] font-bold text-slate-900 truncate group-hover:text-emerald-700 transition-colors">
+                            {item.title}
+                          </h4>
+                          <span className={`text-[9.5px] px-1.5 py-0.5 rounded-md shrink-0 font-bold ${item.badgeClass}`}>
+                            {item.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">
+                          {item.desc}
+                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {item.time}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              completeTask(item.id, 'Đã hoàn thành từ thông báo nhanh Header.');
+                            }}
+                            className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[10px] rounded-md transition-colors cursor-pointer"
+                            title="Đánh dấu hoàn thành việc này"
+                          >
+                            Xong ✓
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* Footer */}
@@ -233,7 +242,7 @@ export const Header: React.FC = () => {
                   }}
                   className="text-[12px] font-bold text-slate-700 hover:text-emerald-700 inline-flex items-center gap-1 transition-colors cursor-pointer"
                 >
-                  Xem tất cả thông báo <ArrowRight className="w-3.5 h-3.5" />
+                  Vào Bàn làm việc xem chi tiết <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

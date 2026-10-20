@@ -1,9 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Users, Sprout, Warehouse, Coins, ArrowRight, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTaskNotificationStore, TaskItem } from '@/stores/taskNotificationStore';
+import { QuickActionTaskModal } from '@/features/dashboard/components/QuickActionTaskModal';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+
+  const {
+    tasks,
+    pendingTasks,
+    completedTasks,
+    criticalTasks,
+    pendingCount,
+    totalCount,
+    completedPercent,
+    completeTask,
+    snoozeTask,
+    resetDefaultTasks,
+  } = useTaskNotificationStore();
+
+  const [taskFilter, setTaskFilter] = useState<'PENDING' | 'CRITICAL' | 'COMPLETED' | 'ALL'>('PENDING');
+  const [activeTask, setActiveTask] = useState<TaskItem | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const handleQuickAction = (task: TaskItem) => {
+    setActiveTask(task);
+    setModalOpen(true);
+  };
+
+  const displayTasks =
+    taskFilter === 'PENDING'
+      ? pendingTasks
+      : taskFilter === 'CRITICAL'
+      ? criticalTasks
+      : taskFilter === 'COMPLETED'
+      ? completedTasks
+      : tasks;
 
   return (
     <div className="space-y-5 animate-fade-in pb-10">
@@ -159,150 +192,239 @@ export const DashboardPage: React.FC = () => {
 
         {/* Right Panel: Trung tâm Nhắc việc & Thao tác Tập trung (Actionable Task Hub) */}
         <div id="task-hub" className="bg-white border border-[#e7e9ec] rounded-xl shadow-subtle overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-[#e7e9ec] bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-[15px] text-slate-900">Trung tâm Nhắc việc & Thao tác</h3>
-                <span className="pill-badge pill-red text-[10.5px]">5 việc cần xử lý</span>
+          {/* Header với Thống kê & Thanh Tiến độ Tác vụ */}
+          <div className="p-4 border-b border-[#e7e9ec] bg-slate-50/70 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-[15px] text-slate-900">Trung tâm Nhắc việc & Thao tác</h3>
+                  {pendingCount > 0 ? (
+                    <span className="pill-badge pill-red text-[10.5px] animate-pulse">
+                      {pendingCount} việc cần xử lý
+                    </span>
+                  ) : (
+                    <span className="pill-badge pill-green text-[10.5px]">
+                      Đã xử lý xong toàn bộ
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11.8px] text-slate-500 mt-0.5">
+                  Xử lý dứt điểm, phê duyệt tức thì & cảnh báo hạn chót
+                </p>
               </div>
-              <p className="text-[11.8px] text-slate-500 mt-0.5">Kế hoạch phê duyệt, hoàn vốn, nhập kho & bổ sung hồ sơ</p>
+
+              {/* Progress Summary Gauge */}
+              <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                <div className="text-right">
+                  <div className="text-[10.5px] text-slate-500 font-semibold">Tiến độ hôm nay</div>
+                  <div className="text-[12px] font-extrabold text-emerald-800">
+                    {completedTasks.length}/{totalCount} việc ({completedPercent}%)
+                  </div>
+                </div>
+                <div className="w-14 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-600 transition-all duration-500"
+                    style={{ width: `${completedPercent}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1.5 border-t border-slate-200/60 pt-2.5 overflow-x-auto text-xs">
+              <button
+                onClick={() => setTaskFilter('PENDING')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  taskFilter === 'PENDING'
+                    ? 'bg-emerald-700 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                Cần xử lý ({pendingCount})
+              </button>
+              <button
+                onClick={() => setTaskFilter('CRITICAL')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  taskFilter === 'CRITICAL'
+                    ? 'bg-rose-700 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                Khẩn cấp ({criticalTasks.length})
+              </button>
+              <button
+                onClick={() => setTaskFilter('COMPLETED')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  taskFilter === 'COMPLETED'
+                    ? 'bg-slate-800 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                Đã giải quyết ({completedTasks.length})
+              </button>
+              <button
+                onClick={() => setTaskFilter('ALL')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  taskFilter === 'ALL'
+                    ? 'bg-slate-700 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                Tất cả ({totalCount})
+              </button>
             </div>
           </div>
 
-          <div className="p-4 space-y-4 flex-1">
-            <ul className="space-y-3">
-              {/* Task Item 1: Hoàn tiền từ chối kết nạp */}
-              <li className="p-3 bg-amber-50/60 border border-amber-200/90 rounded-xl space-y-2 hover:border-amber-300 transition-all">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="pill-badge pill-red text-[10px]">Cần chi trả</span>
-                    <strong className="text-[13px] text-slate-900 font-extrabold">
-                      Hoàn tiền vốn nộp lại cho xã viên Võ Văn G (TV008)
-                    </strong>
-                  </div>
-                  <span className="text-[10.5px] text-slate-400 shrink-0 font-medium">10 phút trước</span>
-                </div>
-                <p className="text-[12px] text-slate-600">
-                  Hồ sơ bị từ chối kết nạp. Kế toán cần lập Phiếu Chi hoàn trả số tiền tạm thu: <strong className="text-rose-700 font-mono font-bold">10.000.000 ₫</strong>.
-                </p>
-                <div className="flex items-center justify-between pt-1 border-t border-amber-200/60">
-                  <span className="text-[11px] text-amber-800 font-semibold">📍 Phân hệ: Quản lý Xã viên & Vốn</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => navigate('/members')}
-                      className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] rounded-lg shadow-2xs transition-colors cursor-pointer"
+          {/* Task List Content */}
+          <div className="p-4 space-y-3.5 flex-1 max-h-[520px] overflow-y-auto">
+            {displayTasks.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 space-y-2">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+                <p className="font-bold text-slate-700 text-sm">Tuyệt vời! Không còn việc tồn đọng</p>
+                <p className="text-xs text-slate-500">Mọi hồ sơ, phiếu kho và giao dịch đều đã được giải quyết dứt điểm.</p>
+                <button
+                  onClick={resetDefaultTasks}
+                  className="mt-2 text-xs text-emerald-700 hover:underline font-bold inline-block cursor-pointer"
+                >
+                  Tải lại danh sách việc mẫu để kiểm thử &rarr;
+                </button>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {displayTasks.map((t) => {
+                  const isDone = t.status === 'COMPLETED';
+
+                  return (
+                    <li
+                      key={t.id}
+                      className={`p-3.5 rounded-xl border space-y-2.5 transition-all ${
+                        isDone
+                          ? 'bg-slate-50/70 border-slate-200 opacity-80'
+                          : t.priority === 'CRITICAL'
+                          ? 'bg-rose-50/60 border-rose-200/90 hover:border-rose-300'
+                          : t.priority === 'HIGH'
+                          ? 'bg-amber-50/60 border-amber-200/90 hover:border-amber-300'
+                          : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                      }`}
                     >
-                      Lập phiếu chi hoàn tiền &rarr;
-                    </button>
-                  </div>
-                </div>
-              </li>
+                      {/* Top Header of Task */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isDone ? (
+                            <span className="pill-badge pill-green text-[10px]">Đã giải quyết</span>
+                          ) : (
+                            <span
+                              className={`pill-badge text-[10px] ${
+                                t.priority === 'CRITICAL'
+                                  ? 'pill-red'
+                                  : t.priority === 'HIGH'
+                                  ? 'pill-amber'
+                                  : 'pill-blue'
+                              }`}
+                            >
+                              {t.priorityLabel}
+                            </span>
+                          )}
+                          <strong
+                            className={`text-[13px] font-extrabold ${
+                              isDone ? 'line-through text-slate-500' : 'text-slate-900'
+                            }`}
+                          >
+                            {t.title}
+                          </strong>
+                        </div>
+                        <span className="text-[10.5px] text-slate-400 shrink-0 font-medium">
+                          {t.timeAgo}
+                        </span>
+                      </div>
 
-              {/* Task Item 2: Duyệt xã viên mới */}
-              <li className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 hover:border-slate-300 transition-all">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="pill-badge pill-amber text-[10px]">Chờ duyệt</span>
-                    <strong className="text-[13px] text-slate-900 font-extrabold">
-                      Duyệt đơn gia nhập xã viên Nguyễn Thành Đạt (TV007)
-                    </strong>
-                  </div>
-                  <span className="text-[10.5px] text-slate-400 shrink-0 font-medium">Hôm nay</span>
-                </div>
-                <p className="text-[12px] text-slate-600">
-                  Đã hoàn thành hồ sơ đăng ký chính thức & cam kết nộp <strong className="font-mono text-emerald-800">10.000.000 ₫</strong> tiền góp vốn.
-                </p>
-                <div className="flex items-center justify-between pt-1 border-t border-slate-200/80">
-                  <span className="text-[11px] text-slate-500 font-semibold">📍 Người phụ trách: Ban Giám đốc / HĐQT</span>
-                  <button
-                    onClick={() => navigate('/members')}
-                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
-                  >
-                    Xem & Phê duyệt &rarr;
-                  </button>
-                </div>
-              </li>
+                      {/* Description */}
+                      <p className="text-[12px] text-slate-600 leading-relaxed">
+                        {t.description}
+                      </p>
 
-              {/* Task Item 3: Cảnh báo kho */}
-              <li className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 hover:border-slate-300 transition-all">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="pill-badge pill-amber text-[10px]">Cảnh báo kho</span>
-                    <strong className="text-[13px] text-amber-900 font-extrabold flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                      Phân bón NPK 16-16-8 dưới ngưỡng tồn kho
-                    </strong>
-                  </div>
-                  <span className="text-[10.5px] text-slate-400 shrink-0 font-medium">Hôm qua</span>
-                </div>
-                <p className="text-[12px] text-slate-600">
-                  Tồn kho hiện tại còn 150 kg (ngưỡng an toàn tối thiểu là 300 kg). Cần lập phiếu mua bổ sung cho mùa vụ.
-                </p>
-                <div className="flex items-center justify-between pt-1 border-t border-slate-200/80">
-                  <span className="text-[11px] text-slate-500 font-semibold">📍 Phân hệ: Quản lý Kho vật tư</span>
-                  <button
-                    onClick={() => navigate('/inventory/materials')}
-                    className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
-                  >
-                    Tạo phiếu nhập kho &rarr;
-                  </button>
-                </div>
-              </li>
+                      {/* Resolution Note if Done */}
+                      {isDone && t.resolutionNote && (
+                        <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[11.5px] text-emerald-900 flex items-center gap-1.5 font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>{t.resolutionNote}</span>
+                        </div>
+                      )}
 
-              {/* Task Item 5: Cảnh báo Hạn sử dụng Vật tư Sinh học (Luồng mở rộng) */}
-              <li className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2 hover:border-rose-300 transition-all">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="pill-badge pill-red text-[10px]">Cảnh báo HSD</span>
-                    <strong className="text-[13px] text-rose-950 font-extrabold flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-rose-600" />
-                      Chế phẩm Trichoderma Bio-VT sắp hết hạn (15/10/2026)
-                    </strong>
-                  </div>
-                  <span className="text-[10.5px] text-rose-400 shrink-0 font-medium">Mới</span>
-                </div>
-                <p className="text-[12px] text-slate-600">
-                  Còn 45 chai Trichoderma có HSD đến tháng 10/2026. Ưu tiên tạo phiếu xuất cấp cho Vụ Đông Xuân để xử lý rơm rạ & mùn đất.
-                </p>
-                <div className="flex items-center justify-between pt-1 border-t border-rose-200/80">
-                  <span className="text-[11px] text-rose-800 font-semibold">📍 Phân hệ: Kho Vật tư & Mùa vụ</span>
-                  <button
-                    onClick={() => navigate('/inventory/materials')}
-                    className="px-2.5 py-1 bg-rose-700 hover:bg-rose-800 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
-                  >
-                    Cấp phát mùa vụ &rarr;
-                  </button>
-                </div>
-              </li>
+                      {/* Due & Action Footer */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-200/70">
+                        <div className="flex items-center gap-2 text-[11px]">
+                          <span className="font-semibold text-slate-500">📍 {t.categoryLabel}</span>
+                          {!isDone && (
+                            <span
+                              className={`inline-flex items-center gap-1 font-bold ${
+                                t.isOverdue ? 'text-rose-700 animate-pulse' : 'text-amber-800'
+                              }`}
+                            >
+                              <Clock className="w-3 h-3" />
+                              {t.dueLabel}
+                            </span>
+                          )}
+                        </div>
 
-              {/* Task Item 4: Minh chứng OCOP */}
-              <li className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 hover:border-slate-300 transition-all">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="pill-badge pill-blue text-[10px]">Hồ sơ OCOP</span>
-                    <strong className="text-[13px] text-slate-900 font-extrabold">
-                      Bổ sung minh chứng OCOP Trà Oolong Mê Linh
-                    </strong>
-                  </div>
-                  <span className="text-[10.5px] text-slate-400 shrink-0 font-medium">2 ngày trước</span>
-                </div>
-                <p className="text-[12px] text-slate-600">
-                  Cần tải bổ sung Giấy chứng nhận ATVSTP & Phiếu xét nghiệm mẫu nước trước ngày 15/09/2026.
-                </p>
-                <div className="flex items-center justify-between pt-1 border-t border-slate-200/80">
-                  <span className="text-[11px] text-slate-500 font-semibold">📍 Phân hệ: Quản lý Hồ sơ OCOP</span>
-                  <button
-                    onClick={() => navigate('/ocop/dossiers/DOS-2026-001')}
-                    className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
-                  >
-                    Tải lên minh chứng &rarr;
-                  </button>
-                </div>
-              </li>
-            </ul>
+                        {/* Action Buttons */}
+                        {!isDone && (
+                          <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                            {/* Snooze 24h Button */}
+                            <button
+                              onClick={() => snoozeTask(t.id)}
+                              title="Nhắc lại vào ngày mai"
+                              className="px-2 py-1 text-slate-500 hover:text-slate-700 hover:bg-slate-200/60 rounded-md text-[11px] font-semibold transition-colors cursor-pointer"
+                            >
+                              Nhắc lại sau
+                            </button>
+
+                            {/* Mark as Done directly */}
+                            <button
+                              onClick={() => completeTask(t.id, 'Đã hoàn tất kiểm tra.')}
+                              title="Đánh dấu đã hoàn thành"
+                              className="px-2 py-1 text-emerald-700 hover:bg-emerald-100/70 rounded-md text-[11px] font-bold transition-colors cursor-pointer"
+                            >
+                              Đã xong ✓
+                            </button>
+
+                            {/* Primary Action Button */}
+                            {t.quickAction ? (
+                              <button
+                                onClick={() => handleQuickAction(t)}
+                                className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] rounded-lg shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                {t.actionLabel} &rarr;
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => navigate(t.link)}
+                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                {t.actionLabel} &rarr;
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Quick Action Modal */}
+      <QuickActionTaskModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        task={activeTask}
+        onComplete={(id, note) => {
+          completeTask(id, note);
+        }}
+      />
     </div>
   );
 };
