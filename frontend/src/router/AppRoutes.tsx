@@ -47,6 +47,7 @@ export const AppRoutes: React.FC = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Guest Auth Routes */}
+        <Route path="/login" element={<Navigate to="/auth/login" replace />} />
         <Route element={<GuestRoute />}>
           <Route element={<AuthLayout />}>
             <Route path="/auth/login" element={<LoginPage />} />

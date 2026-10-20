@@ -45,6 +45,15 @@ apiClient.interceptors.response.use(
     return response.data;
   },
   (error) => {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
+      const currentToken = tokenStorage.getToken();
+      if (currentToken && currentToken.startsWith('mock_')) {
+        tokenStorage.clearAll();
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
+          window.location.href = '/auth/login?reason=session_expired';
+        }
+      }
+    }
     const formattedError = parseApiError(error);
     return Promise.reject(formattedError);
   }

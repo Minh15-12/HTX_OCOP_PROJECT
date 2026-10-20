@@ -283,7 +283,7 @@ export const Header: React.FC = () => {
               <button
                 onClick={() => {
                   logout();
-                  window.location.href = '/login';
+                  window.location.href = '/auth/login';
                 }}
                 className="w-full flex items-center gap-2 px-4 py-2 text-[12.5px] font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
               >
