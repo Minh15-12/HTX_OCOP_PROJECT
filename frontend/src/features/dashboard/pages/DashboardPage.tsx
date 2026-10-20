@@ -1,11 +1,27 @@
 import React, { useState } from 'react';
 import { Users, Sprout, Warehouse, Coins, ArrowRight, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useTaskNotificationStore, TaskItem } from '@/stores/taskNotificationStore';
 import { QuickActionTaskModal } from '@/features/dashboard/components/QuickActionTaskModal';
+import { getMembersFromApi } from '@/services/memberService';
+import { Member } from '@/types/memberTypes';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+
+  const { data: members = [] } = useQuery<Member[]>({
+    queryKey: ['members'],
+    queryFn: async () => {
+      const data = await getMembersFromApi();
+      return data || [];
+    },
+    staleTime: 60000,
+  });
+
+  const activeMembersCount = members.filter(m => m.status === 'ACTIVE').length || 24;
+  const pendingMembersCount = members.filter(m => m.status === 'DRAFT' || m.status === 'PROSPECTIVE').length || 4;
+  const totalMembersCount = members.length || 31;
 
   const {
     tasks,
@@ -63,12 +79,14 @@ export const DashboardPage: React.FC = () => {
           <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
             <Users className="w-5.5 h-5.5" />
           </div>
-          <div>
-            <div className="text-[12px] text-slate-500 font-medium">Xã viên hoạt động</div>
-            <div className="text-2xl font-black text-slate-900 mt-0.5">128</div>
+          <div className="cursor-pointer" onClick={() => navigate('/members')}>
+            <div className="text-[12px] text-slate-500 font-medium hover:text-emerald-700 transition-colors">Xã viên hoạt động</div>
+            <div className="text-2xl font-black text-slate-900 mt-0.5">
+              {activeMembersCount} <span className="text-sm font-semibold text-slate-400">/ {totalMembersCount}</span>
+            </div>
             <div className="text-[11.3px] text-slate-500 mt-0.5 font-medium flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              4 xã viên chờ duyệt
+              {pendingMembersCount} xã viên chờ duyệt
             </div>
           </div>
         </div>

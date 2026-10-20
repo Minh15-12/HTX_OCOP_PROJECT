@@ -13,16 +13,17 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Create or get default Cooperative
-        $cooperative = CooperativeModel::firstOrCreate(
-            ['cooperative_code' => 'HTX-PHUTHINH-01'],
-            [
-                'id' => (string) Str::uuid(),
-                'legal_name' => 'HTX Nông nghiệp Xanh Phú Thịnh',
-                'display_name' => 'HTX Phú Thịnh',
+        // 1. Create or get default Cooperative (Canonical ID with full agricultural and OCOP dataset)
+        $canonicalCoopId = 'a60ccf85-7301-43f7-b6d3-b25f72c75b78';
+        $cooperative = CooperativeModel::where('id', $canonicalCoopId)
+            ->orWhere('cooperative_code', 'HTX-PHUTHINH-01')
+            ->first() ?? CooperativeModel::create([
+                'id' => $canonicalCoopId,
+                'cooperative_code' => 'HTX-PHUTHINH-01',
+                'legal_name' => 'Hợp tác xã Nông nghiệp Xanh Phú Thịnh',
+                'display_name' => 'HTX Nông nghiệp Xanh Phú Thịnh',
                 'status' => 'ACTIVE',
-            ]
-        );
+            ]);
 
         $defaultPassword = Hash::make('password123');
 
