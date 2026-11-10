@@ -4,7 +4,7 @@
 Chương trình Mỗi xã một sản phẩm (OCOP) là chương trình phát triển kinh tế khu vực nông thôn theo hướng phát triển nội lực và gia tăng giá trị. Tài liệu này mô tả quy trình nghiệp vụ số hóa quá trình chuẩn bị, tự đánh giá, nộp hồ sơ và chấm điểm phân hạng sản phẩm OCOP, áp dụng cho HTX Tân Tiến.
 
 - **Sản phẩm mục tiêu**: Ớt chuông Sweet Palermo Đỏ Đà Lạt (mục tiêu 4-5 sao).
-- **Căn cứ pháp lý**: Quyết định 148/QĐ-TTg năm 2023.
+- **Căn cứ pháp lý**: Quyết định 148/QĐ-TTg ngày 24/02/2023 và Quyết định 1489/QĐ-TTg ngày 06/07/2025 sửa đổi, bổ sung một số nội dung về tiêu chí, quy trình và thẩm quyền đánh giá phân hạng OCOP.
 
 ---
 

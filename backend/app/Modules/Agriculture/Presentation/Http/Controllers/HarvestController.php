@@ -77,7 +77,10 @@ class HarvestController extends BaseController
             uniformityRate: $request->has('uniformity_rate') ? (float) $request->input('uniformity_rate') : null,
             gradeAKg: $request->has('grade_a_kg') ? (float) $request->input('grade_a_kg') : null,
             gradeBKg: $request->has('grade_b_kg') ? (float) $request->input('grade_b_kg') : null,
-            rejectKg: $request->has('reject_kg') ? (float) $request->input('reject_kg') : null
+            rejectKg: $request->has('reject_kg') ? (float) $request->input('reject_kg') : null,
+            stageNumber: $request->has('stage_number') ? (int) $request->input('stage_number') : null,
+            weighingSlipCode: $request->input('weighing_slip_code'),
+            rejectionWeightKg: $request->has('rejection_weight_kg') ? (float) $request->input('rejection_weight_kg') : null
         );
 
         $harvest = $this->harvestService->createHarvest($dto);
@@ -108,7 +111,10 @@ class HarvestController extends BaseController
             uniformityRate: $request->has('uniformity_rate') ? (float) $request->input('uniformity_rate') : null,
             gradeAKg: $request->has('grade_a_kg') ? (float) $request->input('grade_a_kg') : null,
             gradeBKg: $request->has('grade_b_kg') ? (float) $request->input('grade_b_kg') : null,
-            rejectKg: $request->has('reject_kg') ? (float) $request->input('reject_kg') : null
+            rejectKg: $request->has('reject_kg') ? (float) $request->input('reject_kg') : null,
+            stageNumber: $request->has('stage_number') ? (int) $request->input('stage_number') : null,
+            weighingSlipCode: $request->input('weighing_slip_code'),
+            rejectionWeightKg: $request->has('rejection_weight_kg') ? (float) $request->input('rejection_weight_kg') : null
         );
 
         $harvest = $this->harvestService->updateHarvest($id, $dto);
@@ -188,4 +194,42 @@ class HarvestController extends BaseController
             message: 'Quyết toán sản lượng thu hoạch và cấn trừ nợ thành công'
         );
     }
+
+    public function listSettlements(Request $request, \Modules\Agriculture\Application\Services\HarvestSettlementService $settlementService): JsonResponse
+    {
+        if (!Gate::allows('AGRICULTURE.READ') && !Gate::allows('FINANCE.READ')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem lịch sử quyết toán mùa vụ', status: 403);
+        }
+
+        $settlements = $settlementService->listSeasonSettlements($request->all());
+
+        return ApiResponse::success(
+            data: $settlements,
+            message: 'Lấy danh sách các đợt quyết toán mùa vụ thành công'
+        );
+    }
+
+    public function auditQuota(string $id, Request $request): JsonResponse
+    {
+        if (!Gate::allows('AGRICULTURE.UPDATE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền đối soát sản lượng thu hoạch', status: 403);
+        }
+
+        $request->validate([
+            'status' => ['required', 'string', 'in:APPROVED,REJECTED,NEEDS_RECONCILIATION'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $harvest = $this->harvestService->auditQuota(
+            id: $id,
+            status: $request->input('status'),
+            note: $request->input('note')
+        );
+
+        return ApiResponse::success(
+            data: new HarvestResource($harvest),
+            message: 'Cập nhật kết quả đối soát sản lượng trần thành công'
+        );
+    }
 }
+

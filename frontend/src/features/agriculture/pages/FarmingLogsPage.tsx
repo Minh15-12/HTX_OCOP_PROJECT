@@ -1,549 +1,726 @@
 import React, { useState, useMemo } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   Search,
-  ShieldAlert,
-  ShieldCheck,
-  CheckCircle,
-  AlertTriangle,
-  Camera,
-  MapPin,
   Filter,
   FileSpreadsheet,
-  Eye,
-  Pencil,
-  Trash2,
-  X,
-  AlertOctagon,
-  Layers,
-  Sprout,
   Calendar,
-  Columns2,
-  Maximize2,
-  Check,
+  Lock,
+  AlertTriangle,
+  Smartphone,
+  Loader2,
+  BookOpen,
+  Droplets,
+  ShieldAlert,
+  Wheat,
+  Scale,
+  ShieldCheck,
+  ListOrdered,
+  Printer,
+  CheckCircle2,
+  XCircle,
+  X
 } from 'lucide-react';
-import { fetchFarmingLogs, deleteFarmingLog } from '@/services/farmingLogApi';
-import { QuickMobileLogModal } from '../components/QuickMobileLogModal';
-import { FarmingLogDetailModal } from '../components/FarmingLogDetailModal';
-import { FarmingLogDetailPanel } from '../components/FarmingLogDetailPanel';
-import { EditFarmingLogModal } from '../components/EditFarmingLogModal';
-import { ACTIVITY_TYPES_META } from '@/types/agriculture';
-import type { FarmingLog } from '@/types/agriculture';
+import { fetchFarmingLogs, deleteFarmingLog, createFarmingLog, verifyFarmingLog, rejectFarmingLog } from '@/services/farmingLogApi';
+import {
+  fetchCropSeasons,
+  CropSeason,
+  fetchSeasonMaterialReconciliations,
+  saveSeasonMaterialReconciliations,
+  freezeSeasonLogbook
+} from '@/services/cropSeasonApi';
+import { fetchAllPlots } from '@/services/farmPlotApi';
+import { fetchHarvests } from '@/services/harvestApi';
+import { reportApi } from '@/services/reportApi';
+
+// Sổ Nhật Ký 5 Tab Component
+import { LogbookCoverTab } from '../components/logbook/LogbookCoverTab';
+import { FertigationLogTab } from '../components/logbook/FertigationLogTab';
+import { IpmPestControlTab } from '../components/logbook/IpmPestControlTab';
+import { HarvestStagesTab } from '../components/logbook/HarvestStagesTab';
+import { SeasonReconciliationTab } from '../components/logbook/SeasonReconciliationTab';
+import { FertigationEntryModal } from '../components/logbook/FertigationEntryModal';
+import { IpmPestEntryModal } from '../components/logbook/IpmPestEntryModal';
+import { VietgapLogbookDossierModal } from '../components/logbook/VietgapLogbookDossierModal';
+
+// Components hiện hữu
+import { FarmingLogsKpiStats } from '../components/FarmingLogsKpiStats';
+import { FarmingLogsTable } from '../components/FarmingLogsTable';
+import { PhiSafetyMonitorTab } from '../components/PhiSafetyMonitorTab';
+import { FarmingLogModals } from '../components/FarmingLogModals';
+
+import type { FarmingLog, FarmPlot, HarvestItem, SeasonMaterialReconciliation, FarmingLogPayload } from '@/types/agriculture';
 import { exportToExcel } from '@/utils/exportUtils';
 import { useToast } from '@/components/ui/ToastNotification';
 
+export type LogbookTabKey =
+  | 'cover'
+  | 'fertigation'
+  | 'ipm'
+  | 'harvests'
+  | 'reconciliation'
+  | 'phi'
+  | 'all_logs';
+
 export const FarmingLogsPage: React.FC = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const [searchParams] = useSearchParams();
+  const paramSeasonId = searchParams.get('season_id') || searchParams.get('seasonId');
 
+  // Tab State
+  const [activeTab, setActiveTab] = useState<LogbookTabKey>('cover');
   const [search, setSearch] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<string>('ALL');
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string>(paramSeasonId || 'ALL');
+  const [selectedPlotId, setSelectedPlotId] = useState<string>('');
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [isSavingReconciliation, setIsSavingReconciliation] = useState<boolean>(false);
+  const [isFreezingLogbook, setIsFreezingLogbook] = useState<boolean>(false);
+
+  // Modals & Dossier
+  const [isDossierModalOpen, setIsDossierModalOpen] = useState<boolean>(false);
+  const [rejectionModalLog, setRejectionModalLog] = useState<FarmingLog | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string>('');
+  const [isRejecting, setIsRejecting] = useState<boolean>(false);
+
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [isFertModalOpen, setIsFertModalOpen] = useState(false);
+  const [isIpmModalOpen, setIsIpmModalOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-
-  // Master-Detail State (Split View)
-  const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
-  const [isSplitView, setIsSplitView] = useState(true);
-
-  // Detail & Edit Modals State
   const [selectedLogForDetailModal, setSelectedLogForDetailModal] = useState<FarmingLog | null>(null);
   const [selectedLogForEdit, setSelectedLogForEdit] = useState<FarmingLog | null>(null);
   const [logToDelete, setLogToDelete] = useState<FarmingLog | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: logsList = [], isLoading } = useQuery<FarmingLog[]>({
-    queryKey: ['farming-logs', search, selectedActivity],
-    queryFn: async () => {
-      return fetchFarmingLogs({
-        search: search.trim() || undefined,
-        activity_type: selectedActivity !== 'ALL' ? selectedActivity : undefined,
-      });
-    },
+  // Query Mùa Vụ
+  const { data: seasonsData } = useQuery({ queryKey: ['cropSeasons'], queryFn: () => fetchCropSeasons() });
+  const seasons: CropSeason[] = Array.isArray(seasonsData) ? seasonsData : (seasonsData as any)?.data || [];
+
+  React.useEffect(() => {
+    if (paramSeasonId) {
+      setSelectedSeasonId(paramSeasonId);
+    } else if (seasons.length > 0 && selectedSeasonId === 'ALL') {
+      setSelectedSeasonId(seasons[0].id);
+    }
+  }, [paramSeasonId, seasons]);
+
+  const currentSeason = seasons.find((s) => s.id === selectedSeasonId) || seasons[0];
+  const isSeasonReadOnly = currentSeason?.status === 'COMPLETED' || currentSeason?.logbook_status === 'FROZEN_ARCHIVED';
+
+  // Query Thửa Đất
+  const { data: rawPlots = [] } = useQuery<FarmPlot[]>({
+    queryKey: ['farmPlots'],
+    queryFn: () => fetchAllPlots(),
   });
 
-  // Automatically select first log if none selected
-  const activeLog = useMemo(() => {
-    if (logsList.length === 0) return null;
-    if (!selectedLogId) return logsList[0];
-    return logsList.find((l) => l.id === selectedLogId) || logsList[0];
-  }, [logsList, selectedLogId]);
+  const plots: FarmPlot[] = useMemo(() => {
+    return Array.isArray(rawPlots) ? rawPlots : [];
+  }, [rawPlots]);
 
-  // Statistics for KPI Cards (Hình 3)
+  React.useEffect(() => {
+    if (plots.length > 0 && !selectedPlotId) {
+      setSelectedPlotId(plots[0].id);
+    }
+  }, [plots, selectedPlotId]);
+
+  // Query Nhật Ký Canh Tác
+  const { data: rawLogsList = [], isLoading } = useQuery<FarmingLog[]>({
+    queryKey: ['farming-logs', search, selectedActivity],
+    queryFn: async () => fetchFarmingLogs({ search: search.trim() || undefined, activity_type: selectedActivity !== 'ALL' ? selectedActivity : undefined }),
+  });
+
+  const logsList = useMemo(() => {
+    if (selectedSeasonId === 'ALL') return rawLogsList;
+    return rawLogsList.filter((l) => l.crop_season_id === selectedSeasonId);
+  }, [rawLogsList, selectedSeasonId]);
+
+  // Query Thu Hoạch
+  const { data: rawHarvests = [] } = useQuery<HarvestItem[]>({
+    queryKey: ['harvests', selectedSeasonId],
+    queryFn: () => fetchHarvests({ season_id: selectedSeasonId !== 'ALL' ? selectedSeasonId : undefined }),
+  });
+
+  const seasonHarvests = useMemo(() => {
+    return Array.isArray(rawHarvests) ? rawHarvests : [];
+  }, [rawHarvests]);
+
+  // Query Đối Soát Cân Bằng Vật Tư Cuối Vụ
+  const { data: rawReconciliations = [] } = useQuery<SeasonMaterialReconciliation[]>({
+    queryKey: ['season-reconciliations', currentSeason?.id],
+    queryFn: () => currentSeason?.id ? fetchSeasonMaterialReconciliations(currentSeason.id) : Promise.resolve([]),
+    enabled: !!currentSeason?.id,
+  });
+
+  const reconciliations = useMemo(() => {
+    return Array.isArray(rawReconciliations) ? rawReconciliations : [];
+  }, [rawReconciliations]);
+
+  // Pagination cho Bảng Flat Logs
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return logsList.slice(start, start + pageSize);
+  }, [logsList, currentPage, pageSize]);
+
+  // Statistics
   const stats = useMemo(() => {
     const total = logsList.length;
-    const sprayCount = logsList.filter(
-      (l) => l.activity_type === 'SPRAYING' || l.activity_type === 'FERTILIZATION'
-    ).length;
-    const quarantineCount = logsList.filter(
-      (l) => l.phi_days && l.phi_days > 0
-    ).length;
-    const gpsAndPhotoCount = logsList.filter(
-      (l) => l.gps_latitude && l.attachment_reference && l.attachment_reference.length > 0
-    ).length;
+    const sprayCount = logsList.filter((l) => l.activity_type === 'SPRAYING' || l.activity_type === 'FERTILIZATION').length;
+    const quarantineCount = logsList.filter((l) => l.phi_days && l.phi_days > 0).length;
+    const gpsAndPhotoCount = logsList.filter((l) => l.gps_latitude && l.attachment_reference && l.attachment_reference.length > 0).length;
     const complianceRate = total > 0 ? Math.round((gpsAndPhotoCount / total) * 100) : 100;
-
-    return {
-      total,
-      sprayCount,
-      quarantineCount,
-      complianceRate,
-    };
+    return { total, sprayCount, quarantineCount, complianceRate };
   }, [logsList]);
 
-  const handleExportExcel = () => {
-    if (!logsList || logsList.length === 0) {
-      showToast('Không có dữ liệu nhật ký canh tác để xuất!', 'warning');
-      return;
+  // Handlers
+  const handleCreateFastLog = async (payload: FarmingLogPayload) => {
+    try {
+      await createFarmingLog(payload);
+      queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['season-reconciliations'] });
+      showToast('Đã lưu bản ghi nhật ký VietGAP thành công!', 'success');
+    } catch {
+      showToast('Không thể lưu nhật ký. Vui lòng kiểm tra lại!', 'error');
     }
-
-    const exportRows = logsList.map((log, index) => {
-      const act = ACTIVITY_TYPES_META[log.activity_type]?.label || log.activity_type;
-      return {
-        'STT': index + 1,
-        'Mã nhật ký': log.id,
-        'Ngày thực hiện': log.activity_date,
-        'Mã thửa đất': log.plot_code,
-        'Tên thửa đất': log.plot_name || 'Vùng trồng ớt Sweet Palermo',
-        'Hoạt động TT02': act,
-        'Vật tư / Chế phẩm': log.material_name || 'Không dùng',
-        'Mã SKU vật tư': log.material_sku || '',
-        'Số lô sản xuất vật tư': log.material_batch_number || '',
-        'Khối lượng / Liều lượng': log.quantity_applied ? `${log.quantity_applied} ${log.unit || ''}` : '-',
-        'Số ngày cách ly (PHI)': log.phi_days ? `${log.phi_days} ngày` : '0 ngày',
-        'Ngày an toàn thu hoạch': log.safe_harvest_date || log.activity_date,
-        'Tọa độ GPS': log.gps_latitude && log.gps_longitude ? `${log.gps_latitude}, ${log.gps_longitude}` : '',
-        'Người thực hiện': log.performer_name || log.performed_by || 'Xã viên HTX Tân Tiến',
-        'Mô tả chi tiết': log.description || '',
-      };
-    });
-
-    exportToExcel(exportRows, 'Nhat_Ky_Canh_Tac_TT02_HTX_Tan_Tien', 'NhatKyCanhTac');
-    showToast('Xuất sổ nhật ký canh tác sang file Excel (.xlsx) thành công!', 'success');
   };
 
-  const handleDeleteLog = async () => {
+  const handleSaveReconciliation = async (items: any[]) => {
+    if (!currentSeason?.id) return;
+    try {
+      setIsSavingReconciliation(true);
+      await saveSeasonMaterialReconciliations(currentSeason.id, items);
+      queryClient.invalidateQueries({ queryKey: ['season-reconciliations', currentSeason.id] });
+      showToast('Đã lưu biên bản đối soát cân bằng kho thành công!', 'success');
+    } catch {
+      showToast('Không thể lưu biên bản đối soát. Vui lòng thử lại!', 'error');
+    } finally {
+      setIsSavingReconciliation(false);
+    }
+  };
+
+  const handleFreezeLogbook = async () => {
+    if (!currentSeason?.id) return;
+    try {
+      setIsFreezingLogbook(true);
+      await freezeSeasonLogbook(currentSeason.id);
+      queryClient.invalidateQueries({ queryKey: ['cropSeasons'] });
+      queryClient.invalidateQueries({ queryKey: ['season-reconciliations'] });
+      showToast('Đã khóa sổ mùa vụ và thiết lập chữ ký chuỗi băm SHA-256 bất biến!', 'success');
+    } catch {
+      showToast('Không thể khóa sổ mùa vụ. Vui lòng thử lại!', 'error');
+    } finally {
+      setIsFreezingLogbook(false);
+    }
+  };
+
+  const handlePrintCover = () => {
+    window.print();
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      setIsExporting(true);
+      showToast('Đang kết xuất sổ Nhật ký canh tác điện tử VietGAP...', 'info');
+      await reportApi.exportFarmingLogsExcel();
+      showToast('Xuất sổ Nhật ký canh tác VietGAP Excel thành công!', 'success');
+    } catch (err: any) {
+      if (!logsList || logsList.length === 0) {
+        showToast('Không có dữ liệu nhật ký canh tác để xuất!', 'warning');
+        return;
+      }
+      const exportRows = logsList.map((log, index) => ({
+        STT: index + 1,
+        'Mã nhật ký': log.log_code || `LOG-${log.id}`,
+        'Ngày thực hiện': log.activity_date,
+        'Thửa đất': log.plot_name || log.plot_code,
+        'Hoạt động': log.activity_type,
+        'Vật tư sử dụng': log.material_name || 'Không có',
+        'Hoạt chất BVTV': log.active_ingredient || 'N/A',
+        'Nhóm IRAC/FRAC': log.resistance_group || 'N/A',
+        'Số Lô (Lot/LSX)': log.material_lot_number || 'N/A',
+        'EC Dung dịch': log.ec_solution || 'N/A',
+        'pH Dung dịch': log.ph_solution || 'N/A',
+        'Thời gian cách ly PHI': log.phi_days || 0,
+        'Ngày an toàn thu hoạch': log.safe_harvest_date || 'N/A',
+        'Người thực hiện': log.performer_name || 'Xã viên',
+      }));
+      exportToExcel(exportRows, 'Nhat_Ky_Canh_Tac_VietGAP_TCVN12850', 'NhatKyCanhTac');
+      showToast('Xuất dữ liệu nhật ký canh tác sang file Excel thành công!', 'success');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
     if (!logToDelete) return;
     try {
       setIsDeleting(true);
       await deleteFarmingLog(logToDelete.id);
-      showToast(`Đã xóa lượt ghi nhật ký [${logToDelete.id}] thành công`, 'success');
+      showToast('Đã xóa nhật ký canh tác thành công!', 'success');
       setLogToDelete(null);
       queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
-    } catch (err: any) {
-      showToast(err.message || 'Xóa nhật ký thất bại', 'error');
+    } catch {
+      showToast('Không thể xóa nhật ký canh tác. Vui lòng thử lại!', 'error');
     } finally {
       setIsDeleting(false);
     }
   };
 
+  const handleVerifyLog = async (log: FarmingLog) => {
+    try {
+      await verifyFarmingLog(log.id, { is_compliant: true, notes: 'Thẩm định hợp chuẩn VietGAP TCVN 11892-1:2017' });
+      showToast(`Đã thẩm định hợp chuẩn nhật ký ${log.log_code || log.id} thành công!`, 'success');
+      queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
+    } catch (err: any) {
+      showToast(err?.message || 'Lỗi khi thẩm định nhật ký!', 'error');
+    }
+  };
+
+  const handleOpenRejectModal = (log: FarmingLog) => {
+    setRejectionModalLog(log);
+    setRejectionReason('');
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectionModalLog) return;
+    if (!rejectionReason.trim()) {
+      showToast('Vui lòng nhập lý do từ chối giải trình!', 'warning');
+      return;
+    }
+    setIsRejecting(true);
+    try {
+      await rejectFarmingLog(rejectionModalLog.id, { rejection_reason: rejectionReason.trim() });
+      showToast(`Đã từ chối nhật ký ${rejectionModalLog.log_code || rejectionModalLog.id} và gửi yêu cầu giải trình!`, 'success');
+      setRejectionModalLog(null);
+      setRejectionReason('');
+      queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
+    } catch (err: any) {
+      showToast(err?.message || 'Lỗi khi từ chối nhật ký!', 'error');
+    } finally {
+      setIsRejecting(false);
+    }
+  };
+
   return (
-    <div className="space-y-5 pb-12 animate-fade-in text-[13px] text-slate-700">
-      {/* 1. Header (Fixes Hình 2: Clean, Balanced, Primary CTA firmly positioned) */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 shadow-sm ring-8 ring-emerald-50">
-            <Layers className="h-6 w-6" strokeWidth={2.2} />
-          </div>
-          <div>
-            <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-emerald-600">
-              <span>Sản xuất & Nhật ký</span>
-              <span className="text-slate-300">•</span>
-              <span className="bg-emerald-100 text-emerald-800 px-2 py-0.2 rounded-full font-bold">
-                Thông tư 02/2024/TT-BNNPTNT
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              Nhật Ký Canh Tác Điện Tử
-            </h1>
-            <p className="mt-0.5 text-xs sm:text-sm text-slate-500">
-              HTX Nông nghiệp Tân Tiến • Giám sát 10 trường quy chuẩn, khóa an toàn PHI Guard và tọa độ GPS hiện trường.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setIsLogModalOpen(true)}
-          className="min-h-[48px] shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20 transition hover:-translate-y-0.5 hover:bg-emerald-700 active:translate-y-0 cursor-pointer"
-        >
-          <Plus className="w-5 h-5 stroke-[2.5]" />
-          <span>Ghi nhật ký mới (TT02)</span>
-        </button>
-      </div>
-
-      {/* 2. Top 4 KPI Metric Cards (Implements Hình 3: Balanced Overview) */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {/* Card 1: Tổng lượt ghi */}
-        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Tổng lượt ghi nhật ký</p>
-              <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">{stats.total}</p>
-              <p className="mt-1 text-xs text-slate-400">Canh tác vụ Thu Đông 2026</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <Layers className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Cảnh báo PHI */}
-        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-rose-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Đang cách ly an toàn PHI</p>
-              <p className="mt-2 text-3xl font-extrabold tracking-tight text-rose-600 flex items-center gap-1.5">
-                {stats.quarantineCount} <span className="text-sm font-bold text-slate-500">lượt</span>
-              </p>
-              <p className="mt-1 text-xs text-rose-500 font-medium">Khóa tự động lệnh thu hoạch</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
-              <ShieldAlert className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: Phun thuốc & Bón phân */}
-        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Xử lý dinh dưỡng / BVTV</p>
-              <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
-                {stats.sprayCount} <span className="text-sm font-bold text-slate-500">lượt</span>
-              </p>
-              <p className="mt-1 text-xs text-slate-400">Kiểm soát vật tư & số lô</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-              <Sprout className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-
-        {/* Card 4: Tỷ lệ minh chứng GPS & Ảnh */}
-        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Minh chứng đạt chuẩn số</p>
-              <p className="mt-2 text-3xl font-extrabold tracking-tight text-blue-700">
-                {stats.complianceRate}%
-              </p>
-              <p className="mt-1 text-xs text-slate-400">Đầy đủ tọa độ GPS & Ảnh thực tế</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <Camera className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Notice Banner PHI Guard */}
-      <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-2xl text-amber-950 flex items-start gap-3.5 shadow-2xs">
-        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+    <div className="space-y-6 pb-20 animate-fade-in text-slate-800">
+      {/* 1. Header with Title & Action Buttons */}
+      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h4 className="font-extrabold text-amber-950 text-sm">
-            Khóa an toàn PHI (Pre-Harvest Interval) đang giám sát tự động:
-          </h4>
-          <p className="mt-1 text-xs text-amber-900 leading-relaxed">
-            Hệ thống tự động tính <code className="bg-amber-100 px-1.5 py-0.5 rounded text-amber-950 font-mono font-bold">safe_harvest_date = activity_date + phi_days</code>.
-            Mọi nỗ lực thu hoạch trước ngày an toàn sẽ bị <strong>chặn 100% bằng mã lỗi ERR_HARVEST_PHI_VIOLATION</strong> theo Thông tư 02/2024.
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800 border border-emerald-200">
+            <BookOpen className="w-3.5 h-3.5 text-emerald-700" />
+            <span>Sổ Nhật Ký Canh Tác Điện Tử Chuẩn VietGAP &amp; OCOP</span>
+          </div>
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+            Sổ Nhật Ký Mùa Vụ Số (Digital Season Logbook)
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+            Tuân thủ VietGAP TCVN 11892-1:2017 • Nghị định 38/2026/NĐ-CP • TCVN 12850:2019 • Quản trị cách ly PHI &amp; Merkle Root SHA-256
           </p>
         </div>
-      </div>
 
-      {/* 3. Table Toolbar with Search, Filter, Excel Export, and View Mode Toggle */}
-      <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-subtle flex flex-wrap items-center justify-between gap-3">
-        <div className="relative flex-1 min-w-[280px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Tìm theo mã thửa, vật tư, hoạt động, số lô, người thực hiện..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Chọn Vụ Mùa Trọng Tâm */}
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-2xl border border-slate-200">
+            <Calendar className="w-4 h-4 text-emerald-700 shrink-0" />
             <select
-              value={selectedActivity}
-              onChange={(e) => setSelectedActivity(e.target.value)}
-              className="min-h-[38px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
+              value={selectedSeasonId}
+              onChange={(e) => setSelectedSeasonId(e.target.value)}
+              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
             >
-              <option value="ALL">Tất cả hoạt động</option>
-              <option value="LAND_PREPARATION">Làm đất & Xử lý giá thể</option>
-              <option value="FERTILIZATION">Bón phân & Dinh dưỡng</option>
-              <option value="SPRAYING">Phun thuốc BVTV & Chế phẩm</option>
-              <option value="CARE">Chăm sóc & Tỉa cành</option>
-              <option value="HARVEST">Thu hoạch</option>
+              {seasons.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.crop})
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* Export Excel Button (Cleanly integrated on toolbar) */}
+          {/* Mode Switcher to Mobile Field Entry */}
           <button
-            onClick={handleExportExcel}
-            className="min-h-[38px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition cursor-pointer"
-            title="Xuất dữ liệu 10 trường sang Excel"
+            type="button"
+            onClick={() => navigate('/agriculture/field-entry')}
+            className="min-h-[44px] shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2.5 text-xs font-extrabold text-emerald-800 shadow-2xs transition active:scale-95 cursor-pointer"
+            title="Chuyển sang giao diện thao tác nhanh trên điện thoại dành cho xã viên ngoài vườn"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-            <span>Xuất Excel</span>
+            <Smartphone className="w-4 h-4 text-emerald-700" />
+            <span>Mobile App</span>
           </button>
 
-          {/* Toggle Split Master-Detail vs Full Table View */}
+          {/* Trọn Bộ Hồ Sơ VietGAP A4 */}
           <button
-            onClick={() => setIsSplitView((prev) => !prev)}
-            className={`min-h-[38px] hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
-              isSplitView
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-            }`}
-            title={isSplitView ? 'Đang bật chia đôi màn hình Master-Detail' : 'Bật chế độ chia đôi màn hình'}
+            type="button"
+            onClick={() => setIsDossierModalOpen(true)}
+            className="min-h-[44px] shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs transition active:scale-95 cursor-pointer"
+            title="Mở toàn bộ hồ sơ sổ nhật ký canh tác A4 chuẩn công vụ (TCVN 11892-1:2017) để in hoặc tải PDF/Excel"
           >
-            {isSplitView ? <Columns2 className="w-4 h-4 text-emerald-600" /> : <Maximize2 className="w-4 h-4 text-slate-500" />}
-            <span>{isSplitView ? 'Chia đôi màn hình' : 'Xem toàn bảng'}</span>
+            <Printer className="w-4 h-4" />
+            <span>Hồ Sơ VietGAP A4</span>
+          </button>
+
+          {/* Xuất Excel */}
+          <button
+            onClick={handleExportExcel}
+            disabled={isExporting}
+            className="min-h-[44px] shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition cursor-pointer disabled:opacity-50"
+            title="Xuất dữ liệu VietGAP sang file Excel"
+          >
+            {isExporting ? <Loader2 className="w-4 h-4 animate-spin text-slate-600" /> : <FileSpreadsheet className="w-4 h-4 text-emerald-700" />}
+            <span>Xuất Excel</span>
           </button>
         </div>
       </div>
 
-      {/* 4. Master-Detail Split View (Implements Hình 4 & Fixes Hình 1) */}
-      <div className={`grid grid-cols-1 ${isSplitView ? 'xl:grid-cols-[minmax(0,1.55fr)_minmax(380px,0.95fr)]' : ''} gap-5 items-start`}>
-        {/* Left: Master Table Section */}
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-slate-50/70">
-            <div>
-              <h2 className="text-sm font-extrabold text-slate-800">Danh sách nhật ký canh tác</h2>
-              <p className="mt-0.5 text-xs text-slate-400">
-                {logsList.length} lượt ghi • Click chọn dòng để xem chi tiết bên phải
-              </p>
-            </div>
-            <div className="text-xs text-slate-400 font-medium hidden sm:block">
-              Chuẩn Thông tư 02/2024
-            </div>
-          </div>
+      {/* 2. Top 4 KPI Metric Cards */}
+      <FarmingLogsKpiStats stats={stats} />
 
-          <div className="overflow-x-auto">
-            {isLoading ? (
-              <div className="p-12 text-center text-slate-400 text-xs font-medium">
-                Đang tải nhật ký canh tác...
-              </div>
-            ) : logsList.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 text-xs font-medium">
-                Chưa có dữ liệu nhật ký canh tác phù hợp. Bấm "Ghi nhật ký mới (TT02)" để thêm lượt ghi đầu tiên.
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse text-[12.8px] min-w-[750px]">
-                <thead>
-                  <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-400 font-extrabold bg-slate-50">
-                    <th className="py-3 px-4 min-w-[105px]">Ngày</th>
-                    <th className="py-3 px-4 min-w-[160px]">Thửa đất</th>
-                    <th className="py-3 px-4 min-w-[170px]">Hoạt động TT02</th>
-                    <th className="py-3 px-4 min-w-[170px]">Vật tư / Khối lượng</th>
-                    <th className="py-3 px-4 min-w-[140px]">Kiểm soát PHI</th>
-                    <th className="py-3 px-4 text-center min-w-[90px]">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {logsList.map((log: FarmingLog) => {
-                    const actMeta = ACTIVITY_TYPES_META[log.activity_type] || {
-                      label: log.activity_type,
-                      badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
-                    };
+      {/* 3. Navigation Bar 6 Tab Chuẩn VietGAP */}
+      <div className="flex items-center gap-1.5 border-b border-slate-200 bg-white p-2 rounded-2xl shadow-xs overflow-x-auto scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setActiveTab('cover')}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            activeTab === 'cover'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>I. Bìa Sổ &amp; Đầu Vụ</span>
+        </button>
 
-                    const isSelected = activeLog?.id === log.id;
+        <button
+          type="button"
+          onClick={() => setActiveTab('fertigation')}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            activeTab === 'fertigation'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <Droplets className="w-4 h-4" />
+          <span>II. Sổ Dinh Dưỡng &amp; Fertigation</span>
+        </button>
 
-                    return (
-                      <tr
-                        key={log.id}
-                        onClick={() => setSelectedLogId(log.id)}
-                        className={`cursor-pointer transition-all ${
-                          isSelected
-                            ? 'bg-emerald-50/70 ring-2 ring-emerald-500/40 font-medium'
-                            : 'hover:bg-slate-50/80 bg-white'
-                        }`}
-                      >
-                        {/* 1. Date */}
-                        <td className="py-3.5 px-4 font-semibold text-slate-900 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />}
-                            <span>{log.activity_date}</span>
-                          </div>
-                        </td>
+        <button
+          type="button"
+          onClick={() => setActiveTab('ipm')}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            activeTab === 'ipm'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <ShieldAlert className="w-4 h-4" />
+          <span>III. Sổ Dịch Hại &amp; BVTV (IPM)</span>
+        </button>
 
-                        {/* 2. Plot */}
-                        <td className="py-3.5 px-4">
-                          <div className="font-bold text-slate-900 whitespace-nowrap">{log.plot_code}</div>
-                          <div className="text-[11px] text-slate-400 truncate max-w-[160px]">
-                            {log.plot_name || 'Vùng ớt Sweet Palermo'}
-                          </div>
-                        </td>
+        <button
+          type="button"
+          onClick={() => setActiveTab('harvests')}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            activeTab === 'harvests'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <Wheat className="w-4 h-4" />
+          <span>IV. Sổ Thu Hoạch Rải Vụ</span>
+        </button>
 
-                        {/* 3. Activity Type */}
-                        <td className="py-3.5 px-4">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border whitespace-nowrap ${actMeta.badgeClass}`}
-                          >
-                            {actMeta.label}
-                          </span>
-                          {log.description && (
-                            <div className="text-[11px] text-slate-500 mt-1 line-clamp-1 max-w-[180px]" title={log.description}>
-                              {log.description}
-                            </div>
-                          )}
-                        </td>
+        <button
+          type="button"
+          onClick={() => setActiveTab('reconciliation')}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            activeTab === 'reconciliation'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <Scale className="w-4 h-4" />
+          <span>V. Cân Bằng Kho &amp; Khóa Sổ</span>
+        </button>
 
-                        {/* 4. Material & Quantity */}
-                        <td className="py-3.5 px-4">
-                          {log.material_name ? (
-                            <div>
-                              <div className="font-semibold text-emerald-800 line-clamp-1 max-w-[170px]" title={log.material_name}>
-                                {log.material_name}
-                              </div>
-                              <div className="text-[11px] font-medium text-slate-500">
-                                {log.quantity_applied ? `${log.quantity_applied} ${log.unit || ''}` : '-'}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 text-xs italic">Không dùng vật tư</span>
-                          )}
-                        </td>
+        <button
+          type="button"
+          onClick={() => setActiveTab('phi')}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            activeTab === 'phi'
+              ? 'bg-rose-700 text-white shadow-xs'
+              : 'text-rose-700 hover:bg-rose-50'
+          }`}
+        >
+          <AlertTriangle className="w-4 h-4" />
+          <span>Bàn Giám Sát PHI</span>
+        </button>
 
-                        {/* 5. PHI Safety */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          {log.phi_days && log.phi_days > 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-extrabold bg-rose-100 text-rose-900 border border-rose-300">
-                              <ShieldAlert className="w-3 h-3 text-rose-600" /> Cách ly {log.phi_days} ngày
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <CheckCircle className="w-3 h-3 text-emerald-600" /> An toàn
-                            </span>
-                          )}
-                        </td>
-
-                        {/* 6. Quick Action Icons */}
-                        <td className="py-3.5 px-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => setSelectedLogForDetailModal(log)}
-                              title="Xem chi tiết modal"
-                              className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setSelectedLogForEdit(log)}
-                              title="Chỉnh sửa nhật ký"
-                              className="p-1.5 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setLogToDelete(log)}
-                              title="Xóa nhật ký canh tác"
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </section>
-
-        {/* Right: Master-Detail Inspector Panel (Styled Identical to Reference Image 4) */}
-        {isSplitView && (
-          <FarmingLogDetailPanel
-            log={activeLog}
-            onEdit={(log) => setSelectedLogForEdit(log)}
-            onDelete={(log) => setLogToDelete(log)}
-            onViewPhoto={(photoUrl) => setSelectedPhoto(photoUrl)}
-          />
-        )}
+        <button
+          type="button"
+          onClick={() => setActiveTab('all_logs')}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            activeTab === 'all_logs'
+              ? 'bg-slate-800 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <ListOrdered className="w-4 h-4" />
+          <span>Tất Cả Nhật Ký ({logsList.length})</span>
+        </button>
       </div>
 
-      {/* Quick Mobile Logging Modal */}
-      <QuickMobileLogModal
-        isOpen={isLogModalOpen}
-        onClose={() => setIsLogModalOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
-        }}
-      />
+      {/* 4. Nội Dung Chi Tiết Từng Tab */}
+      {activeTab === 'cover' && (
+        <LogbookCoverTab
+          season={currentSeason}
+          plots={plots}
+          selectedPlotId={selectedPlotId}
+          onSelectPlot={setSelectedPlotId}
+          onPrintCover={handlePrintCover}
+        />
+      )}
 
-      {/* Farming Log Detail Modal (for Mobile/Popup view) */}
-      <FarmingLogDetailModal
-        isOpen={!!selectedLogForDetailModal}
-        onClose={() => setSelectedLogForDetailModal(null)}
-        log={selectedLogForDetailModal}
-      />
+      {activeTab === 'fertigation' && (
+        <FertigationLogTab
+          logs={logsList}
+          onAddLog={() => setIsFertModalOpen(true)}
+          onViewDetail={(log) => setSelectedLogForDetailModal(log)}
+          isReadOnly={isSeasonReadOnly}
+        />
+      )}
 
-      {/* Edit Farming Log Modal */}
-      <EditFarmingLogModal
-        isOpen={!!selectedLogForEdit}
-        onClose={() => setSelectedLogForEdit(null)}
-        log={selectedLogForEdit}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
-        }}
-      />
+      {activeTab === 'ipm' && (
+        <IpmPestControlTab
+          logs={logsList}
+          onAddLog={() => setIsIpmModalOpen(true)}
+          onViewDetail={(log) => setSelectedLogForDetailModal(log)}
+          isReadOnly={isSeasonReadOnly}
+        />
+      )}
 
-      {/* Delete Confirmation Modal */}
-      {logToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in text-[13px]">
-          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden p-6 space-y-4">
-            <div className="flex items-center gap-3 text-rose-600">
-              <div className="p-3 bg-rose-100 rounded-2xl">
-                <AlertOctagon className="w-6 h-6 text-rose-600" />
-              </div>
-              <div>
-                <h3 className="font-black text-slate-900 text-base">Xác Nhận Xóa Nhật Ký</h3>
-                <p className="text-xs text-slate-500">Mã lượt ghi: {logToDelete.id}</p>
-              </div>
+      {activeTab === 'harvests' && (
+        <HarvestStagesTab
+          harvests={seasonHarvests}
+          season={currentSeason}
+          onAddHarvest={() => navigate('/agriculture/harvests')}
+          onViewDetail={(h) => navigate(`/trace/LOT-${h.id}`)}
+          onPrintSlip={(h) => window.print()}
+          isReadOnly={isSeasonReadOnly}
+        />
+      )}
+
+      {activeTab === 'reconciliation' && (
+        <SeasonReconciliationTab
+          season={currentSeason}
+          reconciliations={reconciliations}
+          onSaveReconciliation={handleSaveReconciliation}
+          onFreezeLogbook={handleFreezeLogbook}
+          isSaving={isSavingReconciliation}
+          isFreezing={isFreezingLogbook}
+        />
+      )}
+
+      {activeTab === 'phi' && (
+        <PhiSafetyMonitorTab
+          logs={logsList}
+          onSelectLog={(l) => setSelectedLogForDetailModal(l)}
+          onOpenQuickLog={() => setIsLogModalOpen(true)}
+        />
+      )}
+
+      {activeTab === 'all_logs' && (
+        <div className="space-y-4">
+          {/* Table Toolbar */}
+          <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-subtle flex flex-wrap items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-[280px]">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Tìm theo mã thửa, vật tư, hoạt động, số lô, người thực hiện..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              />
             </div>
 
-            <div className="p-3.5 bg-rose-50/80 rounded-2xl border border-rose-200 text-xs text-rose-900 leading-relaxed">
-              Bạn có chắc chắn muốn xóa lượt ghi nhật ký này vào ngày <strong>{logToDelete.activity_date}</strong> trên thửa đất <strong>{logToDelete.plot_code}</strong>?
-              <br />
-              <span className="text-[11px] text-rose-700 italic mt-1 block">
-                * Lưu ý: Lịch sử canh tác cần được lưu giữ tối thiểu 2 năm theo Thông tư 02/2024/TT-BNNPTNT để phục vụ đánh giá OCOP và chứng nhận VietGAP.
-              </span>
-            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+                <select
+                  value={selectedActivity}
+                  onChange={(e) => setSelectedActivity(e.target.value)}
+                  className="min-h-[38px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="ALL">Tất cả hoạt động</option>
+                  <option value="LAND_PREPARATION">Làm đất &amp; Xử lý giá thể</option>
+                  <option value="FERTILIZATION">Bón phân &amp; Dinh dưỡng</option>
+                  <option value="SPRAYING">Phun thuốc BVTV &amp; Chế phẩm</option>
+                  <option value="BIOCONTROL">Thả Thiên Địch (Sinh học)</option>
+                  <option value="IPM_SCOUTING">Điều tra Dịch hại (IPM)</option>
+                  <option value="CARE">Chăm sóc &amp; Tỉa cành</option>
+                  <option value="HARVEST">Thu hoạch</option>
+                </select>
+              </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+              {!isSeasonReadOnly && (
+                <button
+                  onClick={() => setIsLogModalOpen(true)}
+                  className="min-h-[38px] inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-extrabold text-white shadow-md shadow-emerald-700/20 transition hover:bg-emerald-800"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Ghi nhật ký mới</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <FarmingLogsTable
+            logsList={logsList}
+            paginatedLogs={paginatedLogs}
+            activeLog={selectedLogForDetailModal}
+            isLoading={isLoading}
+            isSeasonReadOnly={!!isSeasonReadOnly}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
+            onSelectLog={(id) => {
+              const log = logsList.find((l) => l.id === id);
+              if (log) setSelectedLogForDetailModal(log);
+            }}
+            onOpenDetailModal={setSelectedLogForDetailModal}
+            onOpenEditModal={setSelectedLogForEdit}
+            onOpenDeleteModal={setLogToDelete}
+            onSelectPhoto={setSelectedPhoto}
+            onVerifyLog={handleVerifyLog}
+            onRejectLog={handleOpenRejectModal}
+          />
+        </div>
+      )}
+
+      {/* Modals & Dialogs */}
+      <FertigationEntryModal
+        isOpen={isFertModalOpen}
+        onClose={() => setIsFertModalOpen(false)}
+        onSubmit={handleCreateFastLog}
+        season={currentSeason}
+        plots={plots}
+        selectedPlotId={selectedPlotId}
+      />
+
+      <IpmPestEntryModal
+        isOpen={isIpmModalOpen}
+        onClose={() => setIsIpmModalOpen(false)}
+        onSubmit={handleCreateFastLog}
+        season={currentSeason}
+        plots={plots}
+        selectedPlotId={selectedPlotId}
+      />
+
+      <FarmingLogModals
+        isLogModalOpen={isLogModalOpen}
+        onCloseLogModal={() => setIsLogModalOpen(false)}
+        onLogCreated={() => {
+          queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
+          showToast('Đã lưu nhật ký canh tác thành công!', 'success');
+        }}
+        selectedSeasonId={selectedSeasonId !== 'ALL' ? selectedSeasonId : undefined}
+        selectedLogForDetailModal={selectedLogForDetailModal}
+        onCloseDetailModal={() => setSelectedLogForDetailModal(null)}
+        onOpenEditFromDetail={(log) => {
+          setSelectedLogForDetailModal(null);
+          setSelectedLogForEdit(log);
+        }}
+        onOpenDeleteFromDetail={(log) => {
+          setSelectedLogForDetailModal(null);
+          setLogToDelete(log);
+        }}
+        onVerifyLog={handleVerifyLog}
+        onRejectLog={handleOpenRejectModal}
+        selectedLogForEdit={selectedLogForEdit}
+        onCloseEditModal={() => setSelectedLogForEdit(null)}
+        onLogUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ['farming-logs'] });
+          showToast('Đã cập nhật nhật ký canh tác thành công!', 'success');
+        }}
+        logToDelete={logToDelete}
+        onCloseDeleteModal={() => setLogToDelete(null)}
+        onConfirmDelete={handleDeleteConfirm}
+        isDeleting={isDeleting}
+        selectedPhoto={selectedPhoto}
+        onClosePhoto={() => setSelectedPhoto(null)}
+      />
+
+      {/* VietGAP Logbook Dossier A4 Print & Export Modal */}
+      <VietgapLogbookDossierModal
+        isOpen={isDossierModalOpen}
+        onClose={() => setIsDossierModalOpen(false)}
+        season={currentSeason}
+        plots={plots}
+        logs={logsList}
+        harvests={seasonHarvests}
+        reconciliations={reconciliations}
+      />
+
+      {/* ICS Rejection Reason Modal */}
+      {rejectionModalLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs animate-fade-in text-xs">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h4 className="text-sm font-black text-rose-900 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
+                Từ Chối Nhật Ký &amp; Yêu Cầu Giải Trình
+              </h4>
               <button
-                onClick={() => setLogToDelete(null)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer"
+                type="button"
+                onClick={() => setRejectionModalLog(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-slate-600 font-medium leading-relaxed">
+                Bạn đang từ chối phê duyệt nhật ký <strong className="text-slate-900 font-mono">{rejectionModalLog.log_code || rejectionModalLog.id}</strong> ({rejectionModalLog.activity_type} - {rejectionModalLog.activity_date}).
+              </p>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Lý do từ chối / Nội dung sai lệch cần giải trình (*):
+                </label>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Ví dụ: Ghi lùi ngày quá 48h không có biên bản sự cố, hoặc tọa độ GPS nằm ngoài ranh giới thửa..."
+                  rows={3}
+                  className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setRejectionModalLog(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 font-bold text-slate-600 cursor-pointer"
               >
                 Hủy bỏ
               </button>
               <button
-                onClick={handleDeleteLog}
-                disabled={isDeleting}
-                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition disabled:opacity-60 cursor-pointer"
+                type="button"
+                onClick={handleConfirmReject}
+                disabled={isRejecting || !rejectionReason.trim()}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition disabled:opacity-50 cursor-pointer"
               >
-                {isDeleting ? 'Đang xóa...' : 'Xác nhận Xóa'}
+                {isRejecting ? 'Đang xử lý...' : 'Xác nhận từ chối'}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Photo Preview Modal */}
-      {selectedPhoto && (
-        <div
-          onClick={() => setSelectedPhoto(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm cursor-pointer"
-        >
-          <div className="relative max-w-lg max-h-[85vh] rounded-2xl overflow-hidden border border-white/20 shadow-2xl">
-            <img src={selectedPhoto} alt="Minh chứng thực tế" className="w-full h-full object-contain" />
-            <div className="absolute bottom-0 inset-x-0 bg-black/60 p-3 text-white text-xs font-bold text-center">
-              Ảnh minh chứng nhật ký canh tác TT02 - HTX Tân Tiến (Click để đóng)
             </div>
           </div>
         </div>
@@ -551,3 +728,5 @@ export const FarmingLogsPage: React.FC = () => {
     </div>
   );
 };
+
+export default FarmingLogsPage;

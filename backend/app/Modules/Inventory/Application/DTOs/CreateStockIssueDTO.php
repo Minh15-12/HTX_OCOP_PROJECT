@@ -13,6 +13,7 @@ class CreateStockIssueDTO extends BaseDTO
         public readonly string $issueDate,
         public readonly array $lines,
         public readonly ?string $memberId = null,
+        public readonly ?string $cropSeasonId = null,
         public readonly ?string $purpose = null,
         public readonly ?string $customIssueNumber = null,
         public readonly ?string $cooperativeId = null,

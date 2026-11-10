@@ -32,6 +32,10 @@ class EvaluatorScoreController extends BaseController
 
     public function store(string $sessionId, SaveEvaluatorScoreRequest $request): JsonResponse
     {
+        if (!\Illuminate\Support\Facades\Gate::allows('OCOP_EVALUATION.SCORE')) {
+            return \App\Shared\Application\Responses\ApiResponse::error('FORBIDDEN', 'Bạn không có quyền chấm điểm đánh giá OCOP', status: 403);
+        }
+
         $evaluatorId = auth()->id() ?: (string) $request->input('evaluator_id', '');
         $dto = SaveEvaluatorScoreDTO::fromArray($request->validated());
 
@@ -46,6 +50,10 @@ class EvaluatorScoreController extends BaseController
 
     public function lock(string $id, Request $request): JsonResponse
     {
+        if (!\Illuminate\Support\Facades\Gate::allows('OCOP_EVALUATION.LOCK') && !\Illuminate\Support\Facades\Gate::allows('OCOP_EVALUATION.SCORE')) {
+            return \App\Shared\Application\Responses\ApiResponse::error('FORBIDDEN', 'Bạn không có quyền khóa phiếu chấm điểm', status: 403);
+        }
+
         $evaluatorId = auth()->id() ?: (string) $request->input('evaluator_id', '');
 
         $assignment = $this->scoreService->lockScores($id, $evaluatorId);

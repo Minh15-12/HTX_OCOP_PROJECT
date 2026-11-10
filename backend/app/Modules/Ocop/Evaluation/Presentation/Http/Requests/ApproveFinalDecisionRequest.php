@@ -8,7 +8,7 @@ class ApproveFinalDecisionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return \Illuminate\Support\Facades\Gate::allows('OCOP_DECISION.APPROVE');
     }
 
     public function rules(): array

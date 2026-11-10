@@ -24,7 +24,7 @@ class OcopApplicationService
 
     public function listApplications(array $filters = [], int $perPage = 15, string $sort = '-created_at'): LengthAwarePaginator
     {
-        $query = OcopApplicationModel::with(['cooperative', 'product', 'criteriaVersion']);
+        $query = OcopApplicationModel::with(['cooperative', 'product', 'criteriaVersion', 'selfAssessments', 'finalDecision']);
 
         if ($this->tenantContext->hasTenant()) {
             $query->where('cooperative_id', $this->tenantContext->getCooperativeId());
@@ -207,7 +207,7 @@ class OcopApplicationService
         return $app->fresh(['cooperative', 'product', 'criteriaVersion', 'selfAssessments']);
     }
 
-    public function submitApplication(string $id): OcopApplicationModel
+    public function submitApplication(string $id, ?string $actorId = null): OcopApplicationModel
     {
         $app = $this->getApplicationById($id);
 
@@ -237,6 +237,7 @@ class OcopApplicationService
             entityType: 'OcopApplication',
             entityId: $app->id,
             after: $app->toArray(),
+            actorId: $actorId,
             cooperativeId: $app->cooperative_id
         );
 

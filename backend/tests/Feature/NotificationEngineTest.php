@@ -80,4 +80,75 @@ class NotificationEngineTest extends TestCase
             }
         );
     }
+
+    public function test_user_can_list_notifications_and_mark_as_read()
+    {
+        $coopId = \Illuminate\Support\Str::uuid();
+        \Illuminate\Support\Facades\DB::table('cooperatives')->insert([
+            'id' => $coopId,
+            'cooperative_code' => 'COOP_NOTIF',
+            'legal_name' => 'HTX Notif Test',
+            'display_name' => 'HTX Notif',
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        $userId = \Illuminate\Support\Str::uuid();
+        \Illuminate\Support\Facades\DB::table('users')->insert([
+            'id' => $userId,
+            'username' => 'notif_user',
+            'cooperative_id' => $coopId,
+            'full_name' => 'Notif User',
+            'email' => 'notif_user@test.com',
+            'password' => bcrypt('password'),
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+        $user = UserModel::find($userId);
+
+        $notif1Id = \Illuminate\Support\Str::uuid()->toString();
+        $notif2Id = \Illuminate\Support\Str::uuid()->toString();
+
+        \Illuminate\Support\Facades\DB::table('notifications')->insert([
+            [
+                'id' => $notif1Id,
+                'type' => 'Modules\Notification\Domain\Notifications\LowStockNotification',
+                'notifiable_type' => get_class($user),
+                'notifiable_id' => $user->id,
+                'data' => json_encode(['title' => 'Cảnh báo tồn kho', 'message' => 'Vật tư VT01 sắp hết']),
+                'read_at' => null,
+                'created_at' => now()->subMinutes(10),
+                'updated_at' => now()->subMinutes(10),
+            ],
+            [
+                'id' => $notif2Id,
+                'type' => 'Modules\Notification\Domain\Notifications\ExpiringOcopNotification',
+                'notifiable_type' => get_class($user),
+                'notifiable_id' => $user->id,
+                'data' => json_encode(['title' => 'Cảnh báo OCOP', 'message' => 'Chứng nhận sắp hết hạn']),
+                'read_at' => null,
+                'created_at' => now()->subMinutes(5),
+                'updated_at' => now()->subMinutes(5),
+            ],
+        ]);
+
+        // 1. List notifications
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/notifications');
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $this->assertEquals(2, $response->json('meta.unread_count'));
+        $this->assertCount(2, $response->json('data'));
+
+        // 2. Mark single as read
+        $markResponse = $this->actingAs($user, 'sanctum')->postJson("/api/v1/notifications/{$notif1Id}/mark-as-read");
+        $markResponse->assertStatus(200);
+        $this->assertNotNull($user->notifications()->find($notif1Id)->read_at);
+
+        // 3. Mark all as read
+        $markAllResponse = $this->actingAs($user, 'sanctum')->postJson('/api/v1/notifications/mark-all-read');
+        $markAllResponse->assertStatus(200);
+        $this->assertEquals(0, $user->unreadNotifications()->count());
+    }
 }
+

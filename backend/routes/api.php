@@ -2,6 +2,7 @@
 
 use App\Shared\Presentation\Http\Controllers\HealthController;
 use Illuminate\Support\Facades\Route;
+use Modules\Agriculture\Presentation\Http\Controllers\CropController;
 use Modules\Agriculture\Presentation\Http\Controllers\CropSeasonController;
 use Modules\Agriculture\Presentation\Http\Controllers\FarmingLogController;
 use Modules\Agriculture\Presentation\Http\Controllers\FarmPlotController;
@@ -11,8 +12,11 @@ use Modules\Agriculture\Presentation\Http\Controllers\MaterialUsageController;
 use Modules\Agriculture\Presentation\Http\Controllers\PhiCalculationController;
 use Modules\Agriculture\Presentation\Http\Controllers\ProductionUnitController;
 use Modules\Agriculture\Presentation\Http\Controllers\PublicTraceabilityController;
+use Modules\Agriculture\Presentation\Http\Controllers\SeasonReconciliationController;
 use Modules\Cooperative\Presentation\Http\Controllers\CapitalContributionController;
 use Modules\Cooperative\Presentation\Http\Controllers\CooperativeController;
+use Modules\Cooperative\Presentation\Http\Controllers\LandContributionController;
+use Modules\Cooperative\Presentation\Http\Controllers\MeetingController;
 use Modules\Cooperative\Presentation\Http\Controllers\MemberController;
 use Modules\Finance\Presentation\Http\Controllers\CashTransactionController;
 use Modules\Finance\Presentation\Http\Controllers\ReceivablePayableController;
@@ -23,9 +27,12 @@ use Modules\Identity\Presentation\Http\Controllers\RoleController;
 use Modules\Identity\Presentation\Http\Controllers\SystemSettingController;
 use Modules\Identity\Presentation\Http\Controllers\UserController;
 use Modules\Inventory\Presentation\Http\Controllers\MaterialController;
+use Modules\Inventory\Presentation\Http\Controllers\MaterialReconciliationController;
 use Modules\Inventory\Presentation\Http\Controllers\StockCountController;
 use Modules\Inventory\Presentation\Http\Controllers\StockIssueController;
 use Modules\Inventory\Presentation\Http\Controllers\StockReceiptController;
+use Modules\Inventory\Presentation\Http\Controllers\ToolTrackingController;
+use Modules\Inventory\Presentation\Http\Controllers\WarehouseController;
 use Modules\Ocop\Criteria\Presentation\Http\Controllers\CouncilLevelController;
 use Modules\Ocop\Criteria\Presentation\Http\Controllers\CriteriaGroupController;
 use Modules\Ocop\Criteria\Presentation\Http\Controllers\CriteriaVersionController;
@@ -58,14 +65,21 @@ Route::get('/health', [HealthController::class, 'check'])->name('api.health');
 // Public Traceability Routes (Public, outside auth:sanctum)
 Route::get('/public/trace/{lotId}', [PublicTraceabilityController::class, 'show'])->name('api.public.trace');
 Route::get('/trace/{lotId}', [PublicTraceabilityController::class, 'show'])->name('api.trace');
+Route::get('/crops', [CropController::class, 'index'])->name('api.crops.public-index');
+
+// Cryptographically Signed Evidence File Streaming (Protected via HMAC signature and expiration timestamp)
+Route::get('/ocop/evidences/{id}/file-stream', [EvidenceController::class, 'fileStream'])
+    ->name('api.ocop.evidences.file-stream')
+    ->middleware('signed');
 
 // Authentication Routes (Public / Protected)
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login'])->name('api.auth.login');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('api.auth.login');
 
     Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
         Route::get('/me', [AuthController::class, 'me'])->name('api.auth.me');
         Route::post('/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
+        Route::post('/change-password', [AuthController::class, 'changePassword'])->name('api.auth.change-password');
     });
 });
 
@@ -102,6 +116,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::delete('/members/{id}', [MemberController::class, 'destroy'])->name('api.members.destroy');
     Route::post('/members/{id}/approve', [MemberController::class, 'approve'])->name('api.members.approve');
     Route::post('/members/{id}/status-transitions', [MemberController::class, 'transitionStatus'])->name('api.members.status-transition');
+    Route::get('/members/{id}/suggested-credit-limit', [MemberController::class, 'suggestedCreditLimit'])->name('api.members.suggested-credit-limit');
 
     // Capital Contribution Routes (Section 11 of 12_API_SPECIFICATION.md)
     Route::get('/capital-contributions/summary', [CapitalContributionController::class, 'summary'])->name('api.contributions.summary');
@@ -110,6 +125,22 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/members/{member_id}/capital-contributions', [CapitalContributionController::class, 'store'])->name('api.members.contributions.store');
     Route::get('/capital-contributions/{id}', [CapitalContributionController::class, 'show'])->name('api.contributions.show');
 
+    // Land Contribution Routes (Góp vốn quyền sử dụng đất)
+    Route::get('/land-contributions', [LandContributionController::class, 'indexAll'])->name('api.land-contributions.index-all');
+    Route::get('/members/{member_id}/land-contributions', [LandContributionController::class, 'indexByMember'])->name('api.members.land-contributions.index');
+    Route::post('/members/{member_id}/land-contributions', [LandContributionController::class, 'storeForMember'])->name('api.members.land-contributions.store');
+    Route::get('/land-contributions/{id}', [LandContributionController::class, 'show'])->name('api.land-contributions.show');
+    Route::delete('/land-contributions/{id}', [LandContributionController::class, 'destroy'])->name('api.land-contributions.destroy');
+
+    // General Assembly of Members & Voting APIs (Đại hội thành viên & Biểu quyết)
+    Route::get('/meetings', [MeetingController::class, 'index'])->name('api.meetings.index');
+    Route::post('/meetings', [MeetingController::class, 'store'])->name('api.meetings.store');
+    Route::get('/meetings/{id}', [MeetingController::class, 'show'])->name('api.meetings.show');
+    Route::patch('/meetings/{id}', [MeetingController::class, 'update'])->name('api.meetings.update');
+    Route::get('/meetings/{id}/votes', [MeetingController::class, 'listVotes'])->name('api.meetings.votes.index');
+    Route::post('/meetings/{id}/votes', [MeetingController::class, 'castVote'])->name('api.meetings.votes.store');
+    Route::get('/meetings/{id}/resolutions-summary', [MeetingController::class, 'resolutionsSummary'])->name('api.meetings.resolutions-summary');
+
     // Production Unit APIs (Section 13 of 12_API_SPECIFICATION.md)
     Route::get('/production-units', [ProductionUnitController::class, 'index'])->name('api.production-units.index');
     Route::post('/production-units', [ProductionUnitController::class, 'store'])->name('api.production-units.store');
@@ -117,24 +148,47 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::patch('/production-units/{id}', [ProductionUnitController::class, 'update'])->name('api.production-units.update');
 
     // Farm Plot APIs (Section 14 of 12_API_SPECIFICATION.md)
+    Route::get('/farm-plots', [FarmPlotController::class, 'index'])->name('api.farm-plots.index');
+    Route::get('/members/{member_id}/plots', [FarmPlotController::class, 'indexByMember'])->name('api.members.plots.index');
     Route::get('/production-units/{unit_id}/plots', [FarmPlotController::class, 'indexByUnit'])->name('api.production-units.plots.index');
     Route::post('/production-units/{unit_id}/plots', [FarmPlotController::class, 'storeInUnit'])->name('api.production-units.plots.store');
     Route::get('/farm-plots/{plot_id}', [FarmPlotController::class, 'show'])->name('api.farm-plots.show');
+    Route::patch('/farm-plots/{plot_id}', [FarmPlotController::class, 'update'])->name('api.farm-plots.update');
+    Route::delete('/farm-plots/{plot_id}', [FarmPlotController::class, 'destroy'])->name('api.farm-plots.destroy');
     Route::get('/farm-plots/{plot_id}/member-assignments', [FarmPlotController::class, 'listAssignments'])->name('api.farm-plots.assignments.index');
     Route::post('/farm-plots/{plot_id}/member-assignments', [FarmPlotController::class, 'assignMember'])->name('api.farm-plots.assignments.store');
+
+    // Crop Master Data APIs
+    Route::post('/crops', [CropController::class, 'store'])->name('api.crops.store');
 
     // Crop Season APIs (Section 15 of 12_API_SPECIFICATION.md)
     Route::get('/crop-seasons', [CropSeasonController::class, 'index'])->name('api.crop-seasons.index');
     Route::post('/crop-seasons', [CropSeasonController::class, 'store'])->name('api.crop-seasons.store');
+    Route::get('/crop-seasons/bom-presets', [CropSeasonController::class, 'bomPresets'])->name('api.crop-seasons.bom-presets');
     Route::get('/crop-seasons/{id}', [CropSeasonController::class, 'show'])->name('api.crop-seasons.show');
     Route::patch('/crop-seasons/{id}', [CropSeasonController::class, 'update'])->name('api.crop-seasons.update');
     Route::post('/crop-seasons/{id}/close', [CropSeasonController::class, 'close'])->name('api.crop-seasons.close');
+    Route::get('/crop-seasons/{id}/plots', [CropSeasonController::class, 'plots'])->name('api.crop-seasons.plots');
+    Route::post('/crop-seasons/{id}/plots', [CropSeasonController::class, 'allocatePlot'])->name('api.crop-seasons.allocate-plot');
+    Route::post('/crop-seasons/{id}/plots/bulk', [CropSeasonController::class, 'bulkAllocatePlots'])->name('api.crop-seasons.bulk-allocate-plot');
+    Route::delete('/crop-seasons/{id}/plots/{plotId}', [CropSeasonController::class, 'removePlot'])->name('api.crop-seasons.remove-plot');
+    Route::get('/crop-seasons/{id}/boms', [CropSeasonController::class, 'boms'])->name('api.crop-seasons.boms');
+    Route::post('/crop-seasons/{id}/boms', [CropSeasonController::class, 'saveBom'])->name('api.crop-seasons.save-bom');
+    Route::get('/crop-seasons/{id}/supply-demand', [CropSeasonController::class, 'supplyDemand'])->name('api.crop-seasons.supply-demand');
+    Route::get('/crop-seasons/{id}/material-reconciliations', [SeasonReconciliationController::class, 'index'])->name('api.crop-seasons.reconciliations.index');
+    Route::post('/crop-seasons/{id}/material-reconciliations', [SeasonReconciliationController::class, 'store'])->name('api.crop-seasons.reconciliations.store');
+    Route::post('/crop-seasons/{id}/freeze-logbook', [SeasonReconciliationController::class, 'freeze'])->name('api.crop-seasons.freeze-logbook');
 
-    // Farming Log APIs (Section 16 of 12_API_SPECIFICATION.md)
+    // Farming Log APIs (Section 16 of 12_API_SPECIFICATION.md & Improvements)
     Route::get('/farming-logs', [FarmingLogController::class, 'index'])->name('api.farming-logs.index');
     Route::post('/farming-logs', [FarmingLogController::class, 'store'])->name('api.farming-logs.store');
+    Route::get('/farming-logs/banned-pesticides', [FarmingLogController::class, 'bannedPesticides'])->name('api.farming-logs.banned-pesticides');
+    Route::post('/farming-logs/batch-sync', [FarmingLogController::class, 'batchSync'])->name('api.farming-logs.batch-sync');
     Route::get('/farming-logs/{id}', [FarmingLogController::class, 'show'])->name('api.farming-logs.show');
     Route::patch('/farming-logs/{id}', [FarmingLogController::class, 'update'])->name('api.farming-logs.update');
+    Route::delete('/farming-logs/{id}', [FarmingLogController::class, 'destroy'])->name('api.farming-logs.destroy');
+    Route::post('/farming-logs/{id}/verify', [FarmingLogController::class, 'verify'])->name('api.farming-logs.verify');
+    Route::post('/farming-logs/{id}/reject', [FarmingLogController::class, 'reject'])->name('api.farming-logs.reject');
 
     // Material Usage APIs (Section 17 of 12_API_SPECIFICATION.md)
     Route::get('/farming-logs/{log_id}/material-usages', [MaterialUsageController::class, 'indexByLog'])->name('api.farming-logs.usages.index');
@@ -149,12 +203,14 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     // Harvest & Lot APIs (Section 19 of 12_API_SPECIFICATION.md)
     Route::get('/harvests', [HarvestController::class, 'index'])->name('api.harvests.index');
     Route::post('/harvests', [HarvestController::class, 'store'])->name('api.harvests.store');
+    Route::post('/harvests/settle-season', [HarvestController::class, 'settleSeason'])->name('api.harvests.settle-season');
+    Route::get('/harvests/settlements', [HarvestController::class, 'listSettlements'])->name('api.harvests.settlements.index');
     Route::get('/harvests/{id}', [HarvestController::class, 'show'])->name('api.harvests.show');
     Route::patch('/harvests/{id}', [HarvestController::class, 'update'])->name('api.harvests.update');
     Route::post('/harvests/{id}/kcs/gate-check', [HarvestController::class, 'gateCheck'])->name('api.harvests.gate-check');
     Route::post('/harvests/{id}/kcs/quick-lab', [HarvestController::class, 'quickLab'])->name('api.harvests.quick-lab');
     Route::post('/harvests/{id}/kcs/grading', [HarvestController::class, 'grading'])->name('api.harvests.grading');
-    Route::post('/harvests/settle-season', [HarvestController::class, 'settleSeason'])->name('api.harvests.settle-season');
+    Route::post('/harvests/{id}/audit-quota', [HarvestController::class, 'auditQuota'])->name('api.harvests.audit-quota');
 
     Route::get('/lots', [LotController::class, 'index'])->name('api.lots.index');
     Route::post('/lots', [LotController::class, 'store'])->name('api.lots.store');
@@ -168,6 +224,13 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::patch('/products/{id}', [ProductController::class, 'update'])->name('api.products.update');
     Route::get('/products/{product_id}/lots', [ProductController::class, 'listLots'])->name('api.products.lots.index');
     Route::post('/products/{product_id}/lots', [ProductController::class, 'attachLot'])->name('api.products.lots.attach');
+
+    // Warehouse Management APIs (Multi-warehouse support)
+    Route::get('/warehouses', [WarehouseController::class, 'index'])->name('api.warehouses.index');
+    Route::post('/warehouses', [WarehouseController::class, 'store'])->name('api.warehouses.store');
+    Route::get('/warehouses/{id}', [WarehouseController::class, 'show'])->name('api.warehouses.show');
+    Route::patch('/warehouses/{id}', [WarehouseController::class, 'update'])->name('api.warehouses.update');
+    Route::delete('/warehouses/{id}', [WarehouseController::class, 'destroy'])->name('api.warehouses.destroy');
 
     // Material Master Data APIs (Section 21 of 12_API_SPECIFICATION.md)
     Route::get('/materials', [MaterialController::class, 'index'])->name('api.materials.index');
@@ -188,6 +251,14 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::get('/stock-issues/{id}', [StockIssueController::class, 'show'])->name('api.stock-issues.show');
     Route::post('/stock-issues/{id}/submit', [StockIssueController::class, 'submit'])->name('api.stock-issues.submit');
     Route::post('/stock-issues/{id}/approve', [StockIssueController::class, 'approve'])->name('api.stock-issues.approve');
+    Route::get('/stock-issues/{id}/voucher-02', [StockIssueController::class, 'printVoucher02'])->name('api.stock-issues.voucher-02');
+    Route::post('/stock-issues/{id}/return-packaging', [StockIssueController::class, 'returnPackaging'])->name('api.stock-issues.return-packaging');
+
+    // Off-balance Account 005 (Tool tracking) & Material Reconciliation
+    Route::get('/tool-trackings', [ToolTrackingController::class, 'index'])->name('api.tool-trackings.index');
+    Route::post('/tool-trackings', [ToolTrackingController::class, 'store'])->name('api.tool-trackings.store');
+    Route::patch('/tool-trackings/{id}/status', [ToolTrackingController::class, 'updateStatus'])->name('api.tool-trackings.status');
+    Route::get('/inventory/reconciliation', [MaterialReconciliationController::class, 'reconcile'])->name('api.inventory.reconciliation');
 
     // Stock Count APIs (Section 24 of 12_API_SPECIFICATION.md)
     Route::get('/stock-counts', [StockCountController::class, 'index'])->name('api.stock-counts.index');
@@ -204,6 +275,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/cash-transactions/{id}/post', [CashTransactionController::class, 'post'])->name('api.cash-transactions.post');
 
     // Receivable / Payable APIs (Section 26 of 12_API_SPECIFICATION.md)
+    Route::get('/receivable-payables/summary', [ReceivablePayableController::class, 'summary'])->name('api.receivable-payables.summary');
     Route::get('/receivable-payables', [ReceivablePayableController::class, 'index'])->name('api.receivable-payables.index');
     Route::post('/receivable-payables', [ReceivablePayableController::class, 'store'])->name('api.receivable-payables.store');
     Route::get('/receivable-payables/{id}', [ReceivablePayableController::class, 'show'])->name('api.receivable-payables.show');
@@ -220,6 +292,7 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::get('/surplus-distribution-plans/{id}', [SurplusDistributionController::class, 'show'])->name('api.surplus.plans.show');
     Route::post('/surplus-distribution-plans/{id}/submit', [SurplusDistributionController::class, 'submit'])->name('api.surplus.plans.submit');
     Route::post('/surplus-distribution-plans/{id}/approve', [SurplusDistributionController::class, 'approve'])->name('api.surplus.plans.approve');
+    Route::post('/surplus-distribution-plans/{id}/execute', [SurplusDistributionController::class, 'execute'])->name('api.surplus.plans.execute');
 
     // OCOP Criteria Engine APIs (Section 29 of 12_API_SPECIFICATION.md)
     Route::get('/ocop/council-levels', [CouncilLevelController::class, 'index'])->name('api.ocop.council-levels.index');
@@ -248,12 +321,13 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/ocop/applications/{id}/submit', [OcopApplicationController::class, 'submit'])->name('api.ocop.applications.submit');
 
     // OCOP Evidence Management APIs (Section 31 of 12_API_SPECIFICATION.md)
+    Route::get('/ocop/evidences', [EvidenceController::class, 'index'])->name('api.ocop.evidences.index');
+    Route::post('/ocop/evidences', [EvidenceController::class, 'store'])->name('api.ocop.evidences.store');
     Route::get('/ocop/applications/{applicationId}/evidences', [EvidenceController::class, 'indexByApplication'])->name('api.ocop.applications.evidences.index');
     Route::post('/ocop/applications/{applicationId}/evidences', [EvidenceController::class, 'storeInApplication'])->name('api.ocop.applications.evidences.store');
     Route::post('/ocop/applications/{applicationId}/extract-evidence', [EvidenceController::class, 'extractInternal'])->name('api.ocop.applications.evidences.extract');
     Route::get('/ocop/evidences/{id}', [EvidenceController::class, 'show'])->name('api.ocop.evidences.show');
     Route::get('/ocop/evidences/{id}/download', [EvidenceController::class, 'downloadUrl'])->name('api.ocop.evidences.download');
-    Route::get('/ocop/evidences/{id}/file-stream', [EvidenceController::class, 'fileStream'])->name('api.ocop.evidences.file-stream');
     Route::post('/ocop/evidences/{id}/versions', [EvidenceVersionController::class, 'replaceVersion'])->name('api.ocop.evidences.versions.store');
     Route::post('/ocop/evidences/{id}/links', [EvidenceLinkController::class, 'linkToIndicator'])->name('api.ocop.evidences.links.store');
     Route::delete('/ocop/evidences/{id}/links/{indicatorId}', [EvidenceLinkController::class, 'unlinkFromIndicator'])->name('api.ocop.evidences.links.destroy');
@@ -269,18 +343,28 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/ocop/evaluation-sessions/{sessionId}/scores', [EvaluatorScoreController::class, 'store'])->name('api.ocop.evaluation-sessions.scores.store');
     Route::post('/ocop/evaluation-scores/{id}/lock', [EvaluatorScoreController::class, 'lock'])->name('api.ocop.evaluation-scores.lock');
     Route::post('/ocop/evaluation-sessions/{id}/consolidate', [ConsolidatedResultController::class, 'consolidate'])->name('api.ocop.evaluation-sessions.consolidate');
+    Route::get('/ocop/evaluation-sessions/{id}/consolidation', [ConsolidatedResultController::class, 'show'])->name('api.ocop.evaluation-sessions.consolidation');
+    Route::get('/ocop/decisions', [FinalDecisionController::class, 'index'])->name('api.ocop.decisions.index');
     Route::get('/ocop/applications/{applicationId}/decision', [FinalDecisionController::class, 'show'])->name('api.ocop.applications.decision.show');
     Route::post('/ocop/applications/{applicationId}/approve', [FinalDecisionController::class, 'approve'])->name('api.ocop.applications.approve');
     Route::post('/ocop/applications/{applicationId}/reject', [FinalDecisionController::class, 'reject'])->name('api.ocop.applications.reject');
 
     // Audit Query & Traceability APIs (Section 33 of 12_API_SPECIFICATION.md)
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('api.audit-logs.index');
+    Route::get('/audit-logs/verify/hash-chain', [AuditLogController::class, 'verifyHashChain'])->name('api.audit-logs.verify.hash-chain');
     Route::get('/audit-logs/{id}', [AuditLogController::class, 'show'])->name('api.audit-logs.show');
     Route::get('/audit-logs/trace/ocop/{applicationId}', [AuditLogController::class, 'traceOcop'])->name('api.audit-logs.trace.ocop');
+    Route::get('/audit-logs/trace/member/{id}', [AuditLogController::class, 'traceMember'])->name('api.audit-logs.trace.member');
 
     // Reports & Dashboard APIs (Section 34 of 12_API_SPECIFICATION.md)
     Route::get('/reports/dashboard', [ReportController::class, 'dashboard'])->name('api.reports.dashboard');
+    Route::get('/reports/ocop-analytics', [ReportController::class, 'ocopAnalytics'])->name('api.reports.ocop-analytics');
     Route::get('/reports/ocop-readiness/{applicationId}', [ReportController::class, 'ocopReadiness'])->name('api.reports.ocop-readiness');
+    Route::get('/reports/export/members', [ReportController::class, 'exportMembers'])->name('api.reports.export.members');
+    Route::get('/reports/export/cash-book', [ReportController::class, 'exportCashBook'])->name('api.reports.export.cash-book');
+    Route::get('/reports/export/receivables-payables', [ReportController::class, 'exportReceivablesPayables'])->name('api.reports.export.receivables-payables');
+    Route::get('/reports/export/inventory-stock', [ReportController::class, 'exportInventoryStock'])->name('api.reports.export.inventory-stock');
+    Route::get('/reports/export/farming-logs', [ReportController::class, 'exportFarmingLogs'])->name('api.reports.export.farming-logs');
 
     // Document Generation & Certificate APIs (Section 35 of 12_API_SPECIFICATION.md)
     Route::post('/documents/generate/ocop-dossier/{applicationId}', [DocumentController::class, 'generateDossier'])->name('api.documents.generate.dossier');
@@ -299,5 +383,6 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
     Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('api.notifications.mark-as-read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('api.notifications.mark-all-read');
 });
 

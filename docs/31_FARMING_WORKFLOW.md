@@ -72,7 +72,7 @@ Kiểm soát PHI là quy tắc tối mật để đảm bảo an toàn thực ph
 
 ## 6. Nhật Ký Canh Tác Điện Tử
 
-Nhật ký canh tác phải tuân thủ nghiêm ngặt **10 trường dữ liệu** theo quy định tại Thông tư 02/2024/TT-BNNPTNT.
+Nhật ký canh tác phải tuân thủ nghiêm ngặt **10 trường dữ liệu** theo tiêu chuẩn Truy xuất nguồn gốc TCVN 12850:2019, Thông tư 17/2021/TT-BNNPTNT và VietGAP TCVN 11892-1:2017.
 
 Các trường dữ liệu bao gồm:
 1. **Tên hoạt động/loại công việc**: Enum(`LAM_DAT`, `BON_PHAN`, `PHUN_THUOC`, `CHAM_SOC`, `THU_GOM_RAC`)
@@ -109,7 +109,7 @@ Tại HTX Tân Tiến, quy trình thu hoạch và KCS thực hiện qua 3 bướ
 
 ## 8. Truy xuất Nguồn gốc (Traceability)
 
-QR Code in trên bao bì sản phẩm sẽ cung cấp trang truy xuất nguồn gốc chứa đủ thông tin theo **Thông tư 02/2024/TT-BNNPTNT**:
+QR Code in trên bao bì sản phẩm sẽ cung cấp trang truy xuất nguồn gốc chứa đủ thông tin theo **TCVN 12850:2019 và Thông tư 17/2021/TT-BNNPTNT**:
 - Thông tin cơ sở sản xuất (HTX Tân Tiến, Mã PUC).
 - Thông tin sản phẩm (Ớt chuông Sweet Palermo).
 - Mã Lô (Lot ID).

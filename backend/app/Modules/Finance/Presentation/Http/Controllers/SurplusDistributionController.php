@@ -106,4 +106,26 @@ class SurplusDistributionController extends BaseController
             message: 'Phê duyệt phương án phân phối thặng dư thành công'
         );
     }
+
+    public function execute(string $id, Request $request): JsonResponse
+    {
+        if (!Gate::allows('FINANCE.UPDATE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền thực thi chi trả hoặc tái đầu tư thặng dư', status: 403);
+        }
+
+        $options = [
+            'reinvest_as_capital' => (bool) $request->input('reinvest_as_capital', false),
+            'reinvest_member_ids' => $request->input('reinvest_member_ids'),
+            'notes' => $request->input('notes'),
+        ];
+
+        $plan = $this->surplusService->executePlan($id, $options);
+
+        return ApiResponse::success(
+            data: new SurplusDistributionPlanResource($plan),
+            message: $options['reinvest_as_capital']
+                ? 'Thực thi phương án thành công: Đã chuyển thặng dư thành vốn góp tái đầu tư và nâng hạn mức tín dụng cho xã viên'
+                : 'Thực thi phương án thành công: Đã tạo phiếu chi trả thặng dư cho xã viên'
+        );
+    }
 }

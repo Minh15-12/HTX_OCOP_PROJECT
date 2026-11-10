@@ -12,7 +12,7 @@ class MemberPolicy
      */
     public function viewAny(UserModel $user): bool
     {
-        return $user->hasPermission('MEMBER.VIEW') || $user->hasRole('SYSTEM_ADMIN') || $user->hasRole('HTX_OWNER') || $user->hasRole('HTX_STAFF');
+        return $user->hasPermission('MEMBER.READ') || $user->hasPermission('MEMBER.VIEW') || $user->hasRole('SYSTEM_ADMIN') || $user->hasRole('HTX_OWNER') || $user->hasRole('HTX_STAFF') || $user->hasRole('ACCOUNTANT');
     }
 
     /**
@@ -20,7 +20,7 @@ class MemberPolicy
      */
     public function view(UserModel $user, MemberModel $member): bool
     {
-        return ($user->hasPermission('MEMBER.VIEW') || $user->hasRole('SYSTEM_ADMIN') || $user->hasRole('HTX_OWNER') || $user->hasRole('HTX_STAFF'))
+        return ($user->hasPermission('MEMBER.READ') || $user->hasPermission('MEMBER.VIEW') || $user->hasRole('SYSTEM_ADMIN') || $user->hasRole('HTX_OWNER') || $user->hasRole('HTX_STAFF') || $user->hasRole('ACCOUNTANT'))
             && $user->cooperative_id === $member->cooperative_id;
     }
 

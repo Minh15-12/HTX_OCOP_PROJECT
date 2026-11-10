@@ -27,8 +27,10 @@ export const UserModal: React.FC<Props> = ({
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [roleCode, setRoleCode] = useState('HTX_STAFF');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    setErrors({});
     if (userToEdit) {
       setUsername(userToEdit.username);
       setFullName(userToEdit.full_name);
@@ -55,11 +57,33 @@ export const UserModal: React.FC<Props> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const newErrors: Record<string, string> = {};
+
+    if (!username.trim()) {
+      newErrors.username = 'Tên đăng nhập không được để trống';
+    }
+    if (!fullName.trim()) {
+      newErrors.fullName = 'Họ và tên không được để trống';
+    }
+    if (!email.trim()) {
+      newErrors.email = 'Email không được để trống';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Email không đúng định dạng (VD: user@htx.vn)';
+    }
+    if (!userToEdit && (!password || password.length < 6)) {
+      newErrors.password = 'Mật khẩu khởi tạo phải có ít nhất 6 ký tự';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     onSave({
-      username,
-      full_name: fullName,
-      email,
-      phone_number: phone,
+      username: username.trim(),
+      full_name: fullName.trim(),
+      email: email.trim(),
+      phone_number: phone.trim(),
       password: password || undefined,
       role_code: roleCode,
     });
@@ -78,20 +102,39 @@ export const UserModal: React.FC<Props> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {Object.keys(errors).length > 0 && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-start gap-2">
+              <span className="font-bold">⚠️ Vui lòng sửa các lỗi sau:</span>
+              <ul className="list-disc pl-4 space-y-0.5">
+                {Object.values(errors).map((err, idx) => (
+                  <li key={idx}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <Input
             label="Tên đăng nhập"
             requiredAsterisk
             disabled={Boolean(userToEdit)}
             leftIcon={<User className="w-4 h-4 text-slate-400" />}
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            error={errors.username}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              if (errors.username) setErrors(prev => ({ ...prev, username: '' }));
+            }}
           />
 
           <Input
             label="Họ và tên"
             requiredAsterisk
             value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            error={errors.fullName}
+            onChange={(e) => {
+              setFullName(e.target.value);
+              if (errors.fullName) setErrors(prev => ({ ...prev, fullName: '' }));
+            }}
           />
 
           <Input
@@ -100,7 +143,11 @@ export const UserModal: React.FC<Props> = ({
             type="email"
             leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            error={errors.email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+            }}
           />
 
           <Input
@@ -117,7 +164,11 @@ export const UserModal: React.FC<Props> = ({
               type="password"
               leftIcon={<Lock className="w-4 h-4 text-slate-400" />}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              error={errors.password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+              }}
             />
           )}
 

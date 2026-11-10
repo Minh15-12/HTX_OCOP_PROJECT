@@ -128,12 +128,29 @@ export async function fetchHarvests(params?: {
 }): Promise<HarvestItem[]> {
   try {
     const res: any = await apiClient.get('/harvests', { params });
-    const remoteData = res?.data || res;
-    if (Array.isArray(remoteData) && remoteData.length > 0) {
-      return remoteData;
+    const remoteData = res?.data?.data !== undefined ? res.data.data : (Array.isArray(res?.data) ? res.data : null);
+    if (Array.isArray(remoteData)) {
+      return remoteData.map((h: any) => ({
+        ...h,
+        quantity_kg: Number(h.quantity_kg ?? h.quantity) || 0,
+        grade_a_kg: Number(h.grade_a_kg ?? (h.grade === 'GRADE_A' ? h.quantity : 0)) || 0,
+        grade_b_kg: Number(h.grade_b_kg ?? (h.grade === 'GRADE_B' ? h.quantity : 0)) || 0,
+        reject_kg: Number(h.reject_kg ?? (h.grade === 'REJECT' ? h.quantity : 0)) || 0,
+        rejection_weight_kg: Number(h.rejection_weight_kg) || 0,
+        quality_grade: h.quality_grade || h.grade || 'GRADE_A',
+        stage_number: h.stage_number ?? 1,
+        last_spray_date: h.last_spray_date,
+        last_active_ingredient: h.last_active_ingredient,
+        days_since_last_spray: h.days_since_last_spray,
+        weighing_slip_code: h.weighing_slip_code,
+        harvest_code: h.harvest_code || (h.id ? `TH-${String(h.id).replace(/-/g, '').slice(-6).toUpperCase()}` : 'TH-2026-001'),
+        plot_code: h.plot_code || (h.plot ? h.plot.plot_code : 'PLOT-01'),
+        plot_name: h.plot_name || (h.plot ? h.plot.name : 'Thửa đất'),
+        lot_code: h.lot_code || (h.lot ? h.lot.lot_code : 'LOT-GS1-PENDING'),
+      }));
     }
   } catch {
-    // Fallback to local storage
+    // Only on network/server error fall back
   }
 
   let list = getStoredHarvests();
@@ -365,4 +382,11 @@ export async function deleteHarvest(id: string): Promise<boolean> {
   saveHarvestsToStorage(filtered);
   return true;
 }
+
+export const harvestApi = {
+  getHarvests: fetchHarvests,
+  fetchHarvests,
+  getStoredHarvests,
+  deleteHarvest,
+};
 

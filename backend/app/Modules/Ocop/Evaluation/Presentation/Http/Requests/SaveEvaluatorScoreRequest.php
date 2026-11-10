@@ -8,7 +8,7 @@ class SaveEvaluatorScoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return \Illuminate\Support\Facades\Gate::allows('OCOP_EVALUATION.SCORE');
     }
 
     public function rules(): array

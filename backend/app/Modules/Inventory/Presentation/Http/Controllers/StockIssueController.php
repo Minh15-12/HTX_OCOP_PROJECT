@@ -75,6 +75,7 @@ class StockIssueController extends BaseController
             issueDate: $request->input('issue_date'),
             lines: $lineDtos,
             memberId: $request->input('member_id'),
+            cropSeasonId: $request->input('crop_season_id'),
             purpose: $request->input('purpose'),
             customIssueNumber: $request->input('custom_issue_number'),
             cooperativeId: $request->input('cooperative_id'),
@@ -115,6 +116,43 @@ class StockIssueController extends BaseController
         return ApiResponse::success(
             data: new StockIssueResource($issue),
             message: 'Phê duyệt phiếu xuất kho và trừ tồn khả dụng thành công'
+        );
+    }
+
+    public function printVoucher02(string $id): JsonResponse
+    {
+        if (!Gate::allows('INVENTORY.READ')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem chứng từ phiếu xuất kho', status: 403);
+        }
+
+        $voucherData = $this->issueService->getVoucher02Data($id);
+
+        return ApiResponse::success(
+            data: $voucherData,
+            message: 'Tải dữ liệu Phiếu xuất kho Mẫu 02-VT thành công'
+        );
+    }
+
+    public function returnPackaging(Request $request, string $id): JsonResponse
+    {
+        if (!Gate::allows('INVENTORY.UPDATE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền ghi nhận thu hồi vỏ bao bì', status: 403);
+        }
+
+        $request->validate([
+            'returned_count' => 'required|integer|min:1',
+            'proof_photo_url' => 'nullable|string|max:1000',
+        ]);
+
+        $issue = $this->issueService->recordPackagingReturn(
+            $id,
+            (int) $request->input('returned_count'),
+            $request->input('proof_photo_url')
+        );
+
+        return ApiResponse::success(
+            data: new StockIssueResource($issue),
+            message: 'Ghi nhận thu hồi vỏ bao bì thuốc BVTV thành công'
         );
     }
 }

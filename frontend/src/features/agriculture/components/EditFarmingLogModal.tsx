@@ -137,7 +137,7 @@ export const EditFarmingLogModal: React.FC<EditFarmingLogModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Loại hoạt động TT02 <span className="text-rose-500">*</span>
+                Loại hoạt động canh tác <span className="text-rose-500">*</span>
               </label>
               <select
                 value={activityType}

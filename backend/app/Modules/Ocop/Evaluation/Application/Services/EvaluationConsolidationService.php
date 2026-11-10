@@ -43,6 +43,16 @@ class EvaluationConsolidationService
             );
         }
 
+        // Check council quorum requirement (minimum 3 evaluators per OCOP regulations)
+        if ($assignments->count() < 3) {
+            throw new DomainException(
+                "Hội đồng đánh giá OCOP cần tối thiểu 3 thành viên tham gia để đạt túc số (Quorum requirement) trước khi tổng hợp kết quả (hiện chỉ có {$assignments->count()} giám khảo)",
+                'ERR_COUNCIL_QUORUM_NOT_MET',
+                null,
+                400
+            );
+        }
+
         // Check if 100% of evaluators have locked their scores
         $unlockedCount = $assignments->filter(fn ($a) => $a->status !== 'LOCKED')->count();
         if ($unlockedCount > 0) {

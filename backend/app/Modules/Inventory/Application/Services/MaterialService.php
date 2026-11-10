@@ -24,7 +24,7 @@ class MaterialService
 
     public function listMaterials(array $filters = [], int $perPage = 15, string $sort = '-created_at'): LengthAwarePaginator
     {
-        $query = MaterialModel::with('cooperative');
+        $query = MaterialModel::with(['cooperative', 'batches']);
 
         if ($this->tenantContext->hasTenant()) {
             $query->where('cooperative_id', $this->tenantContext->getCooperativeId());

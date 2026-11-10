@@ -209,7 +209,7 @@ export const OCOP_QD148_CRITERIA_DATA: CriteriaGroup[] = [
         isMandatory: true,
         mandatoryReason: 'Bắt buộc phải có tem nhãn kèm mã QR liên kết mã lô (lot_id) truy xuất nguồn gốc trên hệ thống số.',
         options: [
-          { score: 7.0, label: 'Bao bì chuẩn NĐ 43/2017 & TT 02/2024, có tem QR mã lô GS1', description: 'Bao bì thân thiện môi trường, đầy đủ thông tin bắt buộc, quét QR ra nhật ký lô', farmerNote: 'Đóng khay giấy tự hủy 500g, dán tem QR GS1 quét ra ngay vườn nào trồng, ngày thu hoạch' },
+          { score: 7.0, label: 'Bao bì chuẩn NĐ 43/2017 & TT 17/2021, có tem QR mã lô GS1', description: 'Bao bì thân thiện môi trường, đầy đủ thông tin bắt buộc, quét QR ra nhật ký lô', farmerNote: 'Đóng khay giấy tự hủy 500g, dán tem QR GS1 quét ra ngay vườn nào trồng, ngày thu hoạch' },
           { score: 5.0, label: 'Bao bì có tem QR cơ bản', description: 'Bao bì in đẹp, có tem QR liên kết website HTX', farmerNote: 'Có tem nhãn và mã QR giới thiệu HTX' },
           { score: 2.0, label: 'Chỉ có nhãn mác giấy thông thường', description: 'Nhãn in thông tin cơ bản, chưa có mã QR truy xuất', farmerNote: 'Chỉ dán decal tên HTX và số điện thoại' },
           { score: 0.0, label: 'Bao bì trơn, không có nhãn mác', description: 'Đóng thùng carton/sọt không tem nhãn', farmerNote: 'Chưa có bao bì thương hiệu' },

@@ -465,7 +465,9 @@ class OcopAdversarialChallengeTest extends TestCase
     {
         $this->seed(OcopSweetPalermoCriteriaSeeder::class);
         $authAdmin = $this->createAuthContext('ADMIN');
-        $evaluator = $this->createAuthContext('EVALUATOR');
+        $evaluator1 = $this->createAuthContext('EVALUATOR');
+        $evaluator2 = $this->createAuthContext('EVALUATOR');
+        $evaluator3 = $this->createAuthContext('EVALUATOR');
         $product = $this->createProduct($authAdmin['cooperative']->id);
         $version = CriteriaVersionModel::where('version_code', OcopSweetPalermoCriteriaSeeder::VERSION_CODE)->first();
 
@@ -494,42 +496,47 @@ class OcopAdversarialChallengeTest extends TestCase
             'status' => 'IN_PROGRESS',
         ]);
 
-        $assignment = EvaluatorAssignmentModel::create([
-            'id' => (string) Str::uuid(),
-            'evaluation_session_id' => $session->id,
-            'evaluator_id' => $evaluator['user']->id,
-            'role' => 'MEMBER',
-            'status' => 'LOCKED',
-            'completed_at' => now(),
-        ]);
+        $assignments = [];
+        foreach ([$evaluator1, $evaluator2, $evaluator3] as $ev) {
+            $assignments[] = EvaluatorAssignmentModel::create([
+                'id' => (string) Str::uuid(),
+                'evaluation_session_id' => $session->id,
+                'evaluator_id' => $ev['user']->id,
+                'role' => 'MEMBER',
+                'status' => 'LOCKED',
+                'completed_at' => now(),
+            ]);
+        }
 
         // Score indicators: Give 90 points total across indicators, BUT give TC-C.2.1 (VietGAP) = 0.0!
         $vietgapIndicator = IndicatorModel::where('code', 'TC-C.2.1')->firstOrFail();
         $otherIndicators = IndicatorModel::where('code', '!=', 'TC-C.2.1')->get();
 
-        // 1. VietGAP = 0.0 (Failed mandatory requirement)
-        EvaluatorScoreModel::create([
-            'id' => (string) Str::uuid(),
-            'assignment_id' => $assignment->id,
-            'indicator_id' => $vietgapIndicator->id,
-            'score' => 0.0,
-            'is_locked' => true,
-            'locked_at' => now(),
-        ]);
-
-        // 2. Give max scores to enough other indicators to achieve 90.0 points total
-        $accumulated = 0.0;
-        foreach ($otherIndicators as $ind) {
-            $scoreToGive = (float) $ind->max_score;
+        foreach ($assignments as $assignment) {
+            // 1. VietGAP = 0.0 (Failed mandatory requirement)
             EvaluatorScoreModel::create([
                 'id' => (string) Str::uuid(),
                 'assignment_id' => $assignment->id,
-                'indicator_id' => $ind->id,
-                'score' => $scoreToGive,
+                'indicator_id' => $vietgapIndicator->id,
+                'score' => 0.0,
                 'is_locked' => true,
                 'locked_at' => now(),
             ]);
-            $accumulated += $scoreToGive;
+
+            // 2. Give max scores to enough other indicators to achieve 90.0 points total
+            $accumulated = 0.0;
+            foreach ($otherIndicators as $ind) {
+                $scoreToGive = (float) $ind->max_score;
+                EvaluatorScoreModel::create([
+                    'id' => (string) Str::uuid(),
+                    'assignment_id' => $assignment->id,
+                    'indicator_id' => $ind->id,
+                    'score' => $scoreToGive,
+                    'is_locked' => true,
+                    'locked_at' => now(),
+                ]);
+                $accumulated += $scoreToGive;
+            }
         }
 
         // Total score is accumulated (90.0) -> normally 5_STAR!

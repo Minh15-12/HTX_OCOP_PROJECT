@@ -103,8 +103,16 @@ class MemberController extends BaseController
             default => 'OFFICIAL',
         } : null;
 
+        $identityInfo = $request->input('identity_information');
+        foreach (['emergency_contact', 'bank_account_info', 'health_status', 'family_situation', 'beneficiary_info'] as $field) {
+            if ($request->has($field)) {
+                $identityInfo = ($identityInfo ?? []);
+                $identityInfo[$field] = $request->input($field);
+            }
+        }
+
         $dto = new UpdateMemberDTO(
-            identityInformation: $request->input('identity_information'),
+            identityInformation: $identityInfo,
             memberType: $normalizedType,
             userId: $request->input('user_id'),
             admissionDate: $request->input('admission_date'),
@@ -162,6 +170,20 @@ class MemberController extends BaseController
         return ApiResponse::success(
             data: new MemberResource($member),
             message: "Chuyển trạng thái xã viên sang [{$targetStatus}] thành công"
+        );
+    }
+
+    public function suggestedCreditLimit(string $id): JsonResponse
+    {
+        if (auth()->check() && !Gate::allows('MEMBER.READ')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem thông tin tài chính xã viên', status: 403);
+        }
+
+        $result = $this->memberService->calculateSuggestedCreditLimit($id);
+
+        return ApiResponse::success(
+            data: $result,
+            message: 'Tính toán hạn mức tín dụng gợi ý thành công'
         );
     }
 }

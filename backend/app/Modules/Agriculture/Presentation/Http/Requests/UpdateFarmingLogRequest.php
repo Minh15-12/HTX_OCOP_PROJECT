@@ -14,7 +14,7 @@ class UpdateFarmingLogRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'activity_type' => ['sometimes', 'string', 'in:SPRAYING,FERTILIZING,PLOWING,WEEDING,HARVESTING,IRRIGATION,PRUNING'],
+            'activity_type' => ['sometimes', 'string', 'in:SPRAYING,FERTILIZING,FERTILIZATION,PLOWING,LAND_PREPARATION,WEEDING,HARVESTING,HARVEST,IRRIGATION,PRUNING,CARE,MONITORING,PLANTING,PEST_CONTROL,SOWING,OTHER'],
             'activity_date' => ['sometimes', 'date'],
             'description' => ['nullable', 'string', 'max:2000'],
             'performed_by' => ['nullable', 'uuid', 'exists:users,id'],

@@ -18,6 +18,7 @@ class CreateCapitalContributionDTO extends BaseDTO
         public readonly ?string $mapSheetNumber = null,
         public readonly ?float $landAreaSqm = null,
         public readonly ?string $landUseType = null,
-        public readonly ?float $appraisedUnitPrice = null
+        public readonly ?float $appraisedUnitPrice = null,
+        public readonly ?string $cadastralStatus = null
     ) {}
 }

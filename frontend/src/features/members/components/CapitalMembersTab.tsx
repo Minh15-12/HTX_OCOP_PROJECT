@@ -123,7 +123,7 @@ export const CapitalMembersTab: React.FC<CapitalMembersTabProps> = ({
               </tr>
             ) : (
               paginatedMembers.map((m, idx) => {
-                const committed = m.committed_capital ?? m.total_capital_contributed ?? 30000000;
+                const committed = m.committed_capital ?? m.total_capital_contributed ?? 0;
                 const contributed = m.contributed_capital ?? m.total_capital_contributed ?? 0;
                 const remaining = Math.max(0, committed - contributed);
                 const isFullyPaid = contributed >= committed && committed > 0;
@@ -148,9 +148,11 @@ export const CapitalMembersTab: React.FC<CapitalMembersTabProps> = ({
                     <td className="py-3 px-3 font-mono font-bold text-slate-600">{m.member_code}</td>
                     <td className="py-3 px-3">
                       <strong className="text-slate-900 block">{m.full_name}</strong>
-                      <span className="text-[10.5px] text-slate-400">{m.address}</span>
+                      <span className="text-[10.5px] text-slate-400 block break-words" title={m.address}>
+                        {m.address}
+                      </span>
                     </td>
-                    <td className="py-3 px-3">
+                    <td className="py-3 px-3 whitespace-nowrap">
                       {m.member_type === 'CHINH_THUC' ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                           Chính thức
@@ -161,13 +163,13 @@ export const CapitalMembersTab: React.FC<CapitalMembersTabProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-3 text-right font-bold text-slate-900">
+                    <td className="py-3 px-3 text-right font-bold text-slate-900 whitespace-nowrap">
                       {committed.toLocaleString('vi-VN')} ₫
                     </td>
-                    <td className="py-3 px-3 text-right font-extrabold text-emerald-700">
+                    <td className="py-3 px-3 text-right font-extrabold text-emerald-700 whitespace-nowrap">
                       {contributed.toLocaleString('vi-VN')} ₫
                     </td>
-                    <td className="py-3 px-3 text-right font-bold text-amber-800">
+                    <td className="py-3 px-3 text-right font-bold text-amber-800 whitespace-nowrap">
                       {remaining.toLocaleString('vi-VN')} ₫
                     </td>
                     <td className="py-3 px-3 text-right font-extrabold">
@@ -237,7 +239,7 @@ export const CapitalMembersTab: React.FC<CapitalMembersTabProps> = ({
               <td className="py-3 px-3 text-right">
                 {paginatedMembers
                   .reduce(
-                    (sum, m) => sum + (m.committed_capital ?? m.total_capital_contributed ?? 30000000),
+                    (sum, m) => sum + (m.committed_capital ?? m.total_capital_contributed ?? 0),
                     0
                   )
                   .toLocaleString('vi-VN')}{' '}

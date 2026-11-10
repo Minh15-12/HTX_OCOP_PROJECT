@@ -14,7 +14,7 @@ class StatusTransitionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'target_status' => ['required', 'string', 'in:ACTIVE,PENDING_TERMINATION,TERMINATED'],
+            'target_status' => ['required', 'string', 'in:ACTIVE,SUSPENDED,LEAVING,PENDING_TERMINATION,TERMINATED,PROSPECTIVE'],
             'reason' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -23,7 +23,7 @@ class StatusTransitionRequest extends FormRequest
     {
         return [
             'target_status.required' => 'Vui lòng cung cấp trạng thái mục tiêu',
-            'target_status.in' => 'Trạng thái không hợp lệ. Cho phép: ACTIVE, PENDING_TERMINATION, TERMINATED',
+            'target_status.in' => 'Trạng thái không hợp lệ. Cho phép: ACTIVE, SUSPENDED, LEAVING, PENDING_TERMINATION, TERMINATED, PROSPECTIVE',
         ];
     }
 }

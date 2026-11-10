@@ -166,4 +166,19 @@ class ReceivablePayableController extends BaseController
             message: 'Quyết toán mùa vụ và cấn trừ công nợ tự động thành công'
         );
     }
+
+    public function summary(Request $request): JsonResponse
+    {
+        if (!Gate::allows('FINANCE.READ')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem tổng hợp công nợ', status: 403);
+        }
+
+        $filters = $request->only(['date_from', 'date_to']);
+        $summary = $this->debtService->getDebtSummary($filters);
+
+        return ApiResponse::success(
+            data: $summary,
+            message: 'Lấy báo cáo tổng hợp công nợ đa chiều thành công'
+        );
+    }
 }

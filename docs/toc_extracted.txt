@@ -1,0 +1,79 @@
+5: 1. Khung Pháp Lý, Quy Chuẩn Kỹ Thuật Và Kế Toán Quản Trị HTX (Cập Nhật 2026)
+7: 1.1. Tiêu chuẩn VietGAP: Sự chuyển tiếp từ TCVN 11892-1:2017 sang TCVN 11892-1:2026
+12: 1.2. Tiêu chuẩn GlobalG.A.P. và sự khác biệt về độ khắt khe kỹ thuật
+15: 1.3. Quy định về Mã số vùng trồng (PUC), Danh mục thuốc BVTV và Truy xuất nguồn gốc
+20: 1.4. Chế độ Kế toán HTX theo Thông tư 71/2024/TT-BTC
+25: 1.5. Quản lý Bao bì thuốc BVTV sau sử dụng (Thông tư liên tịch 05/2016 & Thông tư 02/2022)
+70: 2. Phân Loại Và Đặc Tính Kỹ Thuật Của Hệ Thống Vật Tư Nông Nghiệp & Nông Cụ, Thiết Bị
+72: 2.1. Sáu nhóm Vật tư Nông nghiệp (Agricultural Inputs)
+73: 1. Giống cây trồng (Seeds & Seedlings): Trong canh tác ớt chuông nhà màng, đầu vào giống bao gồm hạt giống lai F1 hoặc cây con ươm sẵn trong khay xốp chuyên dụng với định mức khoảng 250 gram hạt giống (tương đương 25.000 hạt) cho 1 ha8. Tại vùng chuyên canh Lâm Đồng (quy mô 350–400 ha nhà kính), các giống chủ lực của Syngenta như Bokken F1 (quả đỏ, cây dạng thấp dễ chăm sóc, năng suất cao hơn giống khác 10–20%, kháng bệnh phấn trắng và virus) hoặc Kaamos F1 (quả vàng, trọng lượng 250–300 gram/trái, thịt dày, kháng phấn trắng và các chủng virus Tm:0-3, TSWV, năng suất trung bình đạt khoảng 5 kg/cây) được ưu tiên lựa chọn để phục vụ hợp đồng bao tiêu và xuất khẩu10. Nếu tự gieo hạt, hạt giống cần ngâm nước ấm 50°C (hoặc ngâm nước sạch 6 giờ rồi ngâm thuốc trừ nấm 30 phút) để nứt nanh trước khi gieo sâu 5 mm vào bầu ươm9. Tiêu chuẩn kỹ thuật bắt buộc đối với cây giống ớt ngọt xuất vườn đưa vào nhà màng gồm: 30–45 ngày tuổi, chiều cao 12–15 cm, đường kính cổ rễ 2,5–3,5 mm, có 4–6 lá thật, cây khỏe mạnh, cân đối, không dị hình, bộ rễ chớm đáy bầu và sạch sâu bệnh46. Trước khi trồng 1 ngày, cây giống trên khay cần được phun phòng Ridomil Gold 68WG và thuốc trừ sâu để ngăn ngừa nấm bệnh và côn trùng xâm nhập từ vườn ươm vào nhà màng; việc xuống giống phải hoàn tất dứt điểm trong 1–2 ngày và kiểm tra trồng dặm ngay sau 1 tuần để giữ độ đồng đều46.
+74: 2. Giá thể canh tác (Growing Substrates): Để loại bỏ triệt để mầm bệnh nấm và tuyến trùng tồn lưu trong đất, kỹ thuật trồng ớt chuông hiện đại sử dụng giá thể xơ dừa (coco peat) (hoặc phối trộn perlite) đóng trong các túi poly màu đen kích thước 40 x 30 cm, xếp hàng cách hàng 120–140 cm (hoặc 1,0–1,2 m), túi cách túi trong hàng 40 cm, mỗi túi trồng 2 cây (mật độ 25.000 cây/ha tức 2,5 cây/m², hoặc đến 2.800–3.000 cây/1.000 m² tùy khoảng cách)8. Yêu cầu kiểm soát chất lượng quan trọng nhất đối với giá thể xơ dừa là xử lý độ dẫn điện (EC) trước khi trồng: bắt buộc phải đo EC của nước thoát ra từ túi giá thể và chỉ đạt yêu cầu khi EC < 0,5 mS/cm46. Nếu EC > 0,5 mS/cm, phải tiếp tục xả rửa nước kết hợp bổ sung Canxi Nitrat  với liều lượng 0,75 kg/m³ giá thể cho đến khi EC hạ xuống dưới 0,5 mS/cm46. Trước khi đặt cây con 24 giờ, phải tiến hành tưới đệm (buffering) bằng dung dịch phân bón đầy đủ thành phần với EC = 1,0–1,2 mS/cm để đưa độ ẩm giá thể đạt mức chuẩn 70–75%46.
+75: 3. Phân bón và Hóa chất dinh dưỡng (Fertilizers & Fertigation Salts): Đối với canh tác trên đất, quy trình truyền thống sử dụng 20–25 tấn phân chuồng đã ủ hoai mục/ha (hoặc 18–20 tấn phân gà ủ/ha, tuyệt đối cấm dùng phân tươi nhằm ngăn ngừa mối nguy vi sinh vật Salmonella, E. coli) kết hợp vôi bột (100–110 kg/ha nếu đất chua) và phân vô cơ4. Đối với canh tác công nghệ cao tưới nhỏ giọt (Fertigation), HTX quản lý hệ thống phân bón hòa tan chuyên dụng theo công thức tách bồn nghiêm ngặt để chống kết tủa: Thùng A chứa nhóm phân Canxi (như YaraTera Calcinit) và Thùng B chứa nhóm phân Kali, Magie, Lân, Sunphat và Vi lượng Chelate (như YaraTera Krista K Plus, Krista MAG, Krista MKP, Krista MAP, YaraRega, Magie sunphate , Solubor, Fe-EDTA 13%, Mn-EDTA 13%, Cu-EDTA 15%), pha loãng 100 lần khi tưới11. Nguyên tắc bất di bất dịch trong kho và trạm pha là không bao giờ pha chung phân chứa Canxi (Canxi Nitrat) với phân chứa Lân hoặc gốc Sunphat trong cùng một thùng và phải ưu tiên vi lượng dạng Chelate để tránh kết tủa gây tắc béc tưới13. Trên giá thể xơ dừa, tỷ lệ NPK duy trì ở mức 1:1:1 giai đoạn cây con (0–14 NST, dùng NPK 20-20-20 liều 150 g/1.000 m²/ngày +  lượng tương đương, EC = 1,5 mS/cm, pH = 5,7–6,2) và chuyển sang tỷ lệ 2:1:3 ở các giai đoạn sau (dùng NPK 17-9-27 liều 200 g/1.000 m²/ngày với EC = 1,8–2,3 mS/cm giai đoạn 15–25 NST; tăng lên 250 g/1.000 m²/ngày với EC = 2,3–2,5 mS/cm giai đoạn 35–45 NST; và giảm về 180 g/1.000 m²/ngày với EC = 2,0–2,3 mS/cm từ ngày 90 đến cuối vụ)46. Trong giai đoạn thu hoạch, cần kiểm soát chặt lượng đạm để hàm lượng Nitrat () tồn dư trong quả luôn nhỏ hơn 200 mg/100 gram sản phẩm; đồng thời mọi lô phân bón nhập kho phải lưu kèm số lô và phiếu kiểm nghiệm kim loại nặng (như phiếu Cadimi)4.
+76: 4. Thuốc Bảo vệ thực vật và Chế phẩm sinh học (Pesticides & Biopesticides): Chỉ các sản phẩm nằm trong Danh mục Thông tư 75/2025/TT-BNNMT và có phạm vi đăng ký chính thức trên cây Ớt mới được nhập vào kho HTX7. Để quản lý tính kháng thuốc của dịch hại (đặc biệt là bọ trĩ có vòng đời rút ngắn còn 6–7 ngày ở 30°C và bệnh thán thư/mốc xám), kho vật tư phải phân loại thuốc theo mã nhóm cơ chế tác động của IRAC (đối với thuốc trừ sâu/nhện) và FRAC (đối với thuốc trừ bệnh) để luân phiên kỷ luật, không phun lặp lại quá 2 lượt liên tiếp cùng một nhóm32. Các thương phẩm đăng ký hợp lệ trên cây ớt bao gồm:
+80: 5. Thiên địch (Biological Control Agents - BCAs): Sử dụng thiên địch là giải pháp cốt lõi tại Lâm Đồng để sản xuất ớt chuông ăn tươi không tồn dư hóa chất57. Hệ thống kho của HTX phải quản lý 4 loài thiên địch chủ lực với chế độ nhiệt độ và độ ẩm nghiêm ngặt:
+86: 6. Vật tư tiêu hao phục vụ canh tác và kiểm chuẩn (Consumables): Bao gồm màng lợp nhà kính 5–7 lớp của Israel (Ginegar, Politiv có độ khuếch tán ánh sáng cao, tuổi thọ 7–10 năm), lưới chắn côn trùng 50 mesh (50 lỗ/inch – kích thước bắt buộc để chặn bọ trĩ vì lưới 25 hay 32 mesh vẫn để bọ trĩ lọt qua), thanh nẹp C và ziczac mạ kẽm, dây se nông nghiệp kháng UV hoặc dây cotton dày để quấn nâng đỡ thân ớt chuông theo chiều kim đồng hồ, dây kẽm căng dọc luống ở độ cao 1,0–2,5 m, bẫy dính côn trùng màu vàng/xanh (chọn loại ít hấp dẫn bọ xít Orius), giấy nhạy nước kiểm tra độ phủ thuốc (mục tiêu đạt độ che phủ 20–30% bề mặt lá và hoa), chất bám dính và dung dịch điều chỉnh pH nước phun (giữ pH 5,5–6,5), cùng bộ hóa chất chuẩn dùng hiệu chuẩn thiết bị đo: dung dịch đệm pH 4.01, pH 7.00/7.01, pH 10.01, dung dịch chuẩn độ dẫn điện EC 1.413 mS/cm (1413 µS/cm), dung dịch ngâm điện cực KCl 3M, dung dịch rửa điện cực và nước cất8.
+87: 2.2. Năm nhóm Nông cụ, Máy móc và Thiết bị (Tools, Machinery & Equipment)
+88: 1. Hệ thống tưới nhỏ giọt và Châm phân tự động (Fertigation & Drip Irrigation System): Bao gồm máy bơm nước, cụm lọc chuyên dụng (lọc cát, lọc đĩa hoặc lọc lưới kèm đồng hồ đo chênh áp trước và sau lọc), van một chiều chống chảy ngược về giếng/bể nước sinh hoạt, bộ điều khiển tự động, van điện từ, bộ hẹn giờ, hệ thống bồn châm phân (Thùng A, Thùng B), mạng lưới đường ống chính/phụ (HDPE, UPVC, LDPE), đầu tưới nhỏ giọt bù áp chống rỉ, bộ chia nhánh (chia 2 hoặc chia 4), ống dẫn Soft PE và que ghim nhỏ giọt định vị trên mặt từng túi giá thể, đi kèm các máy đo/bút đo pH, EC, TDS và nhiệt độ (như dòng Hanna HI9813-61, HI98192, HI98197 hoặc Lutron PCD-433)13.
+89: 2. Dụng cụ cắt tỉa và chăm sóc cây (Pruning & Crop Care Tools): Bao gồm kéo cắt tỉa cành, dao tỉa chồi và dụng cụ bấm ngọn8. Trên cây ớt chuông trồng giá thể, từ tuần thứ 3–4 sau trồng, công nhân phải định hình nuôi dưỡng 2 hoặc 3 thân chính, thực hiện cắt tỉa chồi nách (khi chồi dài 2–5 cm) với tần suất dày đặc 5–7 ngày/lần, kết hợp tỉa lá già ở gốc và gỡ bỏ xác hoa dính ở đáy quả non để triệt tiêu nơi trú ẩn của bọ trĩ8. Do tần suất tiếp xúc nhựa cây liên tục, kéo cắt tỉa là tác nhân hàng đầu truyền virus cơ học (PepMV, ToMV, TMV) và viroid (PSTVd), đòi hỏi phải được quản lý định danh theo từng nhà màng và khử trùng liên tục giữa các lần cắt15.
+90: 3. Bình phun và Thiết bị bảo vệ thực vật (Spraying Equipment): Gồm bình phun đeo vai (dung tích 8 lít, 16 lít, 20 lít) hoặc hệ thống máy phun áp lực cao, béc phun sương mịn và dụng cụ cân đong hóa chất4. Theo Phụ lục E TCVN 11892-1:2026, máy phun thuốc và dụng cụ phòng trừ dịch hại phải được vệ sinh đúng cách trước và sau khi sử dụng, kiểm tra chỉnh béc và áp lực bằng giấy nhạy nước để hạt sương lọt sâu vào khe hoa/nách lá mà không bị rò rỉ hay kết tủa làm nghẹt béc4.
+91: 4. Trang thiết bị Bảo hộ lao động (Personal Protective Equipment - PPE): Bao gồm quần áo bảo hộ, găng tay cao su, khẩu trang/mặt nạ phòng độc, kính bảo hộ và ủng cao su4. Khoản 5.1.6.1 TCVN 11892-1:2026 quy định người pha/phun thuốc BVTV phải trang bị đầy đủ găng tay, mặt nạ, dụng cụ cân đo theo hướng dẫn trên nhãn; sau khi sử dụng, đồ bảo hộ phải được giặt/vệ sinh sạch sẽ và cất giữ đúng nơi quy định—tuyệt đối không để đồ bảo hộ ở khu vực sơ chế, bảo quản sản phẩm và không để bên trong nơi chứa thuốc BVTV/phân bón4. Khu vực làm việc phải có nhà vệ sinh, chỗ rửa tay trang bị xà bông/nước rửa tay/cồn y tế, tủ sơ cứu và bảng ghi rõ số điện thoại cơ quan y tế, cứu hỏa, công an địa phương4.
+92: 5. Sọt thu hoạch và Vật chứa sơ chế (Harvesting Crates & Containers): Là các sọt nhựa chứa đựng nông sản từ lúc hái tại ruộng đến nhà sơ chế4. Theo Mục 3.1.2.3, 3.2.4 TCVN 11892-1:2017 và Khoản 5.1.2 TCVN 11892-1:2026, bao bì và sọt tiếp xúc trực tiếp với nông sản phải làm từ vật liệu trơ an toàn thực phẩm, được vệ sinh sạch trước và sau mỗi đợt thu hái, lưu giữ tách biệt hoàn toàn với nơi chứa phân bón, thuốc BVTV, nhiên liệu, hóa chất; và nghiêm cấm sử dụng lại bao bì, dụng cụ đã từng chứa phân bón, thuốc BVTV hay hóa chất để đựng nông sản4.
+93: 3. Đánh Giá Các Mô Hình Quản Lý Kho Vật Tư Và Nông Cụ Trong Hợp Tác Xã
+95: 3.1. Phân tích So sánh 3 Mô hình Quản lý Kho
+129: 3.2. Quy hoạch Mặt bằng Cụm Kho Trung tâm HTX và Khu Lưu chứa Bao bì Nguy hại Chuẩn GAP
+134: 1. Kho Phân bón & Thuốc BVTV (Chemical Input Store)
+137: 2. Phòng Mát Bảo quản Thiên địch & Hạt giống (Biological Cold Room)
+140: 3. Kho Nông cụ, Thiết bị Đo & Sọt Thu hoạch (Inert Tool & Crate Store)
+143: 4. Trạm Pha chế Tập trung & Bể chứa Bao bì Đồng ruộng
+146: 5. Khu vực Lưu chứa Bao bì Thuốc BVTV Tập trung (Hazardous Waste Facility)
+149: 4. Quy Trình Vận Hành Chuẩn (SOP): Nhập – Xuất – Tồn – Cấp Phát – Thu Hồi – Bảo Trì – Khử Trùng
+151: 4.1. SOP 1: Quy trình Nhập – Xuất – Tồn và Nối chuỗi "Số Lô Vật Tư" (Forward & Backward Traceability)
+159: 4.2. SOP 2: Quy trình Cấp phát – Sử dụng – Thu hồi Vật tư và Nông cụ
+166: 4.3. SOP 3: Quy trình Bảo trì Hệ thống Tưới nhỏ giọt và Hiệu chuẩn Thiết bị Đo
+181: 4.4. SOP 4: Quy trình Khử trùng Nông cụ Cắt tỉa, Sọt Thu hoạch và Vệ sinh An toàn Sinh học
+185: 5. Bộ Hồ Sơ Thực Chiến Hoàn Chỉnh: Quản Lý Vật Tư Và Nông Cụ Cho Cây Ớt Chuông Công Nghệ Cao
+187: 5.1. Thiết lập Thông số Cơ sở của Kịch bản Thực chiến (Case Study)
+194: 5.2. Biểu mẫu 01: Hồ sơ Thông tin Vụ Canh tác & Mở Lô Sản xuất Đầu Vụ
+199: 1. Tên Tổ chức / Chủ mã số vùng trồng
+202: 2. Mã số vùng trồng (PUC) & Mã Hộ – Thửa
+205: 3. Định danh Pháp lý Thửa đất
+208: 4. Cây trồng, Giống & Nguồn gốc giống
+211: 5. Xử lý Giá thể trước khi trồng
+214: 6. Quy trình Sản xuất áp dụng
+217: 7. Thời gian Thu hoạch & Sản lượng
+220: 8. Đơn vị Thu mua / Cơ sở Đóng gói
+223: 5.3. Biểu mẫu 02: Chứng từ Kế toán Nhập – Xuất Kho Vật tư & Hạch toán theo Thông tư 71/2024/TT-BTC
+378: 5.4. Biểu mẫu 03: Sổ Theo dõi Tiếp nhận, Bảo quản Lạnh và Phóng thích Thiên địch (Chuỗi Lạnh Sinh học)
+404: 5.5. Biểu mẫu 04: Nhật ký Pha Châm Phân Bón qua Hệ thống Tưới nhỏ giọt (Fertigation) & Kiểm soát EC/pH
+432: 1. NPK 20-20-20+TE
+433: 2. Magie Sunphate ()
+434: 3. YaraTera Calcinit (bổ sung Ca)
+437: 1. NPK 20-20-20: 2,10 kg (150 g/ngày × 14 ngày)
+438: 2. : 2,10 kg (150 g/ngày × 14 ngày)
+439: 3. Calcinit: 1,40 kg46
+444: 1. NPK 17-9-27+TE
+445: 2. Magie Sunphate ()
+446: 3. YaraTera Calcinit
+449: 1. NPK 17-9-27: 2,20 kg (200 g/ngày × 11 ngày)
+450: 2. : 2,20 kg
+451: 3. Calcinit: 3,30 kg46
+456: 1. NPK 17-9-27+TE
+457: 2. Magie Sunphate ()
+458: 3. YaraTera Calcinit
+461: 1. NPK 17-9-27: 2,75 kg (250 g/ngày × 11 ngày)
+462: 2. : 2,75 kg
+463: 3. Calcinit: 4,40 kg13
+466: 5.6. Biểu mẫu 05: Nhật ký Điều tra Dịch hại (IPM) & Sử dụng Thuốc Bảo vệ Thực vật
+538: 5.7. Biểu mẫu 06: Sổ Quản lý Nông cụ, Thiết bị (TK 005) & Thu hồi Vỏ Bao bì Thuốc BVTV (TTLT 05/2016)
+571: 1. Vỏ thuốc: Gạn hết thuốc 30s; cho 30 ml nước sạch (1/3 chai), vặn nắp lắc mạnh 30s, đổ vào bình phun 30s × Lặp lại đủ 3 lần; rửa sạch ren nắp12.
+572: 2. Bình phun & PPE: Xịt rửa bình phun tại trạm; giặt sạch quần áo bảo hộ, găng tay, ủng, mặt nạ bằng xà bông4.
+583: 5.8. Biểu mẫu 07: Phiếu Cân Giao nhận Nguyên liệu, Xác nhận Thời gian Cách ly (PHI) & Cấp Mã Lô Thu hoạch
+632: 5.9. Biểu mẫu 08: Bảng Cộng Sổ Đối Chiếu Cân Bằng Vật Tư & Sản Lượng (Chặng 4 – Khóa sổ Kiểm toán)
+733: 6. Tổ Chức Chức Năng Và Thiết Kế Giao Diện (UI/UX) Trên Hệ Thống Phần Mềm Quản Trị HTX
+736: 6.1. Cấu trúc 6 Phân hệ Chức năng (Functional Modules) và Ma trận Phân quyền
+749: 1. Ban Giám đốc & Ban Kiểm soát Nội bộ (ICS)
+753: 2. Kế toán & Thủ kho Trung tâm HTX
+757: 3. Kỹ thuật viên (Agronomist)
+761: 4. Hộ Xã viên & Công nhân Nhà màng
+765: 6.2. Thiết kế Hiển thị Giao diện (UI/UX) trên Web Dashboard và Ứng dụng Di động
+767: 6.3. Nguyên lý Thiết kế Hiển thị và Trải nghiệm Người dùng (UX) Đặc thù cho Nông hộ

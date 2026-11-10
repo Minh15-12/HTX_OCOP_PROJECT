@@ -112,7 +112,7 @@ class FinanceManagementTest extends TestCase
     public function test_cash_transaction_idempotency_for_approve_and_post(): void
     {
         $coop = $this->createCooperative();
-        $user = $this->createUserWithPermissions($coop, ['FINANCE.CREATE', 'FINANCE.READ', 'FINANCE.UPDATE']);
+        $user = $this->createUserWithPermissions($coop, ['FINANCE.CREATE', 'FINANCE.READ', 'FINANCE.UPDATE', 'FINANCE.TRANSACTION.APPROVE']);
 
         $tx = CashTransactionModel::create([
             'id' => (string) Str::uuid(),
@@ -454,4 +454,98 @@ class FinanceManagementTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonPath('error.code', 'ERR_FINANCE_INVALID_SURPLUS_PLAN');
     }
+
+    public function test_surplus_distribution_plan_execution_cash_payout_and_reinvestment(): void
+    {
+        $coop = $this->createCooperative('HTX_EXEC_TEST');
+        $user = $this->createUserWithPermissions($coop, ['FINANCE.CREATE', 'FINANCE.READ', 'FINANCE.UPDATE']);
+
+        // Member A: 60M capital, initial credit limit 30M
+        $memberA = MemberModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'member_code' => 'XV_EXEC_A',
+            'status' => 'ACTIVE',
+            'identity_information' => ['full_name' => 'Nguyễn Văn Tái Đầu Tư'],
+            'join_date' => '2025-01-01',
+            'credit_limit' => 30000000.0,
+        ]);
+        CapitalContributionModel::create([
+            'id' => (string) Str::uuid(),
+            'member_id' => $memberA->id,
+            'contribution_type' => 'INITIAL',
+            'amount' => 60000000.0,
+            'actual_amount' => 60000000.0,
+            'committed_amount' => 60000000.0,
+            'transaction_date' => '2025-01-02',
+            'status' => 'PAID',
+        ]);
+
+        // Member B: 40M capital, initial credit limit 20M
+        $memberB = MemberModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'member_code' => 'XV_EXEC_B',
+            'status' => 'ACTIVE',
+            'identity_information' => ['full_name' => 'Trần Thị Nhận Tiền'],
+            'join_date' => '2025-01-01',
+            'credit_limit' => 20000000.0,
+        ]);
+        CapitalContributionModel::create([
+            'id' => (string) Str::uuid(),
+            'member_id' => $memberB->id,
+            'contribution_type' => 'INITIAL',
+            'amount' => 40000000.0,
+            'actual_amount' => 40000000.0,
+            'committed_amount' => 40000000.0,
+            'transaction_date' => '2025-01-02',
+            'status' => 'PAID',
+        ]);
+
+        // Create Plan: 100M total surplus, 80M distributable (80% <= 95%), 50/50 capital/service
+        $createResp = $this->actingAs($user, 'sanctum')->postJson('/api/v1/surplus-distribution-plans', [
+            'financial_year' => 2026,
+            'total_surplus' => 100000000.0,
+            'distributable_surplus' => 80000000.0,
+            'capital_weight' => 50.0,
+            'service_usage_weight' => 50.0,
+        ]);
+        $createResp->assertStatus(201);
+        $planId = $createResp->json('data.id');
+
+        // Submit & Approve
+        $this->actingAs($user, 'sanctum')->postJson("/api/v1/surplus-distribution-plans/{$planId}/submit")->assertStatus(200);
+        $this->actingAs($user, 'sanctum')->postJson("/api/v1/surplus-distribution-plans/{$planId}/approve")->assertStatus(200);
+
+        // Execute: Reinvest for Member A, cash payout for Member B
+        $execResp = $this->actingAs($user, 'sanctum')->postJson("/api/v1/surplus-distribution-plans/{$planId}/execute", [
+            'reinvest_member_ids' => [$memberA->id],
+        ]);
+        $execResp->assertStatus(200);
+        $execResp->assertJsonPath('data.status', 'EXECUTED');
+
+        // Member A gets: 60% of 40M capPool (24M) + 50% of 40M svcPool (20M) = 44,000,000 VND reinvested
+        $memberAContribution = CapitalContributionModel::where('member_id', $memberA->id)
+            ->where('contribution_type', 'ADDITIONAL')
+            ->first();
+        $this->assertNotNull($memberAContribution);
+        $this->assertEquals(44000000.0, (float) $memberAContribution->amount);
+        $this->assertEquals('PAID', $memberAContribution->status);
+        $this->assertNotEmpty($memberAContribution->certificate_code);
+
+        // Credit limit for Member A increased by 50% of 44M = 22M (30M + 22M = 52M)
+        $memberAUpdated = MemberModel::find($memberA->id);
+        $this->assertEquals(52000000.0, (float) $memberAUpdated->credit_limit);
+
+        // Member B gets: 40% of 40M capPool (16M) + 50% of 40M svcPool (20M) = 36,000,000 VND paid out via Cash Transaction
+        $cashExpense = CashTransactionModel::where('cooperative_id', $coop->id)
+            ->where('member_id', $memberB->id)
+            ->where('transaction_type', 'EXPENSE')
+            ->where('category', 'PROFIT_DISTRIBUTION')
+            ->first();
+        $this->assertNotNull($cashExpense);
+        $this->assertEquals(36000000.0, (float) $cashExpense->amount);
+        $this->assertEquals('POSTED', $cashExpense->status);
+    }
 }
+

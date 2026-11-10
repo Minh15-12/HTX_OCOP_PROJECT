@@ -14,6 +14,14 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             MemberSeeder::class,
             OcopSweetPalermoCriteriaSeeder::class,
+            HtxTanTienFullSystemSeeder::class,
+            OcopEvidenceAndEvaluationSeeder::class,
+            RichOperationalDatasetSeeder::class,
+            VietGapLogbookOperationalSeeder::class,
+            CropSeasonPlotAndBomSeeder::class,
+            FarmingLogFieldOperationsSeeder::class,
+            DurableToolAndInventorySeeder::class,
+            OcopRealDossierAnalyticsSeeder::class,
         ]);
     }
 }

@@ -102,3 +102,73 @@
   content: "";
   @apply absolute -left-[5px] top-[2px] w-2 h-2 rounded-full bg-brand;
 }
+
+/* =========================================================================
+   Nghị định 30/2020/NĐ-CP - Chuẩn Thể thức & Kỹ thuật Trình bày Văn bản Hành chính
+   ========================================================================= */
+.nd30-document {
+  font-family: 'Times New Roman', 'Tinos', 'Liberation Serif', Times, serif !important;
+  color: #000000 !important;
+  background-color: #ffffff;
+  line-height: 1.35;
+  letter-spacing: 0;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.nd30-document *,
+.nd30-document p,
+.nd30-document span,
+.nd30-document div,
+.nd30-document td,
+.nd30-document th,
+.nd30-document h1,
+.nd30-document h2,
+.nd30-document h3,
+.nd30-document h4,
+.nd30-document li,
+.nd30-document strong,
+.nd30-document em {
+  font-family: 'Times New Roman', 'Tinos', 'Liberation Serif', Times, serif !important;
+  color: #000000;
+}
+
+/* Screen Preview Standard A4 sheet ($210mm x 297mm) */
+.nd30-a4-page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm 20mm 20mm 30mm; /* Chuẩn: Trên 20-25mm, Phải 15-20mm, Dưới 20-25mm, Trái 30-35mm */
+  margin: 0 auto;
+  background-color: #ffffff;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Page break marker for screen & print */
+.nd30-page-break {
+  page-break-before: always;
+  break-before: page;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px dashed #cbd5e1;
+}
+
+@media print {
+  .nd30-page-break {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: none !important;
+  }
+  .nd30-a4-page {
+    width: 100% !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+

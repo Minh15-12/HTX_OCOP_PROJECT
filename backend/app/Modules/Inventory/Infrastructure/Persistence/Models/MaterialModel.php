@@ -18,6 +18,8 @@ class MaterialModel extends Model
         'sku',
         'name',
         'category',
+        'account_code',
+        'is_durable_tool',
         'unit',
         'safety_information',
         'reorder_threshold',
@@ -25,6 +27,7 @@ class MaterialModel extends Model
     ];
 
     protected $casts = [
+        'is_durable_tool' => 'boolean',
         'safety_information' => 'array',
         'reorder_threshold' => 'decimal:4',
     ];
@@ -32,5 +35,10 @@ class MaterialModel extends Model
     public function cooperative(): BelongsTo
     {
         return $this->belongsTo(CooperativeModel::class, 'cooperative_id');
+    }
+
+    public function batches(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MaterialBatchModel::class, 'material_id');
     }
 }

@@ -15,3 +15,6 @@ use Modules\Notification\Application\Jobs\CheckLowStockInventoryJob;
 Schedule::job(new CheckOverdueCapitalJob)->daily();
 Schedule::job(new CheckExpiringOcopCertificatesJob)->daily();
 Schedule::job(new CheckLowStockInventoryJob)->daily();
+
+// Dọn dẹp token xác thực Sanctum đã hết hạn hàng ngày
+Schedule::command('sanctum:prune-expired --hours=24')->daily();

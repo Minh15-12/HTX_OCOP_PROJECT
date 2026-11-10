@@ -18,6 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append(RequestIdMiddleware::class);
         
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return null;
+            }
+            return '/';
+        });
+
         $middleware->alias([
             'tenant.scope' => \Modules\Cooperative\Presentation\Http\Middleware\EnforceTenantScope::class,
             'idempotency' => \App\Shared\Presentation\Http\Middleware\IdempotencyMiddleware::class,

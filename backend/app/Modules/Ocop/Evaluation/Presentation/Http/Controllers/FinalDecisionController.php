@@ -4,6 +4,7 @@ namespace Modules\Ocop\Evaluation\Presentation\Http\Controllers;
 
 use App\Shared\Presentation\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Modules\Ocop\Evaluation\Application\DTOs\ApproveFinalDecisionDTO;
 use Modules\Ocop\Evaluation\Application\DTOs\RejectApplicationDTO;
 use Modules\Ocop\Evaluation\Application\Services\FinalDecisionService;
@@ -17,6 +18,16 @@ class FinalDecisionController extends BaseController
         private readonly FinalDecisionService $decisionService
     ) {}
 
+    public function index(Request $request): JsonResponse
+    {
+        $decisions = $this->decisionService->listDecisions($request->all());
+
+        return $this->success(
+            data: FinalDecisionResource::collection($decisions),
+            message: 'Tải danh sách quyết định công nhận OCOP thành công'
+        );
+    }
+
     public function show(string $applicationId): JsonResponse
     {
         $decision = $this->decisionService->getDecision($applicationId);
@@ -29,6 +40,10 @@ class FinalDecisionController extends BaseController
 
     public function approve(string $applicationId, ApproveFinalDecisionRequest $request): JsonResponse
     {
+        if (!\Illuminate\Support\Facades\Gate::allows('OCOP_DECISION.APPROVE')) {
+            return \App\Shared\Application\Responses\ApiResponse::error('FORBIDDEN', 'Bạn không có quyền phê duyệt quyết định OCOP', status: 403);
+        }
+
         $dto = ApproveFinalDecisionDTO::fromArray($request->validated());
         $decision = $this->decisionService->approve($applicationId, $dto);
 

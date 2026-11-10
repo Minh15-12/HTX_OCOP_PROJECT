@@ -94,30 +94,30 @@ export const mapApiOcopDossierToFrontend = (item: any, index: number = 0): OcopD
     id: item.id,
     stt: index + 1,
     code: item.code || item.application_number || `OCOP-${item.id?.slice(0, 8)}`,
-    productName: item.product_name || item.productName || item.product?.name || 'Sản phẩm OCOP',
+    productName: item.product_name || item.productName || item.product?.product_name || item.product?.name || 'Ớt chuông Sweet Palermo',
     productImage: item.product_image || item.productImage || 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?auto=format&fit=crop&w=600&q=80',
-    subjectName: item.cooperative_name || item.subjectName || 'HTX Nông nghiệp Tân Tiến',
-    productCategory: item.product_category || item.productCategory || 'Thực phẩm (Nông sản tươi)',
-    targetStar: (Number(item.target_star || item.targetStar || 4) as any) || 4,
-    evalLevel: `${item.target_star || 4} sao`,
-    status: item.status || 'IN_EVALUATION',
+    subjectName: item.cooperative?.legal_name || item.cooperative_name || item.subjectName || 'Hợp tác xã Nông nghiệp Tân Tiến',
+    productCategory: item.product_category || item.productCategory || item.product?.category || 'Rau, củ, quả, hạt tươi',
+    targetStar: (Number(item.target_star || item.targetStar || (item.star_rating > 0 ? item.star_rating : 4)) as any) || 4,
+    evalLevel: `${item.star_rating > 0 ? item.star_rating : (item.target_star || item.targetStar || 4)} sao`,
+    status: item.status || 'DRAFT',
     statusLabel: st.label,
     statusColor: st.color,
-    year: Number(item.year || item.created_at?.slice(0, 4) || 2025),
-    submissionDate: item.submitted_at || item.created_at ? String(item.submitted_at || item.created_at).slice(0, 10) : '10/02/2025',
-    totalScore: Number(item.total_score || item.self_score || item.totalScore || 75.0),
-    progressPercent: Number(item.progress_percent || item.progressPercent || 85),
-    cooperativeCode: item.cooperative_code || 'HTX-001',
-    address: item.address || 'Thôn 2, xã Mê Linh, huyện Lâm Hà, Lâm Đồng',
-    representative: item.representative || 'Trần Văn B',
-    phone: item.phone || '0987 654 321',
-    email: item.email || 'htx@phuthinh.vn',
-    memberCount: Number(item.member_count || 125),
-    laborCount: Number(item.labor_count || 48),
-    establishedDate: item.established_date || '10/10/2018',
+    year: Number(item.year || item.created_at?.slice(0, 4) || new Date().getFullYear()),
+    submissionDate: item.submitted_at || item.created_at ? String(item.submitted_at || item.created_at).slice(0, 10) : 'Chưa nộp',
+    totalScore: Number(item.total_score || item.total_self_assessment_score || item.self_score || item.totalScore || 0),
+    progressPercent: Number(item.progress?.percentage || item.progress_percent || item.progressPercent || (item.status === 'APPROVED' ? 100 : item.status === 'SUBMITTED' ? 85 : item.status === 'SELF_EVALUATING' ? 65 : 20)),
+    cooperativeCode: item.cooperative?.cooperative_code || item.cooperative_code || 'HTX',
+    address: item.cooperative?.address || item.address || 'Chưa cập nhật',
+    representative: item.cooperative?.representative_name || item.representative || 'Chưa cập nhật',
+    phone: item.cooperative?.phone_number || item.cooperative?.phone || item.phone || 'Chưa cập nhật',
+    email: item.cooperative?.email || item.email || 'Chưa cập nhật',
+    memberCount: Number(item.cooperative?.total_members || item.member_count || 0),
+    laborCount: Number(item.cooperative?.total_labor || item.labor_count || 0),
+    establishedDate: item.cooperative?.established_date || item.established_date || 'Chưa cập nhật',
     submittedBy: item.submitted_by_name || item.submittedBy,
-    selfScore: Number(item.self_score || item.selfScore || 0),
-    criteriaVersion: item.criteria_version_name || item.criteriaVersion || 'QĐ 148/QĐ-TTg 2023',
+    selfScore: Number(item.total_self_assessment_score || item.self_score || item.selfScore || 0),
+    criteriaVersion: item.criteria_version?.name || item.criteria_version_name || item.criteriaVersion || 'QĐ 148/QĐ-TTg',
     mandatoryPassed: item.mandatory_passed ?? true,
     createdAt: item.created_at,
     updatedAt: item.updated_at,
@@ -155,26 +155,26 @@ export const MOCK_OCOP_DOSSIERS_FULL: OcopDossierItem[] = [
     id: 'OCOP-2025-002',
     stt: 2,
     code: 'OCOP-2025-002',
-    productName: 'Rau xà lách thủy canh',
+    productName: 'Ớt chuông Sweet Palermo Vàng Đà Lạt',
     productImage: 'https://images.unsplash.com/photo-1556801712-76c8eb07ebb1?auto=format&fit=crop&w=600&q=80',
-    subjectName: 'HTX Tân Tiến',
-    productCategory: 'Thực phẩm',
-    targetStar: 3,
-    evalLevel: '3 sao',
-    status: 'CERTIFIED',
-    statusLabel: 'Đã công nhận',
-    statusColor: 'green',
-    year: 2025,
-    submissionDate: '15/01/2025',
-    totalScore: 68.0,
-    progressPercent: 100,
-    cooperativeCode: 'HTX-001',
-    address: 'Xã Tân Tiến, Huyện Đức Trọng, Lâm Đồng',
+    subjectName: 'HTX Nông nghiệp Tân Tiến',
+    productCategory: 'Rau, củ, quả, hạt tươi',
+    targetStar: 4,
+    evalLevel: '4 sao',
+    status: 'IN_EVALUATION',
+    statusLabel: 'Đang thẩm định',
+    statusColor: 'blue',
+    year: 2026,
+    submissionDate: '10/02/2026',
+    totalScore: 78.5,
+    progressPercent: 85,
+    cooperativeCode: 'HTX-TANTIEN-01',
+    address: 'Xã Đạ Sar, Huyện Lạc Dương, Lâm Đồng',
     representative: 'Nguyễn Văn A',
     phone: '0987 111 222',
     email: 'tantien@htx.vn',
-    memberCount: 90,
-    laborCount: 30,
+    memberCount: 165,
+    laborCount: 48,
     establishedDate: '12/05/2019',
   },
 ];
@@ -210,9 +210,9 @@ export const MOCK_EVIDENCES_FULL: EvidenceItem[] = [
 ];
 
 export const MOCK_TIMELINE_SCHEDULES: TimelineScheduleItem[] = [
-  { id: '1', date: '15/03/2025', title: 'Thẩm định cấp huyện', productName: 'Ớt chuông Sweet Palermo', type: 'COMMUNE' },
-  { id: '2', date: '25/03/2025', title: 'Đánh giá cấp tỉnh', productName: 'Trà thảo mộc', type: 'PROVINCIAL' },
-  { id: '3', date: '10/04/2025', title: 'Hội đồng đánh giá', productName: 'Mật ong rừng', type: 'COUNCIL' },
+  { id: '1', date: '15/03/2026', title: 'Thẩm định cấp huyện', productName: 'Ớt chuông Sweet Palermo Đỏ', type: 'COMMUNE' },
+  { id: '2', date: '25/03/2026', title: 'Đánh giá cấp tỉnh', productName: 'Ớt chuông Sweet Palermo Vàng', type: 'PROVINCIAL' },
+  { id: '3', date: '10/04/2026', title: 'Hội đồng đánh giá', productName: 'Ớt chuông Sweet Palermo Cam', type: 'COUNCIL' },
 ];
 
 export const ocopServiceFull = {
@@ -220,26 +220,20 @@ export const ocopServiceFull = {
     try {
       const res = await apiClient.get<any>('/ocop/applications');
       const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-      if (data.length > 0) {
-        return data.map((item: any, idx: number) => mapApiOcopDossierToFrontend(item, idx));
-      }
+      return data.map((item: any, idx: number) => mapApiOcopDossierToFrontend(item, idx));
     } catch (e) {
-      console.warn('Falling back to local OCOP dossiers:', e);
+      console.error('Failed to fetch OCOP dossiers:', e);
+      throw e;
     }
-    return MOCK_OCOP_DOSSIERS_FULL;
   },
 
   async getDossierDetail(id: string): Promise<OcopDossierItem> {
-    try {
-      const res = await apiClient.get<any>(`/ocop/applications/${id}`);
-      const data = res.data?.data || res.data;
-      if (data) {
-        return mapApiOcopDossierToFrontend(data, 0);
-      }
-    } catch (e) {
-      console.warn('Falling back to local OCOP dossier detail:', e);
+    const res = await apiClient.get<any>(`/ocop/applications/${id}`);
+    const data = res.data?.data || res.data;
+    if (data) {
+      return mapApiOcopDossierToFrontend(data, 0);
     }
-    return MOCK_OCOP_DOSSIERS_FULL.find((d) => d.id === id || d.code === id) || MOCK_OCOP_DOSSIERS_FULL[0];
+    throw new Error('Dossier not found');
   },
 
   async createDossier(payload: { product_id: string; criteria_version_id: string; target_star: number }): Promise<OcopDossierItem> {
@@ -256,23 +250,47 @@ export const ocopServiceFull = {
     try {
       const res = await apiClient.get<any>(`/ocop/applications/${applicationId}/evidences`);
       const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-      if (data.length > 0) {
-        return data.map((item: any) => ({
-          id: item.id,
-          title: item.title || item.name || 'Minh chứng OCOP',
-          category: item.category || 'QUALITY',
-          categoryLabel: item.category_label || 'Chất lượng',
-          criterionCode: item.criterion_code || '1.1',
-          uploadedAt: item.created_at ? String(item.created_at).slice(0, 10) : '',
-          fileName: item.file_name || item.title || 'document.pdf',
-          fileSize: item.file_size || '2.5 MB',
-          fileHashSha256: item.file_hash || '',
-          status: item.status || 'VALID',
-        }));
-      }
+      return data.map((item: any) => ({
+        id: item.id,
+        title: item.title || item.name || 'Minh chứng OCOP',
+        category: item.category || 'QUALITY',
+        categoryLabel: item.category_label || 'Chất lượng',
+        criterionCode: item.criterion_code || '1.1',
+        uploadedAt: item.created_at ? String(item.created_at).slice(0, 10) : '',
+        fileName: item.file_name || item.title || 'document.pdf',
+        fileSize: item.file_size || '2.5 MB',
+        fileHashSha256: item.file_hash || '',
+        status: item.status || 'VALID',
+      }));
     } catch (e) {
-      console.warn('Falling back to mock evidences:', e);
+      console.error('Failed to fetch evidences:', e);
+      return [];
     }
-    return MOCK_EVIDENCES_FULL;
+  },
+
+  async getSelfAssessments(applicationId: string): Promise<any[]> {
+    try {
+      const res = await apiClient.get<any>(`/ocop/applications/${applicationId}/self-assessments`);
+      return Array.isArray(res.data) ? res.data : (res.data?.data || []);
+    } catch (e) {
+      console.warn('Could not fetch self assessments:', e);
+      return [];
+    }
+  },
+
+  async getScoreSuggestions(applicationId: string): Promise<any> {
+    try {
+      const res = await apiClient.get<any>(`/ocop/applications/${applicationId}/score-suggestions`);
+      return res.data?.data || res.data;
+    } catch (e) {
+      console.warn('Could not fetch score suggestions:', e);
+      return null;
+    }
+  },
+
+  async saveSelfAssessment(applicationId: string, payload: { indicator_id: string; score: number; explanation?: string }): Promise<any> {
+    const res = await apiClient.post<any>(`/ocop/applications/${applicationId}/self-assessments`, payload);
+    return res.data?.data || res.data;
   },
 };
+

@@ -20,9 +20,13 @@ class SurplusDistributionPlanModel extends Model
         'plan_code',
         'financial_year',
         'total_surplus',
+        'internal_service_surplus',
+        'external_service_surplus',
+        'unallocated_common_fund_amount',
         'distributable_surplus',
         'capital_weight',
         'service_usage_weight',
+        'patronage_distribution_rate',
         'status',
         'created_by',
         'approved_by',
@@ -31,9 +35,13 @@ class SurplusDistributionPlanModel extends Model
     protected $casts = [
         'financial_year' => 'integer',
         'total_surplus' => 'decimal:2',
+        'internal_service_surplus' => 'decimal:2',
+        'external_service_surplus' => 'decimal:2',
+        'unallocated_common_fund_amount' => 'decimal:2',
         'distributable_surplus' => 'decimal:2',
         'capital_weight' => 'decimal:2',
         'service_usage_weight' => 'decimal:2',
+        'patronage_distribution_rate' => 'decimal:2',
     ];
 
     public function cooperative(): BelongsTo

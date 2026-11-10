@@ -20,6 +20,10 @@ class UpdateCropSeasonRequest extends FormRequest
             'expected_end_date' => ['sometimes', 'date'],
             'status' => ['nullable', 'string', 'in:PLANNED,ACTIVE,HARVESTING,CANCELLED'],
             'plan_information' => ['nullable', 'array'],
+            'seed_supplier' => ['nullable', 'string', 'max:255'],
+            'seedling_standard_checklist' => ['nullable', 'array'],
+            'buyer_contract_info' => ['nullable', 'array'],
+            'puc_quota_kg' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

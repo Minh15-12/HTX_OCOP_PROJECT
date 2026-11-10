@@ -61,3 +61,34 @@ export const exportToCSV = (data: Record<string, any>[], filename: string) => {
   link.click();
   document.body.removeChild(link);
 };
+
+/**
+ * Tải file Excel OpenXML (.xlsx) chuẩn trực tiếp từ máy chủ Backend
+ * @param endpoint Endpoint xuất báo cáo (VD: '/reports/export/members')
+ * @param fallbackFilename Tên file mặc định khi tải về
+ * @param params Tham số lọc ngày tháng hoặc điều kiện truy vấn
+ */
+export const downloadServerReportXlsx = async (
+  endpoint: string,
+  fallbackFilename: string,
+  params?: Record<string, any>
+): Promise<void> => {
+  const { apiClient } = await import('@/services/apiClient');
+  const response: any = await apiClient.get(endpoint, {
+    params,
+    responseType: 'blob',
+  });
+
+  const blob = new Blob([response.data || response], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', fallbackFilename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};

@@ -76,8 +76,41 @@ class OcopApplicationController extends BaseController
         );
     }
 
-    public function readyForSubmission(string $id): JsonResponse
+    public function readyForSubmission(Request $request, string $id): JsonResponse
     {
+        $user = $request->user();
+        if (!$user) {
+            return $this->error('UNAUTHENTICATED', 'Chưa đăng nhập', 401);
+        }
+
+        $forbiddenRoles = ['STOREKEEPER', 'ACCOUNTANT', 'EVALUATOR', 'COUNCIL_MEMBER', 'AUDITOR', 'MEMBER', 'HTX_MEMBER'];
+        foreach ($forbiddenRoles as $forbiddenRole) {
+            if ($user->hasRole($forbiddenRole) && !$user->hasRole('HTX_OWNER') && !$user->hasRole('SYSTEM_ADMIN')) {
+                return $this->error(
+                    code: 'FORBIDDEN_ROLE',
+                    message: 'Vai trò của bạn không có thẩm quyền chuẩn bị nộp hồ sơ OCOP',
+                    status: 403
+                );
+            }
+        }
+
+        $authorized = $user->hasPermission('OCOP_APPLICATION.UPDATE')
+            || $user->hasPermission('OCOP_APPLICATION.SUBMIT')
+            || $user->hasRole('HTX_OWNER')
+            || $user->hasRole('HTX_DIRECTOR')
+            || $user->hasRole('COOP_ADMIN')
+            || $user->hasRole('HTX_STAFF')
+            || $user->hasRole('OCOP_PREPARER')
+            || $user->hasRole('SYSTEM_ADMIN');
+
+        if (!$authorized) {
+            return $this->error(
+                code: 'FORBIDDEN',
+                message: 'Bạn không có quyền chuyển trạng thái sẵn sàng nộp hồ sơ OCOP',
+                status: 403
+            );
+        }
+
         $app = $this->applicationService->markReadyForSubmission($id);
 
         return $this->success(
@@ -86,9 +119,43 @@ class OcopApplicationController extends BaseController
         );
     }
 
-    public function submit(string $id): JsonResponse
+    public function submit(Request $request, string $id): JsonResponse
     {
-        $app = $this->applicationService->submitApplication($id);
+        $user = $request->user();
+        if (!$user) {
+            return $this->error('UNAUTHENTICATED', 'Chưa đăng nhập', 401);
+        }
+
+        // SoD Defense: roles strictly forbidden from submitting legal OCOP dossiers
+        $forbiddenRoles = ['STOREKEEPER', 'ACCOUNTANT', 'EVALUATOR', 'COUNCIL_MEMBER', 'COUNCIL_SECRETARY', 'AUDITOR', 'MEMBER', 'HTX_MEMBER'];
+        foreach ($forbiddenRoles as $forbiddenRole) {
+            if ($user->hasRole($forbiddenRole) && !$user->hasRole('HTX_OWNER') && !$user->hasRole('SYSTEM_ADMIN')) {
+                return $this->error(
+                    code: 'FORBIDDEN_ROLE',
+                    message: 'Vai trò của bạn không có thẩm quyền nộp hồ sơ OCOP',
+                    status: 403
+                );
+            }
+        }
+
+        // Permitted cooperative roles & permissions
+        $authorized = $user->hasPermission('OCOP_APPLICATION.SUBMIT')
+            || $user->hasRole('HTX_OWNER')
+            || $user->hasRole('HTX_DIRECTOR')
+            || $user->hasRole('COOP_ADMIN')
+            || $user->hasRole('HTX_STAFF')
+            || $user->hasRole('OCOP_PREPARER')
+            || $user->hasRole('SYSTEM_ADMIN');
+
+        if (!$authorized) {
+            return $this->error(
+                code: 'FORBIDDEN',
+                message: 'Chỉ Chủ tịch/Đại diện HTX hoặc tài khoản có quyền nộp hồ sơ OCOP mới có thể thực hiện thao tác này',
+                status: 403
+            );
+        }
+
+        $app = $this->applicationService->submitApplication($id, $user->id);
 
         return $this->success(
             data: new ApplicationDetailResource($app),

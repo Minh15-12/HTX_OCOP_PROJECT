@@ -43,6 +43,11 @@ class UserModel extends Authenticatable
         return $this->belongsTo(CooperativeModel::class, 'cooperative_id');
     }
 
+    public function member(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::class, 'user_id');
+    }
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(

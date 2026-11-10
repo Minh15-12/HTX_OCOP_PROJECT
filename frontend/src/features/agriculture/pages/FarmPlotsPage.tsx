@@ -1,1046 +1,408 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  MapPin,
-  Plus,
-  Search,
-  X,
-  Pencil,
-  Sprout,
-  Ruler,
-  Layers3,
-  ChevronRight,
-  CircleCheck,
-  SlidersHorizontal,
-  Users,
-  ShieldAlert,
-  UserCheck,
-  Trash2,
-  FileSpreadsheet,
-  AlertOctagon,
-} from 'lucide-react';
-import { PhiCountdownBadge } from '../components/PhiCountdownBadge';
-import { EditFarmPlotModal } from '../components/EditFarmPlotModal';
-import { exportToExcel } from '@/utils/exportUtils';
+import React, { useState, useEffect } from 'react';
+import { MapPin, Plus, ChevronRight, Layers3, Layers, Compass, Printer } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTenantContextStore } from '@/stores/tenantContextStore';
 import { useToast } from '@/components/ui/ToastNotification';
 import {
   fetchProductionUnits,
   createProductionUnit,
   updateProductionUnit,
   fetchPlotsByUnit,
+  fetchAllPlots,
   createPlot,
   deletePlot,
   fetchPlotMemberAssignments,
   assignMemberToPlot,
-  type ProductionUnit,
-  type FarmPlot,
-  type MemberAssignment,
-} from '../../../services/farmPlotApi';
+  ProductionUnit,
+  ProductionUnitPayload,
+  FarmPlot,
+  FarmPlotFormData,
+  MemberAssignment,
+} from '@/services/farmPlotApi';
+import { getMembersFromApi } from '@/services/memberService';
+import { Member } from '@/types/memberTypes';
 
-const statusText: Record<string, string> = {
-  ACTIVE: 'Đang canh tác',
-  PREPARING: 'Chuẩn bị đất',
-  FALLOW: 'Đang nghỉ vụ',
-  INACTIVE: 'Ngưng canh tác',
-  UNDER_PUC_REVIEW: 'Chờ đánh giá PUC ⚠️',
-  IN_QUARANTINE: 'Cách ly PHI 🛑',
-};
-
-const statusClass: Record<string, string> = {
-  ACTIVE: 'border-emerald-300 bg-emerald-50 text-emerald-800 font-bold',
-  PREPARING: 'border-amber-200 bg-amber-50 text-amber-700',
-  FALLOW: 'border-slate-300 bg-slate-100 text-slate-600 font-medium',
-  INACTIVE: 'border-red-200 bg-red-50 text-red-600',
-  UNDER_PUC_REVIEW: 'border-amber-300 bg-amber-100 text-amber-900 font-bold',
-  IN_QUARANTINE: 'border-rose-400 bg-rose-100 text-rose-900 font-extrabold animate-pulse ring-2 ring-rose-200',
-};
-
-type UnitForm = {
-  name: string;
-  unit_code: string;
-  crop: string;
-  area: number | '';
-  status: string;
-  puc_code: string;
-  puc_status: string;
-};
-
-const emptyForm: UnitForm = {
-  name: '',
-  unit_code: 'VT-',
-  crop: '',
-  area: '',
-  status: 'ACTIVE',
-  puc_code: 'PUC-49-',
-  puc_status: 'ACTIVE',
-};
-
-const toList = (res: any): any[] => {
-  const list = res?.data ?? res ?? [];
-  return Array.isArray(list) ? list : [];
-};
-
-/** Mock data chuẩn hóa cho HTX Tân Tiến - Ớt Chuông Sweet Palermo Đỏ Đà Lạt */
-const MOCK_UNITS: ProductionUnit[] = [
-  { id: 'u1', unit_code: 'VT-DALAT-01', name: 'Vùng trồng Ớt Chuông Sweet Palermo Hòn Bồ (P12 - Đà Lạt)', crop: 'Ớt chuông Sweet Palermo Đỏ', area: 15.0, status: 'ACTIVE', puc_code: 'PUC-49-015-9923', puc_status: 'ACTIVE' },
-  { id: 'u2', unit_code: 'VT-DASAR-02', name: 'Vùng trồng Liên Kết Đạ Sar - Lạc Dương (HTX Tân Tiến)', crop: 'Ớt chuông Sweet Palermo Đỏ & Vàng', area: 12.5, status: 'ACTIVE', puc_code: 'PUC-49-015-9924', puc_status: 'ACTIVE' },
-  { id: 'u3', unit_code: 'VT-DANHIM-03', name: 'Vùng Trồng Công Nghệ Cao Đơn Dương', crop: 'Ớt chuông Sweet Palermo Đỏ Baby', area: 8.5, status: 'ACTIVE', puc_code: 'PUC-49-018-0045', puc_status: 'UNDER_PUC_REVIEW' },
-  { id: 'u4', unit_code: 'VT-LACDUONG-04', name: 'Vùng trồng Liên Kết Xã Đạ Chais', crop: 'Ớt chuông Sweet Palermo Đỏ', area: 10.0, status: 'ACTIVE', puc_code: 'PUC-49-020-1122', puc_status: 'ACTIVE' },
-  { id: 'u5', unit_code: 'VT-HONBO-05', name: 'Khu Nhà Kính Khảo Nghiệm Giống F1 Hòn Bồ', crop: 'Ớt chuông Sweet Palermo Sô-cô-la', area: 6.0, status: 'PREPARING', puc_code: 'PUC-49-022-3344', puc_status: 'ACTIVE' },
-  { id: 'u6', unit_code: 'VT-DONDUONG-06', name: 'Vùng Nghỉ Dưỡng Đất & Cải Tạo Hữu Cơ', crop: 'Cải tạo đất hữu cơ', area: 7.0, status: 'FALLOW', puc_code: 'PUC-49-025-5566', puc_status: 'ACTIVE' },
-];
-
-const MOCK_PLOTS: Record<string, FarmPlot[]> = {
-  u1: [
-    { id: 'p1', production_unit_id: 'u1', plot_code: 'PLOT-TT-XV001-01', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9501° N, 108.4712° E', unit_name: 'Nhà kính Hòn Bồ 01' },
-    { id: 'p2', production_unit_id: 'u1', plot_code: 'PLOT-TT-XV001-02', area: 4.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-20', gps_coordinates: '11.9510° N, 108.4720° E', unit_name: 'Nhà kính Hòn Bồ 02' },
-    { id: 'p3', production_unit_id: 'u1', plot_code: 'PLOT-TT-XV002-01', area: 6.5, status: 'ACTIVE', gps_coordinates: '11.9525° N, 108.4735° E', unit_name: 'Nhà kính Hòn Bồ 03' },
-  ],
-  u2: [
-    { id: 'p4', production_unit_id: 'u2', plot_code: 'PLOT-TT-XV003-01', area: 5.0, status: 'IN_QUARANTINE', safe_harvest_date: '2026-10-18', gps_coordinates: '11.9404° N, 108.4583° E', unit_name: 'Thửa Đất Đạ Sar 01' },
-    { id: 'p5', production_unit_id: 'u2', plot_code: 'PLOT-TT-XV003-02', area: 7.5, status: 'ACTIVE', gps_coordinates: '11.9412° N, 108.4590° E', unit_name: 'Thửa Đất Đạ Sar 02' },
-  ],
-  u3: [
-    { id: 'p6', production_unit_id: 'u3', plot_code: 'PLOT-TT-XV004-01', area: 4.0, status: 'ACTIVE', gps_coordinates: '11.9600° N, 108.4800° E', unit_name: 'Thửa Công Nghệ Cao 01' },
-    { id: 'p7', production_unit_id: 'u3', plot_code: 'PLOT-TT-XV004-02', area: 4.5, status: 'ACTIVE', gps_coordinates: '11.9610° N, 108.4810° E', unit_name: 'Thửa Công Nghệ Cao 02' },
-  ],
-};
+import { ProductionUnitsTable } from '../components/ProductionUnitsTable';
+import { CompactUnitSelectorBar } from '../components/CompactUnitSelectorBar';
+import { FarmPlotsFullTable } from '../components/FarmPlotsFullTable';
+import { FarmPlotModals } from '../components/FarmPlotModals';
+import { FarmPlotMapView } from '../components/FarmPlotMapView';
+import { FarmPlotKpiCards } from '../components/FarmPlotKpiCards';
+import { PrintPucMapModal } from '../components/PrintPucMapModal';
 
 export const FarmPlotsPage: React.FC = () => {
-  const [units, setUnits] = useState<ProductionUnit[]>([]);
-  const [selected, setSelected] = useState<ProductionUnit | null>(null);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('Tất cả');
-  const [crop, setCrop] = useState('Tất cả');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [usingMock, setUsingMock] = useState(false);
-
-  const [modal, setModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<UnitForm>(emptyForm);
-  const [submitting, setSubmitting] = useState(false);
-
-  const [plots, setPlots] = useState<FarmPlot[]>([]);
-  const [plotsLoading, setPlotsLoading] = useState(false);
-  const [plotForm, setPlotForm] = useState({ plot_code: '', area: '', safe_harvest_date: '', status: 'ACTIVE' });
-  const [plotSaving, setPlotSaving] = useState(false);
-  const [showPlotForm, setShowPlotForm] = useState(false);
-
+  const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { activeCooperative } = useTenantContextStore();
+
+  const [activeTab, setActiveTab] = useState<'units' | 'plots'>('units');
+  const [selectedUnitId, setSelectedUnitId] = useState<string | 'ALL'>('ALL');
+  const [viewMode, setViewMode] = useState<'split' | 'map'>('split');
+
+  // Modal & Drawer states
+  const [unitModalOpen, setUnitModalOpen] = useState(false);
+  const [editingUnit, setEditingUnit] = useState<ProductionUnit | null>(null);
+  const [addPlotModalOpen, setAddPlotModalOpen] = useState(false);
+  const [isPrintPucModalOpen, setIsPrintPucModalOpen] = useState(false);
   const [editingPlot, setEditingPlot] = useState<FarmPlot | null>(null);
   const [plotToDelete, setPlotToDelete] = useState<FarmPlot | null>(null);
-  const [isDeletingPlot, setIsDeletingPlot] = useState(false);
-
-  // Member Assignment Modal State
+  const [selectedPlotForDrawer, setSelectedPlotForDrawer] = useState<FarmPlot | null>(null);
   const [selectedPlotForAssignments, setSelectedPlotForAssignments] = useState<FarmPlot | null>(null);
   const [assignments, setAssignments] = useState<MemberAssignment[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
-  const [newMemberId, setNewMemberId] = useState('mem-001');
-  const [newMemberRole, setNewMemberRole] = useState('Xã viên canh tác VietGAP');
 
+  // Queries
+  const { data: units = [], isLoading: loadingUnits } = useQuery<ProductionUnit[]>({
+    queryKey: ['productionUnits'],
+    queryFn: () => fetchProductionUnits({ per_page: 50 }),
+  });
 
-  const loadUnits = async (keepId?: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const list = toList(await fetchProductionUnits({ per_page: 50 }));
-      if (list.length === 0) {
-        setUnits(MOCK_UNITS);
-        const current = MOCK_UNITS.find((u) => u.id === (keepId ?? selected?.id));
-        setSelected(current ?? MOCK_UNITS[0] ?? null);
-        setUsingMock(true);
-      } else {
-        setUnits(list);
-        const current = list.find((u: ProductionUnit) => u.id === (keepId ?? selected?.id));
-        setSelected(current ?? list[0] ?? null);
-        setUsingMock(false);
-      }
-    } catch {
-      setUnits(MOCK_UNITS);
-      const current = MOCK_UNITS.find((u) => u.id === (keepId ?? selected?.id));
-      setSelected(current ?? MOCK_UNITS[0] ?? null);
-      setUsingMock(true);
-      setError(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const selectedUnit = selectedUnitId === 'ALL' ? null : units.find((u) => u.id === selectedUnitId) || null;
 
-  const loadPlots = async (unitId: string) => {
-    try {
-      setPlotsLoading(true);
-      const list = toList(await fetchPlotsByUnit(unitId));
-      setPlots(list.length > 0 ? list : (MOCK_PLOTS[unitId] || []));
-    } catch {
-      setPlots(MOCK_PLOTS[unitId] || []);
-    } finally {
-      setPlotsLoading(false);
-    }
-  };
+  const { data: plots = [], isLoading: loadingPlots } = useQuery<FarmPlot[]>({
+    queryKey: ['farmPlots', selectedUnitId],
+    queryFn: async () => (selectedUnitId === 'ALL' ? fetchAllPlots() : fetchPlotsByUnit(selectedUnitId)),
+  });
+
+  const { data: members = [] } = useQuery<Member[]>({
+    queryKey: ['members'],
+    queryFn: () => getMembersFromApi().catch(() => []),
+  });
+
+  // Mutations
+  const saveUnitMutation = useMutation({
+    mutationFn: async ({ payload, id }: { payload: ProductionUnitPayload; id?: string }) => {
+      return id ? updateProductionUnit(id, payload) : createProductionUnit(payload);
+    },
+    onSuccess: (savedUnit, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['productionUnits'] });
+      setUnitModalOpen(false);
+      setEditingUnit(null);
+      if (savedUnit) setSelectedUnitId(savedUnit.id);
+      showToast(
+        variables.id
+          ? `Đã cập nhật thông tin vùng trồng [${variables.payload.name}]!`
+          : `Đã khai báo vùng trồng [${variables.payload.name}] thành công!`
+      );
+    },
+    onError: (err: any) => showToast(err?.message || 'Có lỗi khi lưu thông tin vùng trồng', 'error'),
+  });
+
+  const addPlotMutation = useMutation({
+    mutationFn: async (plotData: FarmPlotFormData & { unit_id?: string }) => {
+      const targetUnitId = plotData.unit_id || selectedUnit?.id || (units.length > 0 ? units[0].id : null);
+      if (!targetUnitId) throw new Error('Chưa chọn vùng trồng để gán thửa đất');
+      return createPlot(targetUnitId, plotData);
+    },
+    onSuccess: (newPlot) => {
+      queryClient.invalidateQueries({ queryKey: ['farmPlots'] });
+      showToast(`Đã thêm thửa đất [${newPlot?.plot_code || 'mới'}] thành công!`);
+    },
+    onError: (err: any) => showToast(err?.message || 'Có lỗi khi thêm thửa đất', 'error'),
+  });
+
+  const deletePlotMutation = useMutation({
+    mutationFn: async () => {
+      if (!plotToDelete) throw new Error('Không có thông tin thửa đất');
+      const targetUnitId = plotToDelete.production_unit_id || selectedUnit?.id;
+      if (!targetUnitId) throw new Error('Không xác định được vùng sản xuất');
+      return deletePlot(targetUnitId, plotToDelete.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['farmPlots'] });
+      showToast(`Đã xóa / ngưng canh tác thửa đất [${plotToDelete?.plot_code}] thành công`);
+      setPlotToDelete(null);
+    },
+    onError: (err: any) => showToast(err?.message || 'Xóa thửa đất thất bại', 'error'),
+  });
 
   const openAssignmentsModal = async (plot: FarmPlot) => {
     setSelectedPlotForAssignments(plot);
     setAssignmentsLoading(true);
-    const res = await fetchPlotMemberAssignments(plot.id);
-    setAssignments(res);
-    setAssignmentsLoading(false);
-  };
-
-  const handleAssignMember = async () => {
-    if (!selectedPlotForAssignments) return;
-    await assignMemberToPlot(selectedPlotForAssignments.id, { member_id: newMemberId, role: newMemberRole });
-    const updated = await fetchPlotMemberAssignments(selectedPlotForAssignments.id);
-    setAssignments(updated);
-  };
-
-  const handleDeletePlot = async () => {
-    if (!plotToDelete || !selected) return;
     try {
-      setIsDeletingPlot(true);
-      await deletePlot(selected.id, plotToDelete.id);
-      showToast(`Đã xóa / ngưng canh tác thửa đất [${plotToDelete.plot_code}] thành công`, 'success');
-      setPlotToDelete(null);
-      await loadPlots(selected.id);
-    } catch (err: any) {
-      showToast(err.message || 'Xóa thửa đất thất bại', 'error');
+      const res = await fetchPlotMemberAssignments(plot.id);
+      setAssignments(res);
+    } catch {
+      setAssignments([]);
     } finally {
-      setIsDeletingPlot(false);
+      setAssignmentsLoading(false);
     }
   };
 
-  const handleExportPlotsExcel = () => {
-    if (!plots || plots.length === 0) {
-      showToast('Không có dữ liệu thửa đất để xuất!', 'warning');
-      return;
+  const handleAssignMember = async (memberId: string, role: string) => {
+    if (!selectedPlotForAssignments) return;
+    try {
+      await assignMemberToPlot(selectedPlotForAssignments.id, { member_id: memberId, role });
+      showToast('Đã phân công xã viên phụ trách thửa đất thành công!');
+      const updated = await fetchPlotMemberAssignments(selectedPlotForAssignments.id);
+      setAssignments(updated);
+    } catch (err: any) {
+      showToast(err?.message || 'Có lỗi khi phân công xã viên', 'error');
     }
-    const exportData = plots.map((p, idx) => ({
-      'STT': idx + 1,
-      'Mã thửa đất': p.plot_code,
-      'Vùng sản xuất': selected?.name || p.unit_name || '',
-      'Mã vùng': selected?.unit_code || '',
-      'Mã PUC': selected?.puc_code || '',
-      'Cây trồng': selected?.crop || '',
-      'Diện tích (ha)': p.area,
-      'Trạng thái': statusText[p.status] || p.status,
-      'Tọa độ GPS': p.gps_coordinates || '',
-      'Ngày an toàn PHI': p.safe_harvest_date || 'Không cách ly',
-    }));
-    exportToExcel(exportData, `Danh_Sach_Thua_Dat_${selected?.unit_code || 'HTX'}`, 'ThuaDat');
-    showToast('Xuất danh sách thửa đất sang Excel thành công!', 'success');
   };
 
-
-  useEffect(() => {
-    loadUnits();
-  }, []);
-
-  useEffect(() => {
-    setShowPlotForm(false);
-    setPlotForm({ plot_code: '', area: '', safe_harvest_date: '', status: 'ACTIVE' });
-    if (selected?.id) loadPlots(selected.id);
-    else setPlots([]);
-  }, [selected?.id]);
-
-  const filtered = useMemo(() => {
-    return units.filter((u) => {
-      const q = search.toLowerCase();
-      const matchSearch =
-        !q || [u.name, u.unit_code, u.crop, u.puc_code || ''].some((v) => (v || '').toLowerCase().includes(q));
-      const matchStatus =
-        status === 'Tất cả' ||
-        statusText[u.status] === status ||
-        (status === 'Chờ đánh giá PUC' && u.puc_status === 'UNDER_PUC_REVIEW');
-      const matchCrop = crop === 'Tất cả' || u.crop === crop;
-      return matchSearch && matchStatus && matchCrop;
-    });
-  }, [units, search, status, crop]);
-
-  const crops = Array.from(new Set(units.map((u) => u.crop).filter(Boolean)));
   const totalArea = units.reduce((a, u) => a + (Number(u.area) || 0), 0);
   const activeCount = units.filter((u) => u.status === 'ACTIVE').length;
 
-  const openCreate = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setModal(true);
-  };
-
-  const openEdit = (u: ProductionUnit) => {
-    setEditingId(u.id);
-    setForm({
-      name: u.name,
-      unit_code: u.unit_code,
-      crop: u.crop,
-      area: Number(u.area),
-      status: u.status || 'ACTIVE',
-      puc_code: u.puc_code || '',
-      puc_status: u.puc_status || 'ACTIVE',
-    });
-    setModal(true);
-  };
-
-  const save = async () => {
-    if (!form.name.trim() || !form.unit_code.trim() || !form.crop.trim() || !Number(form.area)) {
-      alert('Vui lòng nhập đủ: Tên, Mã, Cây trồng, Diện tích (> 0)');
-      return;
-    }
-    try {
-      setSubmitting(true);
-      if (usingMock) {
-        if (editingId) {
-          setUnits((prev) =>
-            prev.map((u) =>
-              u.id === editingId
-                ? {
-                    ...u,
-                    name: form.name.trim(),
-                    crop: form.crop.trim(),
-                    area: Number(form.area),
-                    status: form.status,
-                    puc_code: form.puc_code,
-                    puc_status: form.puc_status as any,
-                  }
-                : u
-            )
-          );
-          setSelected((prev) =>
-            prev?.id === editingId
-              ? {
-                  ...prev,
-                  name: form.name.trim(),
-                  crop: form.crop.trim(),
-                  area: Number(form.area),
-                  status: form.status,
-                  puc_code: form.puc_code,
-                  puc_status: form.puc_status as any,
-                }
-              : prev
-          );
-        } else {
-          const newUnit: ProductionUnit = {
-            id: `u${Date.now()}`,
-            unit_code: form.unit_code.trim(),
-            name: form.name.trim(),
-            crop: form.crop.trim(),
-            area: Number(form.area),
-            status: form.status || 'ACTIVE',
-            puc_code: form.puc_code.trim() || undefined,
-            puc_status: (form.puc_status as any) || 'ACTIVE',
-          };
-          setUnits((prev) => [newUnit, ...prev]);
-          setSelected(newUnit);
-        }
-        setModal(false);
-      } else {
-        if (editingId) {
-          await updateProductionUnit(editingId, {
-            name: form.name.trim(),
-            crop: form.crop.trim(),
-            area: Number(form.area),
-            status: form.status,
-            puc_code: form.puc_code,
-            puc_status: form.puc_status as any,
-          });
-        } else {
-          await createProductionUnit({
-            unit_code: form.unit_code.trim(),
-            name: form.name.trim(),
-            crop: form.crop.trim(),
-            area: Number(form.area),
-            puc_code: form.puc_code,
-          });
-        }
-        setModal(false);
-        await loadUnits(editingId ?? undefined);
-      }
-    } catch (err: any) {
-      alert(err?.message || (editingId ? 'Cập nhật vùng trồng thất bại' : 'Tạo vùng trồng thất bại'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const savePlot = async () => {
-    if (!selected) return;
-    if (!plotForm.plot_code.trim() || !(Number(plotForm.area) > 0)) {
-      alert('Vui lòng nhập Mã thửa và Diện tích (> 0)');
-      return;
-    }
-    try {
-      setPlotSaving(true);
-      if (usingMock) {
-        const newPlot: FarmPlot = {
-          id: `p${Date.now()}`,
-          production_unit_id: selected.id,
-          plot_code: plotForm.plot_code.trim(),
-          area: Number(plotForm.area),
-          status: plotForm.status || 'ACTIVE',
-          safe_harvest_date: plotForm.status === 'IN_QUARANTINE' ? plotForm.safe_harvest_date || '2026-10-25' : null,
-          unit_name: selected.name,
-        };
-        setPlots((prev) => [...prev, newPlot]);
-        setPlotForm({ plot_code: '', area: '', safe_harvest_date: '', status: 'ACTIVE' });
-        setShowPlotForm(false);
-      } else {
-        await createPlot(selected.id, {
-          plot_code: plotForm.plot_code.trim(),
-          area: Number(plotForm.area),
-        });
-        setPlotForm({ plot_code: '', area: '', safe_harvest_date: '', status: 'ACTIVE' });
-        setShowPlotForm(false);
-        await loadPlots(selected.id);
-      }
-    } catch (err: any) {
-      alert(err?.message || 'Thêm thửa đất thất bại');
-    } finally {
-      setPlotSaving(false);
-    }
-  };
-
-  const inputCls =
-    'w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50 disabled:bg-slate-100 disabled:text-slate-400';
-
   return (
-    <div className="min-h-full space-y-5 pb-10 text-[13px] text-slate-700">
+    <div className="min-h-full space-y-4 pb-12 text-[13px] text-slate-700 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 shadow-sm ring-8 ring-emerald-50">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-white p-4.5 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 shadow-2xs">
             <MapPin className="h-6 w-6" strokeWidth={2.2} />
           </div>
           <div>
-            <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-emerald-600">
-              <span>Quản lý nghiệp vụ</span>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-              <span className="text-slate-400">Vùng trồng</span>
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400">
+              <span className="font-bold text-slate-700">
+                {activeCooperative?.legal_name || 'Hợp tác xã'}
+              </span>
+              <ChevronRight className="h-3 w-3 text-slate-300" />
+              <span className="text-emerald-700 font-bold">Vùng trồng & Mã PUC Cục BVTV</span>
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Vùng trồng & Mã PUC Cục BVTV</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Quản lý vùng sản xuất, diện tích VietGAP, mã số vùng trồng PUC và các thửa đất trực thuộc.
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={openCreate}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition hover:-translate-y-0.5 hover:bg-emerald-700 active:translate-y-0"
-        >
-          <Plus className="h-4 w-4" />
-          Khai báo vùng trồng mới
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Tổng vùng trồng</p>
-              <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">{units.length}</p>
-              <p className="mt-1 text-xs text-slate-400">Vùng đang quản lý</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <Layers3 className="h-5 w-5" />
-            </div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+              Quản trị Vùng sản xuất & Mã số vùng trồng (PUC)
+            </h1>
           </div>
         </div>
 
-        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Tổng diện tích</p>
-              <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">
-                {totalArea.toFixed(1)} <span className="text-base font-bold text-slate-500">ha</span>
-              </p>
-              <p className="mt-1 text-xs text-slate-400">Diện tích canh tác VietGAP</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <Ruler className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Đang canh tác</p>
-              <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">{activeCount}</p>
-              <p className="mt-1 text-xs text-slate-400">Vùng đang hoạt động</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-              <Sprout className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Thửa đất</p>
-              <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">{selected ? plots.length : '—'}</p>
-              <p className="mt-1 text-xs text-slate-400">Theo vùng đang chọn</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-              <MapPin className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex items-center gap-2 text-xs font-bold text-slate-600">
-          <SlidersHorizontal className="h-4 w-4 text-emerald-600" />
-          Tìm kiếm & bộ lọc
-        </div>
-        <div className="flex flex-col gap-3 lg:flex-row">
-          <div className="relative min-w-0 flex-1">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm tên vùng, mã vùng, mã PUC Cục BVTV, cây trồng..."
-              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-50"
-            />
-          </div>
-          <select
-            value={crop}
-            onChange={(e) => setCrop(e.target.value)}
-            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 lg:min-w-[190px]"
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsPrintPucModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200 px-3.5 py-2 text-xs font-bold shadow-xs transition active:scale-98 cursor-pointer shrink-0"
+            title="In / Tải PDF / Tải Excel Báo cáo trích lục vùng trồng & Thửa đất Mẫu 01-PUC"
           >
-            <option value="Tất cả">Tất cả cây trồng</option>
-            {crops.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 lg:min-w-[180px]"
-          >
-            <option value="Tất cả">Tất cả trạng thái</option>
-            {Object.values(statusText).map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+            <Printer className="h-4 w-4 text-blue-700" />
+            Trích lục Mẫu 01-PUC (PDF/Excel)
+          </button>
+
+          {activeTab === 'units' ? (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingUnit(null);
+                setUnitModalOpen(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-800 active:scale-98 cursor-pointer shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              Khai báo vùng trồng mới
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAddPlotModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-800 active:scale-98 cursor-pointer shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              Thêm thửa đất mới
+            </button>
+          )}
         </div>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3.5 text-sm text-red-600">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white font-bold">!</span>
-          <span>{error}</span>
+      {/* Stats Cards */}
+      <FarmPlotKpiCards
+        totalUnits={units.length}
+        totalArea={totalArea}
+        activeCount={activeCount}
+        plotsCount={plots.length}
+        selectedUnitCode={selectedUnit ? selectedUnit.unit_code : 'Toàn HTX'}
+      />
+
+      {/* 2 Tabs Navigation & View Mode Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-slate-200 bg-white p-2 rounded-2xl shadow-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('units');
+              setViewMode('split');
+            }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap ${
+              activeTab === 'units' && viewMode !== 'map'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>Tab 1: Danh Sách Vùng Trồng &amp; Mã PUC ({units.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('plots');
+              setViewMode('split');
+            }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap ${
+              activeTab === 'plots' && viewMode !== 'map'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <MapPin className="w-4 h-4" />
+            <span>Tab 2: Phân Lô Thửa Đất Canh Tác ({plots.length})</span>
+          </button>
         </div>
-      )}
 
-      {loading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white py-24 text-center text-sm text-slate-400 shadow-sm">
-          Đang tải dữ liệu vùng trồng...
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setViewMode(viewMode === 'map' ? 'split' : 'map')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
+              viewMode === 'map'
+                ? 'bg-emerald-800 text-white border-emerald-900 shadow-xs'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{viewMode === 'map' ? 'Xem Bảng Dữ Liệu' : 'Bản Đồ Số GIS'}</span>
+          </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(360px,0.8fr)]">
-          {/* List */}
-          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <div>
-                <h2 className="text-base font-extrabold text-slate-800">Danh sách vùng trồng</h2>
-                <p className="mt-0.5 text-xs text-slate-400">{filtered.length} vùng được hiển thị</p>
-              </div>
-              <div className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
-                {totalArea.toFixed(1)} ha
-              </div>
-            </div>
+      </div>
 
-            <div className="divide-y divide-slate-100">
-              {filtered.length === 0 ? (
-                <div className="flex min-h-[330px] flex-col items-center justify-center px-6 text-center">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 text-slate-300">
-                    <MapPin className="h-8 w-8" />
-                  </div>
-                  <p className="font-semibold text-slate-600">Chưa có vùng trồng nào</p>
-                  <p className="mt-1 max-w-sm text-xs leading-5 text-slate-400">
-                    Chưa có dữ liệu phù hợp với bộ lọc hiện tại. Bạn có thể khai báo vùng trồng mới để bắt đầu quản lý.
-                  </p>
-                  <button
-                    onClick={openCreate}
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
-                  >
-                    <Plus className="h-4 w-4" /> Thêm vùng trồng
-                  </button>
-                </div>
-              ) : (
-                filtered.map((u) => {
-                  const displayStatusKey = u.puc_status === 'UNDER_PUC_REVIEW' ? 'UNDER_PUC_REVIEW' : u.status;
-                  return (
-                    <div
-                      key={u.id}
-                      onClick={() => setSelected(u)}
-                      className={`group cursor-pointer px-5 py-4 transition-all hover:bg-emerald-50/30 ${
-                        selected?.id === u.id ? 'bg-emerald-50/60' : 'bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition ${selected?.id === u.id ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500 group-hover:bg-emerald-50 group-hover:text-emerald-600'}`}>
-                          <Sprout className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="truncate font-bold text-slate-800">{u.name}</h3>
-                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusClass[displayStatusKey] || 'border-slate-200 bg-slate-100 text-slate-600'}`}>
-                              {statusText[displayStatusKey] || displayStatusKey}
-                            </span>
-                          </div>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
-                            <span>Mã: <b className="font-semibold text-slate-600">{u.unit_code}</b></span>
-                            {u.puc_code && (
-                              <span>• Mã PUC: <b className="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">{u.puc_code}</b></span>
-                            )}
-                            <span>• Cây trồng: <b className="font-semibold text-slate-600">{u.crop}</b></span>
-                          </div>
-                        </div>
-                        <div className="hidden text-right sm:block">
-                          <p className="text-lg font-extrabold text-slate-800">{u.area}</p>
-                          <p className="text-[11px] text-slate-400">ha</p>
-                        </div>
-                        <button
-                          title="Sửa vùng trồng"
-                          onClick={(e) => { e.stopPropagation(); openEdit(u); }}
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 opacity-70 transition hover:bg-white hover:text-emerald-600 hover:shadow-sm group-hover:opacity-100"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </section>
-
-          {/* Detail */}
-          <aside className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            {selected ? (
-              <div>
-                <div className="border-b border-slate-100 bg-gradient-to-br from-emerald-50 via-white to-white p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                        <MapPin className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Chi tiết vùng trồng</p>
-                        <h3 className="mt-1 text-lg font-extrabold text-slate-900">{selected.name}</h3>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => openEdit(selected)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:text-emerald-700"
-                    >
-                      <Pencil className="h-3.5 w-3.5" /> Sửa
-                    </button>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between rounded-xl border border-white bg-white/80 px-3.5 py-3 shadow-sm">
-                    <span className="text-xs text-slate-500">Trạng thái</span>
-                    <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusClass[selected.puc_status === 'UNDER_PUC_REVIEW' ? 'UNDER_PUC_REVIEW' : selected.status] || ''}`}>
-                      {selected.puc_status === 'UNDER_PUC_REVIEW' ? 'Chờ đánh giá PUC ⚠️' : statusText[selected.status] || selected.status}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-5">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-slate-50 p-3.5">
-                      <p className="text-[11px] font-medium text-slate-400">Mã vùng</p>
-                      <p className="mt-1.5 truncate text-sm font-bold text-slate-700">{selected.unit_code}</p>
-                    </div>
-                    <div className="rounded-xl bg-emerald-50 p-3.5">
-                      <p className="text-[11px] font-medium text-emerald-600">Diện tích</p>
-                      <p className="mt-1.5 text-sm font-extrabold text-emerald-700">{selected.area} ha</p>
-                    </div>
-                    <div className="col-span-2 rounded-xl bg-blue-50/70 border border-blue-100 p-3.5">
-                      <p className="text-[11px] font-medium text-blue-600">Mã PUC Cục BVTV</p>
-                      <p className="mt-1 text-sm font-mono font-bold text-blue-800">{selected.puc_code || 'Chưa đăng ký'}</p>
-                    </div>
-                    <div className="col-span-2 rounded-xl border border-slate-100 p-3.5">
-                      <p className="text-[11px] font-medium text-slate-400">Cây trồng chủ lực</p>
-                      <div className="mt-1.5 flex items-center gap-2 text-sm font-bold text-slate-700">
-                        <Sprout className="h-4 w-4 text-emerald-600" /> {selected.crop}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 border-t border-slate-100 pt-5">
-                    <div className="mb-3 flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-extrabold text-slate-800">Thửa đất</h4>
-                        <p className="mt-0.5 text-[11px] text-slate-400">{plots.length} thửa thuộc vùng này</p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={handleExportPlotsExcel}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition cursor-pointer"
-                          title="Xuất Excel danh sách thửa đất"
-                        >
-                          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" /> Xuất Excel
-                        </button>
-                        <button
-                          onClick={() => setShowPlotForm((v) => !v)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 cursor-pointer"
-                        >
-                          <Plus className="h-3.5 w-3.5" /> Thêm thửa
-                        </button>
-                      </div>
-                    </div>
-
-                    {showPlotForm && (
-                      <div className="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3.5">
-                        <p className="mb-3 text-xs font-bold text-emerald-800">Khai báo thửa đất</p>
-                        <div className="space-y-2.5">
-                          <input
-                            value={plotForm.plot_code}
-                            onChange={(e) => setPlotForm({ ...plotForm, plot_code: e.target.value })}
-                            placeholder="Mã thửa, ví dụ: TD-01"
-                            className={inputCls}
-                          />
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={plotForm.area}
-                            onChange={(e) => setPlotForm({ ...plotForm, area: e.target.value })}
-                            placeholder="Diện tích (ha hoặc m²)"
-                            className={inputCls}
-                          />
-                          <select
-                            value={plotForm.status}
-                            onChange={(e) => setPlotForm({ ...plotForm, status: e.target.value })}
-                            className={inputCls}
-                          >
-                            <option value="ACTIVE">Đang canh tác (ACTIVE)</option>
-                            <option value="IN_QUARANTINE">Cách ly PHI (IN_QUARANTINE)</option>
-                            <option value="FALLOW">Bỏ vụ (FALLOW)</option>
-                          </select>
-                          {plotForm.status === 'IN_QUARANTINE' && (
-                            <input
-                              type="date"
-                              value={plotForm.safe_harvest_date}
-                              onChange={(e) => setPlotForm({ ...plotForm, safe_harvest_date: e.target.value })}
-                              className={inputCls}
-                            />
-                          )}
-                          <div className="flex justify-end gap-2 pt-1">
-                            <button onClick={() => setShowPlotForm(false)} className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
-                            <button onClick={savePlot} disabled={plotSaving} className="rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60">
-                              {plotSaving ? 'Đang lưu...' : 'Lưu thửa'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {plotsLoading ? (
-                      <div className="rounded-xl bg-slate-50 py-8 text-center text-xs text-slate-400">Đang tải thửa đất...</div>
-                    ) : plots.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-8 text-center">
-                        <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-300 shadow-sm">
-                          <MapPin className="h-5 w-5" />
-                        </div>
-                        <p className="text-xs font-semibold text-slate-500">Chưa có thửa đất</p>
-                        <p className="mt-1 text-[11px] text-slate-400">Thêm thửa để theo dõi chi tiết vùng trồng.</p>
-                      </div>
-                    ) : (
-                      <ul className="space-y-2.5">
-                        {plots.map((p) => {
-                          const isQuarantine = p.status === 'IN_QUARANTINE';
-                          const isFallow = p.status === 'FALLOW';
-                          const borderBgClass = isQuarantine
-                            ? 'border-rose-300 bg-rose-50/80 shadow-xs ring-1 ring-rose-200'
-                            : isFallow
-                            ? 'border-slate-200 bg-slate-50/80'
-                            : 'border-emerald-200 bg-emerald-50/30 hover:border-emerald-300 hover:bg-emerald-50/60';
-
-                          return (
-                            <li key={p.id} className={`rounded-xl border p-3.5 transition ${borderBgClass}`}>
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2.5">
-                                  <div
-                                    className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm ${
-                                      isQuarantine
-                                        ? 'bg-rose-100 text-rose-600 animate-pulse'
-                                        : isFallow
-                                        ? 'bg-slate-200 text-slate-600'
-                                        : 'bg-white text-emerald-600'
-                                    }`}
-                                  >
-                                    {isQuarantine ? <ShieldAlert className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <p className="text-xs font-bold text-slate-800">{p.plot_code}</p>
-                                      <span
-                                        className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold border ${
-                                          statusClass[p.status] || 'border-slate-200 bg-slate-100 text-slate-700'
-                                        }`}
-                                      >
-                                        {statusText[p.status] || p.status}
-                                      </span>
-                                    </div>
-                                    {p.gps_coordinates && (
-                                      <div className="mt-0.5 text-[10.5px] font-mono text-slate-500">
-                                        📍 {p.gps_coordinates}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-xs font-bold text-slate-700 mr-1">{p.area} ha</span>
-                                  <button
-                                    onClick={() => setEditingPlot(p)}
-                                    className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-blue-600 hover:bg-blue-50 shadow-2xs transition cursor-pointer"
-                                    title="Chỉnh sửa thông tin thửa đất"
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => openAssignmentsModal(p)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 shadow-xs hover:border-emerald-200 hover:text-emerald-700 cursor-pointer"
-                                    title="Phân công xã viên"
-                                  >
-                                    <Users className="h-3 w-3 text-emerald-600" />
-                                    Xã viên
-                                  </button>
-                                  <button
-                                    onClick={() => setPlotToDelete(p)}
-                                    className="inline-flex items-center justify-center h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 shadow-2xs transition cursor-pointer"
-                                    title="Xóa / Ngưng canh tác thửa đất"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                                <PhiCountdownBadge safeHarvestDate={p.safe_harvest_date} status={p.status} />
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex min-h-[560px] flex-col items-center justify-center px-8 text-center">
-                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-50 text-slate-300">
-                  <MapPin className="h-9 w-9" />
-                </div>
-                <h3 className="font-bold text-slate-600">Chọn một vùng trồng</h3>
-                <p className="mt-1 max-w-xs text-xs leading-5 text-slate-400">Thông tin chi tiết, diện tích và danh sách thửa đất sẽ hiển thị tại đây.</p>
-              </div>
-            )}
-          </aside>
-        </div>
-      )}
-
-      {/* Member Plot Assignment Modal */}
-      {selectedPlotForAssignments && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-white px-6 py-4">
-              <div>
-                <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-emerald-600" />
-                  Phân công Xã viên phụ trách
-                </h3>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">Thửa đất: {selectedPlotForAssignments.plot_code}</p>
-              </div>
-              <button
-                onClick={() => setSelectedPlotForAssignments(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-slate-400 shadow-xs hover:text-slate-700"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-700">Danh sách Xã viên đang phụ trách:</h4>
-                {assignmentsLoading ? (
-                  <div className="text-xs text-slate-400 py-4 text-center">Đang tải...</div>
-                ) : (
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {assignments.map((ma) => (
-                      <div key={ma.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-                        <div>
-                          <div className="font-bold text-slate-800">{ma.member_name} ({ma.member_code})</div>
-                          <div className="text-slate-400 text-[11px]">{ma.role} • Từ ngày {ma.assigned_date}</div>
-                        </div>
-                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">
-                          Đang phụ trách
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 space-y-3">
-                <h4 className="text-xs font-bold text-slate-700">Phân công Xã viên mới:</h4>
-                <div className="space-y-2">
-                  <select
-                    value={newMemberId}
-                    onChange={(e) => setNewMemberId(e.target.value)}
-                    className={inputCls}
-                  >
-                    <option value="mem-001">TV001 - Nguyễn Văn A</option>
-                    <option value="mem-002">TV002 - Trần Thị B</option>
-                    <option value="mem-003">TV003 - Lê Văn C</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={newMemberRole}
-                    onChange={(e) => setNewMemberRole(e.target.value)}
-                    className={inputCls}
-                    placeholder="Vai trò (Xã viên canh tác VietGAP / Trưởng nhóm)"
-                  />
-                </div>
-                <button
-                  onClick={handleAssignMember}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
-                >
-                  Xác nhận Phân công Xã viên
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Unit */}
-      {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl">
-            <div className="flex items-start justify-between border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-white px-6 py-5">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Quản lý vùng trồng</p>
-                <h3 className="mt-1 text-xl font-extrabold text-slate-900">{editingId ? 'Sửa vùng trồng' : 'Khai báo vùng trồng mới'}</h3>
-                <p className="mt-1 text-xs text-slate-400">Nhập thông tin để quản lý vùng sản xuất & mã PUC Cục BVTV.</p>
-              </div>
-              <button onClick={() => setModal(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm transition hover:text-slate-700">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 px-6 py-5">
-              <div>
-                <label className="mb-1.5 block text-xs font-bold text-slate-600">Tên vùng trồng *</label>
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} placeholder="Vùng trồng Cà phê Cầu Đất" />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold text-slate-600">Mã vùng *</label>
-                  <input value={form.unit_code} disabled={!!editingId} onChange={(e) => setForm({ ...form, unit_code: e.target.value })} className={inputCls} placeholder="VT-LAMHA-01" />
-                  {editingId && <p className="mt-1 text-[10px] text-slate-400">Mã vùng không thể thay đổi.</p>}
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold text-slate-600">Diện tích (ha) *</label>
-                  <input type="number" step="0.1" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value === '' ? '' : Number(e.target.value) })} className={inputCls} placeholder="0.0" />
-                </div>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-bold text-slate-600">Mã PUC Cục BVTV</label>
-                <input value={form.puc_code} onChange={(e) => setForm({ ...form, puc_code: e.target.value })} className={inputCls} placeholder="PUC-49-012-XXXX" />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-bold text-slate-600">Cây trồng chủ lực *</label>
-                <div className="relative">
-                  <Sprout className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input value={form.crop} onChange={(e) => setForm({ ...form, crop: e.target.value })} className={`${inputCls} pl-10`} placeholder="Cà phê Arabica" />
-                </div>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-bold text-slate-600">Trạng thái Mã PUC</label>
-                <select value={form.puc_status} onChange={(e) => setForm({ ...form, puc_status: e.target.value })} className={inputCls}>
-                  <option value="ACTIVE">Hoạt động bình thường (ACTIVE)</option>
-                  <option value="UNDER_PUC_REVIEW">Đang chờ đánh giá lại PUC (BR-FARM-005)</option>
-                  <option value="INACTIVE">Tạm ngưng (INACTIVE)</option>
-                </select>
-              </div>
-              {editingId && (
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold text-slate-600">Trạng thái Vùng trồng</label>
-                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputCls}>
-                    {Object.entries(statusText).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </div>
-              )}
-              <div className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3.5 py-3 text-xs text-emerald-700">
-                <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>Thông tin vùng trồng sẽ được cập nhật vào hệ thống quản lý sản xuất.</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-4">
-              <button onClick={() => setModal(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
-              <button onClick={save} disabled={submitting} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60">
-                {submitting ? 'Đang lưu...' : editingId ? 'Lưu thay đổi' : 'Tạo vùng trồng'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Farm Plot Modal */}
-      {selected && (
-        <EditFarmPlotModal
-          isOpen={!!editingPlot}
-          onClose={() => setEditingPlot(null)}
-          plot={editingPlot}
-          unitId={selected.id}
-          onSuccess={() => {
-            if (selected) loadPlots(selected.id);
+      {/* Main Layout: GIS Map or 2 Tabs Content */}
+      {viewMode === 'map' ? (
+        <FarmPlotMapView
+          units={units}
+          selectedUnit={selectedUnit}
+          plots={plots}
+          onSelectUnit={(u) => setSelectedUnitId(u ? u.id : 'ALL')}
+          onSelectPlot={(p) => setSelectedPlotForDrawer(p)}
+          selectedPlotId={selectedPlotForDrawer?.id}
+          onPlotUpdated={() => {
+            queryClient.invalidateQueries({ queryKey: ['farmPlots'] });
           }}
         />
-      )}
+      ) : activeTab === 'units' ? (
+        <ProductionUnitsTable
+          units={units}
+          isLoading={loadingUnits}
+          onOpenCreateModal={() => {
+            setEditingUnit(null);
+            setUnitModalOpen(true);
+          }}
+          onOpenEditModal={(u) => {
+            setEditingUnit(u);
+            setUnitModalOpen(true);
+          }}
+          onViewPlotsOfUnit={(u) => {
+            setSelectedUnitId(u.id);
+            setActiveTab('plots');
+          }}
+          onOpenMapView={(u) => {
+            setSelectedUnitId(u.id);
+            setViewMode('map');
+          }}
+        />
+      ) : (
+        <div className="space-y-4">
+          <CompactUnitSelectorBar
+            units={units}
+            selectedUnitId={selectedUnitId}
+            onSelectUnitId={(id) => setSelectedUnitId(id)}
+            onOpenCreateUnitModal={() => {
+              setEditingUnit(null);
+              setUnitModalOpen(true);
+            }}
+            onOpenEditUnitModal={(u) => {
+              setEditingUnit(u);
+              setUnitModalOpen(true);
+            }}
+            onOpenAddPlotModal={() => setAddPlotModalOpen(true)}
+            onToggleMapView={() => setViewMode('map')}
+            isMapView={false}
+          />
 
-      {/* Delete Plot Confirmation Modal */}
-      {plotToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in text-[13px]">
-          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden p-6 space-y-4">
-            <div className="flex items-center gap-3 text-rose-600">
-              <div className="p-3 bg-rose-100 rounded-2xl">
-                <AlertOctagon className="w-6 h-6 text-rose-600" />
-              </div>
-              <div>
-                <h3 className="font-black text-slate-900 text-base">Xóa / Ngưng Canh Tác Thửa Đất</h3>
-                <p className="text-xs text-slate-500">Mã thửa: {plotToDelete.plot_code}</p>
-              </div>
-            </div>
-
-            <div className="p-3.5 bg-rose-50/80 rounded-2xl border border-rose-200 text-xs text-rose-900 leading-relaxed">
-              Bạn có chắc chắn muốn xóa thửa đất <strong>[{plotToDelete.plot_code}]</strong> (Diện tích: {plotToDelete.area} ha) khỏi danh sách quản lý vùng trồng <strong>{selected?.name}</strong>?
-              <br />
-              <span className="text-[11px] text-rose-700 italic mt-1 block">
-                * Thao tác này sẽ cập nhật trạng thái hoặc gỡ bỏ phân công xã viên trên thửa đất này.
-              </span>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                onClick={() => setPlotToDelete(null)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                onClick={handleDeletePlot}
-                disabled={isDeletingPlot}
-                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition disabled:opacity-60 cursor-pointer"
-              >
-                {isDeletingPlot ? 'Đang xử lý...' : 'Xác nhận Xóa'}
-              </button>
-            </div>
-          </div>
+          <FarmPlotsFullTable
+            units={units}
+            selectedUnit={selectedUnit}
+            plots={plots}
+            plotsLoading={loadingPlots}
+            selectedPlotId={selectedPlotForDrawer?.id}
+            onSelectPlot={(p) => setSelectedPlotForDrawer(p)}
+            onOpenEditUnitModal={(u) => {
+              setEditingUnit(u);
+              setUnitModalOpen(true);
+            }}
+            onOpenAddPlotModal={() => setAddPlotModalOpen(true)}
+            onEditPlot={(p) => {
+              setSelectedPlotForDrawer(null);
+              setEditingPlot(p);
+            }}
+            onOpenAssignments={(p) => {
+              setSelectedPlotForDrawer(null);
+              openAssignmentsModal(p);
+            }}
+            onDeletePlot={(p) => {
+              setSelectedPlotForDrawer(null);
+              setPlotToDelete(p);
+            }}
+            onSwitchToMap={() => setViewMode('map')}
+            isAllUnitsMode={selectedUnitId === 'ALL'}
+          />
         </div>
       )}
+
+      {/* Farm Plot Modals & Drawer */}
+      <FarmPlotModals
+        units={units}
+        selectedUnit={selectedUnit}
+        unitModalOpen={unitModalOpen}
+        editingUnit={editingUnit}
+        onCloseUnitModal={() => {
+          setUnitModalOpen(false);
+          setEditingUnit(null);
+        }}
+        onSaveUnit={async (payload, id) => {
+          await saveUnitMutation.mutateAsync({ payload, id });
+        }}
+        isSavingUnit={saveUnitMutation.isPending}
+        addPlotModalOpen={addPlotModalOpen}
+        onCloseAddPlotModal={() => setAddPlotModalOpen(false)}
+        onAddPlot={async (plotData) => {
+          await addPlotMutation.mutateAsync(plotData);
+        }}
+        isAddingPlot={addPlotMutation.isPending}
+        editingPlot={editingPlot}
+        onCloseEditPlot={() => setEditingPlot(null)}
+        onPlotEdited={() => {
+          queryClient.invalidateQueries({ queryKey: ['farmPlots'] });
+        }}
+        selectedPlotForAssignments={selectedPlotForAssignments}
+        members={members}
+        assignments={assignments}
+        assignmentsLoading={assignmentsLoading}
+        onCloseAssignments={() => setSelectedPlotForAssignments(null)}
+        onAssignMember={handleAssignMember}
+        plotToDelete={plotToDelete}
+        onCloseDeletePlot={() => setPlotToDelete(null)}
+        onConfirmDeletePlot={async () => {
+          await deletePlotMutation.mutateAsync();
+        }}
+        isDeletingPlot={deletePlotMutation.isPending}
+        selectedPlotForDrawer={selectedPlotForDrawer}
+        onCloseDrawer={() => setSelectedPlotForDrawer(null)}
+        onEditFromDrawer={(p) => {
+          setSelectedPlotForDrawer(null);
+          setEditingPlot(p);
+        }}
+        onAssignFromDrawer={(p) => {
+          setSelectedPlotForDrawer(null);
+          openAssignmentsModal(p);
+        }}
+      />
+
+      <PrintPucMapModal
+        isOpen={isPrintPucModalOpen}
+        onClose={() => setIsPrintPucModalOpen(false)}
+        productionUnit={selectedUnit}
+        plots={plots}
+      />
     </div>
   );
 };
 
+export default FarmPlotsPage;

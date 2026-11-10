@@ -45,6 +45,13 @@ export const LoginPage: React.FC = () => {
           setAuth(loginData.user, loginData.token);
           if (loginData.cooperative) {
             setCooperative(loginData.cooperative);
+          } else if (loginData.user?.cooperative_id) {
+            setCooperative({
+              id: loginData.user.cooperative_id,
+              cooperative_code: 'HTX-TANTIEN-01',
+              legal_name: loginData.user.cooperative_name || 'Hợp tác xã Nông nghiệp Tân Tiến',
+              status: 'ACTIVE',
+            });
           }
           showToast('Đăng nhập thành công! Chào mừng trở lại.', 'success');
           navigate('/dashboard', { replace: true });
@@ -64,9 +71,9 @@ export const LoginPage: React.FC = () => {
         roles: [{ id: 'r1', name: 'COOP_ADMIN', display_name: 'Quản trị HTX' }],
       };
       const mockCoop = {
-        id: 'coop-demo-01',
-        cooperative_code: 'HTX-MINH-SANG',
-        legal_name: 'HTX Nông Nghiệp Minh Sáng',
+        id: 'a60ccf85-7301-43f7-b6d3-b25f72c75b78',
+        cooperative_code: 'HTX-TANTIEN-01',
+        legal_name: 'Hợp tác xã Nông nghiệp Tân Tiến',
         status: 'ACTIVE',
       };
       setAuth(mockUser, 'mock_jwt_token_demo_2026');

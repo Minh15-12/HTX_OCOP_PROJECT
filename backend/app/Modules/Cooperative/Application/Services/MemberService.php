@@ -181,6 +181,12 @@ class MemberService
         $member = $this->getMemberById($memberId);
         $before = $member->toArray();
 
+        // Enforce Luật HTX 2023 & Rule 4: Soft-delete retains TERMINATED state and date
+        $member->update([
+            'status' => 'TERMINATED',
+            'termination_date' => $member->termination_date ?: now()->toDateString(),
+        ]);
+
         $member->delete();
 
         $this->auditService->log(
@@ -188,6 +194,7 @@ class MemberService
             entityType: 'Member',
             entityId: $member->id,
             before: $before,
+            after: $member->toArray(),
             cooperativeId: $member->cooperative_id
         );
     }
@@ -265,5 +272,46 @@ class MemberService
         );
 
         return $memberModel->fresh(['cooperative', 'user']);
+    }
+
+    public function calculateSuggestedCreditLimit(string $memberId): array
+    {
+        $member = $this->getMemberById($memberId);
+
+        // Active plot assignments
+        $assignedPlots = \Modules\Agriculture\Infrastructure\Persistence\Models\MemberPlotAssignmentModel::with('plot')
+            ->where('member_id', $member->id)
+            ->where(function ($q) {
+                $q->whereNull('status')->orWhere('status', 'ACTIVE');
+            })
+            ->get();
+
+        $totalPlotAreaHa = (float) $assignedPlots->sum(fn ($a) => (float) ($a->plot?->area ?? 0));
+
+        // Land contributions
+        $landContributions = \Modules\Cooperative\Infrastructure\Persistence\Models\LandContributionModel::whereHas('contribution', function ($q) use ($member) {
+            $q->where('member_id', $member->id);
+        })->get();
+
+        $contributedAreaHa = (float) $landContributions->sum(fn ($l) => (float) ($l->land_area_sqm / 10000));
+
+        // Total active cultivated / contributed area
+        $totalAreaHa = max($totalPlotAreaHa, $contributedAreaHa);
+
+        // HTX Credit Policy: 15,000,000 VND / hectare
+        $ratePerHa = 15000000.0;
+        $suggestedLimit = round($totalAreaHa * $ratePerHa, 2);
+
+        return [
+            'member_id' => $member->id,
+            'member_code' => $member->member_code,
+            'current_credit_limit' => (float) $member->credit_limit,
+            'total_area_ha' => round($totalAreaHa, 4),
+            'plot_area_ha' => round($totalPlotAreaHa, 4),
+            'contributed_land_ha' => round($contributedAreaHa, 4),
+            'rate_per_ha' => $ratePerHa,
+            'suggested_credit_limit' => $suggestedLimit,
+            'can_override' => true,
+        ];
     }
 }

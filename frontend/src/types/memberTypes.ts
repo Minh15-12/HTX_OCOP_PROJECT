@@ -1,5 +1,5 @@
-export type MemberType = 'CHINH_THUC' | 'LIEN_KET_GOP_VON' | 'LIEN_KET_KHONG_GOP_VON';
-export type MemberStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'REJECTED' | 'SUSPENDED' | 'PENDING_TERMINATION' | 'TERMINATED';
+export type MemberType = 'CHINH_THUC' | 'LIEN_KET_GOP_VON' | 'LIEN_KET_KHONG_GOP_VON' | 'LIEN_KET' | 'OFFICIAL' | 'ASSOCIATED';
+export type MemberStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'REJECTED' | 'SUSPENDED' | 'PENDING_TERMINATION' | 'TERMINATED' | 'DRAFT' | 'PROSPECTIVE';
 export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'LAND' | 'ASSET';
 export type CapitalForm = 'TIEN_MAT' | 'HIEN_VAT' | 'QUYEN_SU_DUNG_DAT';
 
@@ -7,6 +7,9 @@ export const MEMBER_TYPE_LABELS: Record<MemberType, string> = {
   CHINH_THUC: 'Chính thức',
   LIEN_KET_GOP_VON: 'Liên kết góp vốn',
   LIEN_KET_KHONG_GOP_VON: 'Liên kết không góp vốn',
+  LIEN_KET: 'Liên kết',
+  OFFICIAL: 'Chính thức',
+  ASSOCIATED: 'Liên kết',
 };
 
 export interface LandContribution {
@@ -67,6 +70,7 @@ export interface Member {
   cccd_issue_place: string; // Nơi cấp
   education_level: string; // Chưa xác định / THPT / Đại học...
   occupation: string; // Nông dân / Kỹ sư nông nghiệp...
+  ethnicity?: string; // Dân tộc (Kinh, Tày, Nùng, Dao,...)
 
   // 2. Thông tin liên hệ & Địa chỉ
   province: string;
@@ -109,10 +113,15 @@ export interface Member {
   status: MemberStatus;
   join_date: string;
   current_debt: number; // Công nợ tồn đọng (vật tư, thủy nông)
+  credit_limit?: number; // Hạn mức nợ vật tư trả chậm cho phép (đ)
   annual_product_output_kg: number;
   notary_document_url?: string;
   deleted_at?: string; // For Soft Delete
   deleted_reason?: string; // Lý do chấm dứt tư cách
+  cooperative_name?: string;
+  main_product?: string;
+  farming_method?: string;
+  phi_status?: string;
 }
 
 export interface CapitalTransaction {

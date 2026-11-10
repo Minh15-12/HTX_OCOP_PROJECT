@@ -31,8 +31,9 @@ import { BackupRestoreCard } from '../components/BackupRestoreCard';
 import { SecuritySettingsCard } from '../components/SecuritySettingsCard';
 import { UserModal } from '../components/UserModal';
 import { BusinessSettingsCard } from '../components/BusinessSettingsCard';
+import { TenantManagementCard } from '../components/TenantManagementCard';
 
-type TabKey = 'overview' | 'permissions' | 'users' | 'roles' | 'config' | 'business' | 'audit' | 'backup';
+type TabKey = 'overview' | 'permissions' | 'users' | 'roles' | 'config' | 'business' | 'audit' | 'backup' | 'tenants';
 
 
 const MOCK_PERMISSION_GROUPS: PermissionGroup[] = [
@@ -60,18 +61,18 @@ const MOCK_PERMISSION_GROUPS: PermissionGroup[] = [
 
 export const SystemSettingsPage: React.FC = () => {
   const { showToast } = useToast();
-  const { setCooperative } = useTenantContextStore();
+  const { activeCooperative, setCooperative } = useTenantContextStore();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
 
   const [settings, setSettings] = useState<SystemSettings>({
-    system_name: 'HTX Nông nghiệp Xanh Phú Thịnh',
-    managing_unit: 'Hợp tác xã Nông nghiệp Xanh Phú Thịnh',
+    system_name: activeCooperative?.legal_name || 'Hệ thống Quản lý HTX-OCOP',
+    managing_unit: activeCooperative?.legal_name || 'Hợp tác xã Nông nghiệp',
     default_language: 'Tiếng Việt',
     timezone: '(GMT+07:00) Asia/Ho_Chi_Minh',
-    address: 'Thôn 2, xã Mê Linh, huyện Lâm Hà, tỉnh Lâm Đồng',
+    address: 'Trụ sở chính HTX',
     date_format: 'dd/mm/yyyy',
-    support_email: 'htxphuthinh@gmail.com',
-    support_phone: '0987 654 321',
+    support_email: 'hotro@htx-ocop.vn',
+    support_phone: '1900 1234',
     system_version: 'v1.0.0',
     logo_url: null,
     enable_2fa: false,
@@ -92,13 +93,7 @@ export const SystemSettingsPage: React.FC = () => {
 
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>('r2');
   const [permissionsGrouped, setPermissionsGrouped] = useState<PermissionGroup[]>(MOCK_PERMISSION_GROUPS);
-  const [users, setUsers] = useState<UserItem[]>([
-    { id: 'u1', username: 'admin', full_name: 'Nguyễn Văn A', email: 'admin@htx.vn', status: 'ACTIVE', roles: [{ id: 'r1', code: 'HTX_OWNER', name: 'Quản trị viên' }] },
-    { id: 'u2', username: 'ketoan01', full_name: 'Trần Thị B', email: 'ketoan01@htx.vn', status: 'ACTIVE', roles: [{ id: 'r2', code: 'HTX_STAFF', name: 'Kế toán' }] },
-    { id: 'u3', username: 'nvhtx01', full_name: 'Lê Văn C', email: 'nvhtx01@htx.vn', status: 'ACTIVE', roles: [{ id: 'r3', code: 'STAFF', name: 'Nhân viên HTX' }] },
-    { id: 'u4', username: 'truongnhom01', full_name: 'Phạm Thị D', email: 'truongnhom01@htx.vn', status: 'ACTIVE', roles: [{ id: 'r4', code: 'LEADER', name: 'Trưởng nhóm SX' }] },
-    { id: 'u5', username: 'thanhvien01', full_name: 'Hoàng Văn E', email: 'thanhvien01@htx.vn', status: 'ACTIVE', roles: [{ id: 'r5', code: 'MEMBER', name: 'Xã viên' }] },
-  ]);
+  const [users, setUsers] = useState<UserItem[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -128,7 +123,7 @@ export const SystemSettingsPage: React.FC = () => {
         setRoles(roleRes.value);
         if (!selectedRoleId) setSelectedRoleId(roleRes.value[0].id);
       }
-      if (userRes.status === 'fulfilled' && Array.isArray(userRes.value) && userRes.value.length > 0) {
+      if (userRes.status === 'fulfilled' && Array.isArray(userRes.value)) {
         setUsers(userRes.value);
       }
       if (permRes.status === 'fulfilled' && permRes.value?.grouped) {
@@ -153,15 +148,16 @@ export const SystemSettingsPage: React.FC = () => {
       if (newName) {
         const currentCoop = tokenStorage.getCooperative();
         setCooperative({
-          id: currentCoop?.id || 'coop-demo-01',
-          cooperative_code: currentCoop?.cooperative_code || 'HTX-MINH-SANG',
+          id: currentCoop?.id || '',
+          cooperative_code: currentCoop?.cooperative_code || '',
           legal_name: newName,
           status: 'ACTIVE',
         });
       }
       showToast('Cập nhật cài đặt hệ thống thành công!', 'success');
     } catch (err: any) {
-      showToast('Lưu cài đặt hệ thống thành công!', 'success');
+      const errorMsg = err?.response?.data?.message || 'Không thể lưu cài đặt hệ thống. Vui lòng thử lại!';
+      showToast(errorMsg, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -173,9 +169,9 @@ export const SystemSettingsPage: React.FC = () => {
       await systemService.updateRolePermissions(roleId, permissions);
       setRoles(prev => prev.map(r => r.id === roleId ? { ...r, permissions } : r));
       showToast('Cập nhật ma trận phân quyền thành công!', 'success');
-    } catch (err) {
-      setRoles(prev => prev.map(r => r.id === roleId ? { ...r, permissions } : r));
-      showToast('Đã lưu phân quyền vai trò!', 'success');
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || 'Không thể lưu phân quyền vai trò. Vui lòng thử lại!';
+      showToast(errorMsg, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -186,7 +182,7 @@ export const SystemSettingsPage: React.FC = () => {
     try {
       if (userToEdit) {
         const updated = await systemService.updateUser(userToEdit.id, formData);
-        setUsers(prev => prev.map(u => u.id === userToEdit.id ? { ...u, ...formData } : u));
+        setUsers(prev => prev.map(u => u.id === userToEdit.id ? { ...u, ...formData, ...updated } : u));
         showToast('Cập nhật người dùng thành công!', 'success');
       } else {
         const created = await systemService.createUser(formData);
@@ -194,23 +190,9 @@ export const SystemSettingsPage: React.FC = () => {
         showToast('Thêm mới người dùng thành công!', 'success');
       }
       setIsUserModalOpen(false);
-    } catch (err) {
-      if (userToEdit) {
-        setUsers(prev => prev.map(u => u.id === userToEdit.id ? { ...u, ...formData } : u));
-      } else {
-        const mockNew: UserItem = {
-          id: `u-${Date.now()}`,
-          username: formData.username,
-          full_name: formData.full_name,
-          email: formData.email,
-          phone_number: formData.phone_number,
-          status: 'ACTIVE',
-          roles: [{ id: 'r2', code: formData.role_code || 'HTX_STAFF', name: 'Kế toán' }],
-        };
-        setUsers(prev => [mockNew, ...prev]);
-      }
-      showToast('Đã lưu người dùng thành công!', 'success');
-      setIsUserModalOpen(false);
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || 'Không thể lưu thông tin người dùng. Vui lòng kiểm tra lại!';
+      showToast(errorMsg, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -218,12 +200,12 @@ export const SystemSettingsPage: React.FC = () => {
 
   const handleToggleUserStatus = async (userId: string) => {
     try {
-      await systemService.toggleUserStatus(userId);
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: u.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE' } : u));
-      showToast('Đã đổi trạng thái tài khoản!', 'info');
-    } catch (err) {
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: u.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE' } : u));
-      showToast('Đã đổi trạng thái tài khoản!', 'info');
+      const updated = await systemService.toggleUserStatus(userId);
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: updated?.status || (u.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE') } : u));
+      showToast('Đã đổi trạng thái tài khoản thành công!', 'success');
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || 'Không thể thay đổi trạng thái tài khoản!';
+      showToast(errorMsg, 'error');
     }
   };
 
@@ -258,6 +240,7 @@ export const SystemSettingsPage: React.FC = () => {
         <nav className="flex space-x-2 overflow-x-auto scrollbar-none" aria-label="Tabs">
           {[
             { key: 'overview', label: 'Tổng quan', icon: Building },
+            { key: 'tenants', label: 'Mô hình Liên hiệp / Chi nhánh', icon: Building },
             { key: 'config', label: 'Cấu hình nghiệp vụ', icon: Settings },
             { key: 'roles', label: 'Vai trò & Phân quyền', icon: ShieldCheck },
             { key: 'users', label: 'Người dùng', icon: Users },
@@ -291,6 +274,13 @@ export const SystemSettingsPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
             <SystemInfoCard settings={settings} onChange={handleSettingChange} onSave={handleSaveSettings} isSaving={isSaving} />
             <SecuritySettingsCard settings={settings} onChange={handleSettingChange} onSave={handleSaveSettings} isSaving={isSaving} />
+          </div>
+        )}
+
+        {/* TAB: TENANTS */}
+        {activeTab === 'tenants' && (
+          <div className="animate-fade-in">
+            <TenantManagementCard />
           </div>
         )}
 

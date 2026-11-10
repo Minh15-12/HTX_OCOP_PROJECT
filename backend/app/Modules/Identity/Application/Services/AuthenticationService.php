@@ -14,7 +14,7 @@ class AuthenticationService
 
     public function login(LoginData $dto): array
     {
-        $user = UserModel::with(['roles.permissions', 'cooperative'])
+        $user = UserModel::with(['roles.permissions', 'cooperative', 'member'])
             ->where('username', $dto->username)
             ->orWhere('email', $dto->username)
             ->first();
@@ -60,6 +60,8 @@ class AuthenticationService
                 'full_name' => $user->full_name,
                 'cooperative_id' => $user->cooperative_id,
                 'cooperative_name' => $user->cooperative?->legal_name,
+                'member_id' => $user->member?->id,
+                'member_code' => $user->member?->member_code,
                 'status' => $user->status,
                 'roles' => $roles,
                 'permissions' => $permissions,
@@ -82,7 +84,7 @@ class AuthenticationService
 
     public function getUserInfo(UserModel $user): array
     {
-        $user->loadMissing(['roles.permissions', 'cooperative']);
+        $user->loadMissing(['roles.permissions', 'cooperative', 'member']);
         $roles = $user->roles->pluck('code')->toArray();
         $permissions = $user->roles->flatMap->permissions->pluck('code')->unique()->values()->toArray();
 
@@ -93,9 +95,36 @@ class AuthenticationService
             'full_name' => $user->full_name,
             'cooperative_id' => $user->cooperative_id,
             'cooperative_name' => $user->cooperative?->legal_name,
+            'member_id' => $user->member?->id,
+            'member_code' => $user->member?->member_code,
             'status' => $user->status,
             'roles' => $roles,
             'permissions' => $permissions,
         ];
+    }
+
+    public function changePassword(UserModel $user, string $currentPassword, string $newPassword): void
+    {
+        if (!Hash::check($currentPassword, $user->password)) {
+            throw new DomainException('Mật khẩu hiện tại không chính xác', 'INVALID_CURRENT_PASSWORD', null, 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($newPassword),
+        ]);
+
+        // Revoke all other tokens except current one
+        $currentToken = $user->currentAccessToken();
+        if ($currentToken) {
+            $user->tokens()->where('id', '!=', $currentToken->id)->delete();
+        }
+
+        $this->auditService->log(
+            action: 'AUTH_PASSWORD_CHANGED',
+            entityType: 'User',
+            entityId: $user->id,
+            actorId: $user->id,
+            cooperativeId: $user->cooperative_id
+        );
     }
 }

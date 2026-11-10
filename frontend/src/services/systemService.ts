@@ -58,14 +58,14 @@ export interface SystemSettings {
 const SETTINGS_STORAGE_KEY = 'htx_ocop_system_settings';
 
 const defaultSettings: SystemSettings = {
-  system_name: 'HTX Nông nghiệp Xanh Phú Thịnh',
-  managing_unit: 'Hợp tác xã Nông nghiệp Xanh Phú Thịnh',
+  system_name: 'Hệ thống Quản lý HTX-OCOP',
+  managing_unit: 'Ban Quản trị Hợp tác xã',
   default_language: 'Tiếng Việt',
   timezone: '(GMT+07:00) Asia/Ho_Chi_Minh',
-  address: 'Thôn 2, xã Mê Linh, huyện Lâm Hà, tỉnh Lâm Đồng',
+  address: 'Trụ sở Hợp tác xã',
   date_format: 'dd/mm/yyyy',
-  support_email: 'htxphuthinh@gmail.com',
-  support_phone: '0987 654 321',
+  support_email: 'hotro@htx-ocop.vn',
+  support_phone: '1900 1234',
   system_version: 'v1.0.0',
   logo_url: null,
   enable_2fa: false,

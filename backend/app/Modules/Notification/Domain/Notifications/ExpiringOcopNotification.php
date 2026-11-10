@@ -16,7 +16,20 @@ class ExpiringOcopNotification extends Notification
 
     public function via($notifiable): array
     {
-        return ['database'];
+        return !empty($notifiable->email) ? ['database', 'mail'] : ['database'];
+    }
+
+    public function toMail($notifiable)
+    {
+        $application = $this->application->loadMissing('product');
+        return (new \App\Mail\OcopExpiringMail([
+            'product_name' => $application->product ? $application->product->name : 'N/A',
+            'application_number' => $application->application_number,
+            'star_rating' => $application->star_rating ?? 4,
+            'decision_number' => 'QĐ 842/QĐ-UBND Tỉnh Lâm Đồng',
+            'expiry_date' => date('d/m/Y', strtotime('+85 days')),
+            'days_remaining' => 85,
+        ]))->to($notifiable->email);
     }
 
     public function toDatabase($notifiable): array

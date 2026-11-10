@@ -167,17 +167,22 @@ class OcopDocumentService
             );
         }
 
-        if (!Storage::disk('local')->exists($document->file_reference)) {
-            throw new DomainException(
-                'Tệp tài liệu không tồn tại trên hệ thống lưu trữ',
-                'DOCUMENT_FILE_NOT_FOUND',
-                null,
-                404
-            );
+        $disk = config('filesystems.evidence_disk', 'local');
+        if (!Storage::disk($disk)->exists($document->file_reference)) {
+            if (Storage::disk('local')->exists($document->file_reference)) {
+                $disk = 'local';
+            } else {
+                throw new DomainException(
+                    'Tệp tài liệu không tồn tại trên hệ thống lưu trữ',
+                    'DOCUMENT_FILE_NOT_FOUND',
+                    null,
+                    404
+                );
+            }
         }
 
-        $fullPath = Storage::disk('local')->path($document->file_reference);
-        $content = Storage::disk('local')->get($document->file_reference);
+        $fullPath = $disk === 'local' ? Storage::disk('local')->path($document->file_reference) : null;
+        $content = Storage::disk($disk)->get($document->file_reference);
 
         return [
             'document' => $document,

@@ -21,9 +21,16 @@ class StockIssueModel extends Model
         'issue_number',
         'issue_date',
         'member_id',
+        'crop_season_id',
         'is_credit',
         'purpose',
         'status',
+        'packaging_returned_status',
+        'empty_bottles_expected',
+        'empty_bottles_returned',
+        'packaging_proof_url',
+        'packaging_returned_at',
+        'packaging_returned_by',
         'total_amount',
         'created_by',
         'approved_by',
@@ -33,6 +40,9 @@ class StockIssueModel extends Model
         'issue_date' => 'date:Y-m-d',
         'total_amount' => 'decimal:2',
         'is_credit' => 'boolean',
+        'empty_bottles_expected' => 'integer',
+        'empty_bottles_returned' => 'integer',
+        'packaging_returned_at' => 'datetime',
     ];
 
     public function cooperative(): BelongsTo
@@ -43,6 +53,11 @@ class StockIssueModel extends Model
     public function member(): BelongsTo
     {
         return $this->belongsTo(MemberModel::class, 'member_id');
+    }
+
+    public function cropSeason(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel::class, 'crop_season_id');
     }
 
     public function creator(): BelongsTo
@@ -60,3 +75,4 @@ class StockIssueModel extends Model
         return $this->hasMany(StockIssueLineModel::class, 'stock_issue_id');
     }
 }
+

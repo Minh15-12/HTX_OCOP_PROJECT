@@ -12,7 +12,7 @@ class InventoryPolicy
      */
     public function viewAny(UserModel $user): bool
     {
-        return $user->hasPermission('INVENTORY.VIEW') || $user->hasRole('SYSTEM_ADMIN') || $user->hasRole('HTX_OWNER') || $user->hasRole('HTX_STAFF') || $user->hasRole('STOREKEEPER');
+        return $user->hasPermission('INVENTORY.READ') || $user->hasPermission('INVENTORY.VIEW') || $user->hasRole('SYSTEM_ADMIN') || $user->hasRole('HTX_OWNER') || $user->hasRole('HTX_STAFF') || $user->hasRole('STOREKEEPER');
     }
 
     /**
@@ -20,7 +20,7 @@ class InventoryPolicy
      */
     public function view(UserModel $user, MaterialModel $material): bool
     {
-        return ($user->hasPermission('INVENTORY.VIEW') || $user->hasRole('SYSTEM_ADMIN') || $user->hasRole('HTX_OWNER') || $user->hasRole('HTX_STAFF') || $user->hasRole('STOREKEEPER'))
+        return ($user->hasPermission('INVENTORY.READ') || $user->hasPermission('INVENTORY.VIEW') || $user->hasRole('SYSTEM_ADMIN') || $user->hasRole('HTX_OWNER') || $user->hasRole('HTX_STAFF') || $user->hasRole('STOREKEEPER'))
             && $user->cooperative_id === $material->cooperative_id;
     }
 

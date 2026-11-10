@@ -442,4 +442,143 @@ class InventoryManagementTest extends TestCase
         $approveResp->assertStatus(422);
         $approveResp->assertJsonPath('error.code', 'ERR_MEMBER_CREDIT_LIMIT_EXCEEDED');
     }
+
+    public function test_fefo_stock_issue_blocks_expired_batches(): void
+    {
+        $coop = $this->createCooperative();
+        $user = $this->createUserWithPermissions($coop, ['INVENTORY.CREATE', 'INVENTORY.READ', 'INVENTORY.UPDATE']);
+
+        $material = MaterialModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'sku' => 'EXP_MAT_01',
+            'name' => 'Thuốc Sinh Học Cận Hạn',
+            'category' => 'PESTICIDE',
+            'unit' => 'LIT',
+            'status' => 'ACTIVE',
+        ]);
+
+        // Create expired batch
+        \Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'material_id' => $material->id,
+            'batch_number' => 'LOT-EXPIRED-2025',
+            'quantity' => 100.0,
+            'expired_at' => now()->subDays(10), // Expired 10 days ago!
+        ]);
+
+        // Fake approved receipt so availableStock check passes
+        $rcp = StockReceiptModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'receipt_number' => 'PNK_EXP_01',
+            'receipt_date' => '2025-01-01',
+            'status' => 'APPROVED',
+        ]);
+        $rcp->lines()->create([
+            'id' => (string) Str::uuid(),
+            'material_id' => $material->id,
+            'quantity' => 100.0,
+            'unit_price' => 50000,
+            'line_amount' => 5000000,
+        ]);
+
+        // Attempt to issue
+        $issueResp = $this->actingAs($user, 'sanctum')->postJson('/api/v1/stock-issues', [
+            'issue_date' => '2026-10-31',
+            'lines' => [
+                ['material_id' => $material->id, 'quantity' => 10.0, 'unit_price' => 50000],
+            ],
+        ]);
+        $issueId = $issueResp->json('data.id');
+
+        $approveResp = $this->actingAs($user, 'sanctum')->postJson("/api/v1/stock-issues/{$issueId}/approve");
+        $approveResp->assertStatus(400);
+        $approveResp->assertJsonPath('error.code', 'MATERIAL_BATCH_EXPIRED');
+    }
+
+    public function test_credit_advance_issue_creates_receivable_and_enforces_member_credit_limit(): void
+    {
+        $coop = $this->createCooperative('HTX_CREDIT_ADVANCE');
+        $user = $this->createUserWithPermissions($coop, ['INVENTORY.CREATE', 'INVENTORY.READ', 'INVENTORY.UPDATE']);
+
+        $member = \Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'member_code' => 'XV_NO_01',
+            'identity_information' => ['full_name' => 'Nguyễn Văn Nông Dân'],
+            'member_type' => 'OFFICIAL',
+            'status' => 'ACTIVE',
+            'credit_limit' => 10000000.0, // 10 triệu VNĐ
+        ]);
+
+        $material = MaterialModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'sku' => 'PHAN_HUU_CO_VI_SINH',
+            'name' => 'Phân Hữu Cơ Vi Sinh Sông Gianh',
+            'category' => 'FERTILIZER',
+            'unit' => 'BAO',
+            'status' => 'ACTIVE',
+        ]);
+
+        // Receipt 100 bao
+        $rcp = StockReceiptModel::create([
+            'id' => (string) Str::uuid(),
+            'cooperative_id' => $coop->id,
+            'receipt_number' => 'PNK_HC_100',
+            'receipt_date' => '2026-09-01',
+            'status' => 'APPROVED',
+        ]);
+        $rcp->lines()->create([
+            'id' => (string) Str::uuid(),
+            'material_id' => $material->id,
+            'quantity' => 100.0,
+            'unit_price' => 200000,
+            'line_amount' => 20000000,
+        ]);
+
+        // 1. Valid credit advance: 30 bao x 200k = 6.000.000đ (<= 10M limit)
+        $issueResp1 = $this->actingAs($user, 'sanctum')->postJson('/api/v1/stock-issues', [
+            'issue_date' => '2026-09-05',
+            'member_id' => $member->id,
+            'is_credit' => true,
+            'purpose' => 'Cấp nợ vật tư đầu vụ',
+            'lines' => [
+                ['material_id' => $material->id, 'quantity' => 30.0, 'unit_price' => 200000],
+            ],
+        ]);
+        $issueId1 = $issueResp1->json('data.id');
+
+        $approveResp1 = $this->actingAs($user, 'sanctum')->postJson("/api/v1/stock-issues/{$issueId1}/approve");
+        $approveResp1->assertStatus(200);
+
+        // Assert Receivable record created
+        $this->assertDatabaseHas('receivable_payables', [
+            'cooperative_id' => $coop->id,
+            'member_id' => $member->id,
+            'debt_type' => 'RECEIVABLE',
+            'original_amount' => 6000000.00,
+            'outstanding_amount' => 6000000.00,
+            'status' => 'OPEN',
+        ]);
+
+        // 2. Excess credit advance: 30 more bao x 200k = 6.000.000đ (Existing 6M + 6M = 12M > 10M limit)
+        $issueResp2 = $this->actingAs($user, 'sanctum')->postJson('/api/v1/stock-issues', [
+            'issue_date' => '2026-09-06',
+            'member_id' => $member->id,
+            'is_credit' => true,
+            'purpose' => 'Cấp nợ vượt trần',
+            'lines' => [
+                ['material_id' => $material->id, 'quantity' => 30.0, 'unit_price' => 200000],
+            ],
+        ]);
+        $issueId2 = $issueResp2->json('data.id');
+
+        $approveResp2 = $this->actingAs($user, 'sanctum')->postJson("/api/v1/stock-issues/{$issueId2}/approve");
+        $approveResp2->assertStatus(422);
+        $approveResp2->assertJsonPath('error.code', 'ERR_MEMBER_CREDIT_LIMIT_EXCEEDED');
+    }
 }
+

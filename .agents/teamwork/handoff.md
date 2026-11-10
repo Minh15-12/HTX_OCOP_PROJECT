@@ -1,102 +1,78 @@
 # BÁO CÁO BÀN GIAO SENTINEL (SENTINEL HANDOFF REPORT)
+## MILESTONE 4: KIỂM TOÁN TOÀN DIỆN KIẾN TRÚC UI/UX, BẢO TOÀN CSDL VÀ CHUẨN HÓA GIAO DIỆN NÔNG DÂN (PHÂN HỆ 1: QUẢN TRỊ HTX & XÃ VIÊN)
 
-**Dự án:** Số hóa Hoàn chỉnh Quy trình Chuẩn bị Hồ sơ Đánh giá, Phân hạng OCOP theo Quyết định 148/QĐ-TTg (HTX Tân Tiến — Ớt Chuông Sweet Palermo)  
-**Vai trò:** Project Sentinel  
-**Thời gian hoàn tất:** 2026-10-12T08:33:00Z  
-**Phán quyết Kiểm toán Chiến thắng (Victory Audit Verdict):** **VICTORY CONFIRMED**  
-
----
-
-## 1. OBSERVATION (Quan sát & Căn cứ Thực nghiệm)
-
-1. **Ghi nhận Yêu cầu & Điều phối Vòng đời:**
-   - Yêu cầu người dùng được ghi nhận nguyên văn tại `.agents/teamwork/ORIGINAL_REQUEST.md`.
-   - Sentinel đã định tuyến chính xác sang lộ trình **General** (`teamwork_preview_orchestrator`), khởi tạo và giám sát Project Orchestrator (`orchestrator_1`).
-   - Hai cron giám sát vận hành chuẩn mực: Cron 1 (Báo cáo tiến độ) và Cron 2 (Kiểm tra liveness) chạy đều đặn mỗi 8 và 10 phút, không phát sinh bất kỳ tác vụ treo hoặc lỗi liveness nào.
-
-2. **Kết quả Thẩm định Độc lập từ Post-Victory Auditor (`victory_auditor_1`):**
-   - **Phase A (Timeline Reconstruction):** Đạt chuẩn (PASS). Chuỗi sự kiện phát triển diễn ra tự nhiên, tuần tự từ Khảo sát (07:35-07:47 UTC) -> Thi công (07:49-08:09 UTC) -> Thẩm định đối kháng & kiểm toán nội bộ (08:10-08:22 UTC) -> Bàn giao (08:24 UTC) -> Kiểm toán chiến thắng (08:25-08:31 UTC).
-   - **Phase B (Cheating Detection / Forensic Check):** Đạt chuẩn (PASS). Hoàn toàn không có mã giả (dummy facades), không có giá trị gán cứng (hardcoded bypass), không có tệp kết quả giả lập sẵn. Mã băm SHA-256 được tính toán động thật bằng `hash_file('sha256', ...)` và `hash('sha256', ...)`.
-   - **Phase C (Independent Test Execution):** Đạt chuẩn 100% qua CLI:
-     - Backend OCOP: `php artisan test --filter=Ocop` đạt **49/49 passed (389 assertions)** trong 2.90s.
-     - Backend Toàn diện: `php artisan test` đạt **122/122 passed (673 assertions)**, 0 regression.
-     - Frontend Build: `npm run build` thành công trong 7.06s (Exit code 0, 0 circular chunk warnings).
-     - Frontend Lint: `npm run lint` đạt Exit code 0 (0 errors, 0 warnings).
-     - Invariant Verification: `node frontend/e2e/empirical_math_and_ux_check.mjs` đạt **86/86 assertions passed**.
-     - Database Seeder: `php artisan db:seed --class=OcopSweetPalermoCriteriaSeeder` nạp sạch sẽ, có tính idempotent chạy lại an toàn.
+> **Mã quy trình:** Sentinel Lifecycle Orchestration & Independent Post-Victory Gate  
+> **Thời điểm xác nhận:** 2026-11-02T17:01:00Z  
+> **Phán quyết Kiểm toán Tối cao:** **VICTORY CONFIRMED** (Phê chuẩn độc lập bởi `victory_auditor_4`)  
+> **Sản phẩm bàn giao cốt lõi:** `f:/HTX_OCOP_PROJECT/docs/BAO_CAO_DANH_GIA_UIUX_VA_CSDL_PHAN_HE_1_QUAN_TRI_HTX.md` (769 dòng, 91.8 KB)
 
 ---
 
-## 2. LOGIC CHAIN (Chuỗi Logic Thực thi & Đáp ứng Yêu cầu)
+## 1. OBSERVATION (QUAN SÁT THỰC NGHIỆM ĐỘC LẬP)
 
-1. **R1 — Cây Tiêu chí OCOP QĐ 148 & Cơ chế Quản lý Phiên bản:**
-   - Đã số hóa đầy đủ cấu trúc 3 phần theo Quyết định 148/QĐ-TTg cho Rau củ quả tươi (Ớt chuông Sweet Palermo Đỏ Đà Lạt): Phần A (40.0đ), Phần B (25.0đ), Phần C (35.0đ) = 100.0 điểm tuyệt đối.
-   - 11 tiêu chí, 11 chỉ tiêu, 11 scoring rules, 6 điều kiện khống chế bắt buộc (VietGAP 4 sao, BVMT, nguyên liệu địa phương, tem QR, tuân thủ PHI, đầy đủ hồ sơ).
-   - Phiên bản `OCOP-QD148-2023-FRESH` được phát hành sang trạng thái `PUBLISHED` (bất biến, không thể sửa đổi trái phép).
-
-2. **R2 — Biểu mẫu OCOP Chuẩn (Biểu 01, 02, 03) & Cơ chế Tự chấm điểm Thân thiện:**
-   - Số hóa chuẩn xác Biểu 01 (Phiếu đăng ký), Biểu 02 (Báo cáo tự đánh giá gồm 4 phần và phụ lục 14 minh chứng MC01-MC14), Biểu 03 (Báo cáo xác nhận UBND Phường 12 / TP. Đà Lạt).
-   - Nông dân hoàn toàn chủ động click chọn điểm theo thực tế; hệ thống cung cấp nút bấm "Gợi ý thông minh" phân tích tự động dữ liệu vùng trồng, sản lượng, VietGAP, nhật ký PHI để đề xuất mức điểm tối ưu (98.5đ).
-   - Tự động cộng tổng điểm, kiểm tra điều kiện cứng, dự báo hạng sao và tính toán thời gian thực % hoàn thiện hồ sơ.
-
-3. **R3 — Quản lý Kho Minh chứng Số hóa & Toàn vẹn Dữ liệu:**
-   - Tính toán và kiểm tra mã băm SHA-256 (64 hex characters) cho mọi tài liệu tải lên hoặc trích xuất tự động.
-   - Quản lý phiên bản minh chứng (v1.0 -> v1.1), chuyển bản cũ sang ARCHIVED khi có bản mới, không xóa cứng dữ liệu lịch sử.
-   - Trích xuất tự động dữ liệu HTX (vùng trồng 280 ha, danh sách 165 xã viên, nhật ký PHI) thành minh chứng số hóa có mã hash SHA-256.
-
-4. **R4 — Cải tiến Giao diện Frontend Thân thiện cho Nông dân (Farmer-Centric UX):**
-   - Thiết kế Wizard từng bước rõ ràng, thẻ chọn điểm dạng Card-based Radio to bản (touch target $\ge 52\text{px}$), loại bỏ select box nhỏ.
-   - Ngôn ngữ mộc mạc, chú thích dễ hiểu cho thuật ngữ hành chính; chỉ báo trạng thái 3 màu (Xanh, Vàng, Đỏ).
-   - Tích hợp modal xem trước và in ấn A4 chuẩn thể thức văn bản hành chính Việt Nam, hỗ trợ `@media print` in sạch không dính UI website.
-   - Sửa cấu hình ESLint flat config và khử hoàn toàn cảnh báo circular chunks.
-
----
-
-## 3. CAVEATS (Lưu ý Vận hành)
-
-- Cây tiêu chí sau khi phát hành mang trạng thái `PUBLISHED` bất biến. Khi có quyết định thay đổi quy chuẩn tiêu chí mới trong tương lai, cần tạo một bản ghi `criteria_versions` mới với mã phiên bản mới thay vì chỉnh sửa đè lên phiên bản hiện tại.
-- Để sử dụng tính năng in ấn sắc nét nhất cho Biểu 01, 02, 03, khuyến nghị người dùng chọn khổ giấy A4 và đánh dấu tùy chọn "Background graphics" trong hộp thoại in của trình duyệt.
+1. **Yêu cầu gốc và Kế hoạch phân bổ (R1 - R4):**
+   - Đã ghi nhận đầy đủ yêu cầu tại `f:/HTX_OCOP_PROJECT/.agents/teamwork/ORIGINAL_REQUEST.md` (mục `## 2026-11-02T16:11:34Z`).
+   - Tuyến thực thi: **General** (`teamwork_preview_orchestrator`), triển khai 9 subagents chuyên trách qua 5 pha tuần tự chặt chẽ.
+2. **Kết quả kiểm toán Thành phần Trùng lặp & Rác thông tin (R1):**
+   - Định danh 2 component mồ côi (dead code) không được import: `MemberCapitalSection.tsx` (150 dòng) và `MemberDocumentsSection.tsx` (144 dòng).
+   - Định danh 1 component trùng lặp 98%: `DataFieldRow.tsx` (tồn tại cục bộ trong `features/members/components/` và dùng chung trong `components/common/`).
+   - Định danh thành phần phình to (bloatware): `CapitalMemberDrawer.tsx` (761 dòng) nhồi nhét cả nhập liệu, tra cứu và bảng lịch sử vốn.
+   - Thẩm định 3 màn hình xem chi tiết (`MemberDrawer`, `MeetingDetailDrawer`, `CapitalMemberDrawer`): lập danh sách loại bỏ các trường không cần thiết (mạng xã hội Facebook, học vấn, raw JSON Before/After, mã hash hex SHA-256 gây hoang mang cho nông dân).
+3. **Kết quả kiểm toán 5 Nghiệp vụ x 6 Bước Deep-Dive & Ma trận CRUD (R2):**
+   - Phân tích toàn diện 100% cho 5 nghiệp vụ: Hồ sơ pháp lý, Xã viên, Đại hội biểu quyết, Sổ vốn điều lệ, Phân phối thặng dư.
+   - Bóc trần 5 khuyết tật kỹ thuật nghiệm trọng trong codebase hiện hữu:
+     * `CoopProfilePage.tsx` bỏ qua API backend, chỉ ghi đè Zustand local memory.
+     * `ProfitPage.tsx` sử dụng mock data 1.25 tỷ và biểu đồ tĩnh tại runtime.
+     * `memberService.ts` nuốt lỗi try/catch, trả về kết quả giả và lưu localStorage.
+     * `meetingApi.ts` gọi sai phương thức PUT thay vì PATCH gây lỗi HTTP 405 Method Not Allowed.
+     * Xung đột form nhập quyền sử dụng đất giữa `LandContributionModal` và `CapitalRecordModal`.
+4. **Kết quả kiểm thử Persona & Kiểm chứng CSDL PostgreSQL (R3):**
+   - Mô phỏng 27 kịch bản trên 3 Personas (Nông dân, Kế toán, Chủ tịch HTX): xác thực bắt buộc trường dữ liệu, chặn trần vốn 30% (Luật HTX 2023 Điều 77), kiểm tra tỷ lệ quỹ chung không chia tối thiểu 20%.
+   - Truy vấn trực tiếp CSDL PostgreSQL: 31 xã viên active/pending, 1 xã viên soft-delete (`status = TERMINATED`, bảo toàn lịch sử); 30 bản ghi vốn góp (5.95 tỷ VNĐ, gồm 4.875 tỷ đất QSDĐ); 277 bản ghi audit trail với chuỗi băm SHA-256 đạt 99.6% liền mạch.
+5. **Chuẩn hóa Giao diện Nông dân (R4):**
+   - Rút gọn luồng đăng ký xã viên `MemberWizard` 5 bước thành 2 bước trực quan; triệt tiêu cạm bẫy mặc định nợ 50 triệu.
+   - Chuyển đổi biểu mẫu biểu quyết `CastVoteModal` sang 3 thẻ chọn 1 chạm to bản (Tán thành / Không tán thành / Phiếu trắng), tự động tính trọng số biểu quyết theo tỷ lệ vốn góp.
+6. **Kiểm toán Pháp y Độc lập (Post-Victory Audit):**
+   - `victory_auditor_4` đã thực thi độc lập: 41 test PHPUnit pass 100%, frontend lint 0 lỗi, build Vite hoàn tất trong 13.30s; xác nhận 100% dẫn chứng mã nguồn là trung thực.
 
 ---
 
-## 4. CONCLUSION (Kết luận & Quyết định Nghiệm thu)
+## 2. LOGIC CHAIN (CHUỖI SUY LUẬN & ĐIỀU PHỐI)
 
-- Dự án số hóa quy trình hồ sơ OCOP theo Quyết định 148/QĐ-TTg đã hoàn thành 100% các tiêu chí và yêu cầu đề ra.
-- Quy trình kiểm toán độc lập đã xác nhận phán quyết cao nhất: **VICTORY CONFIRMED**.
-- Toàn bộ cron giám sát và các agent trực thuộc đã được thu hồi và dọn dẹp sạch sẽ theo đúng quy chế Sentinel.
+1. Sentinel tiếp nhận yêu cầu, phân tích phạm vi kiểm toán toàn diện liên tầng (UI/UX, Codebase, Database PostgreSQL, Persona testing, Farmer usability), định tuyến sang `teamwork_preview_orchestrator`.
+2. Orchestrator lập kế hoạch và kích hoạt 3 Explorer song song:
+   - Explorer 1 rà soát frontend, component trùng lặp và tính khả dụng nông dân (R1, R4).
+   - Explorer 2 phân tích 6 bước, ma trận CRUD và đối soát API contract (R2).
+   - Explorer 3 thực thi kịch bản Persona nhập liệu và truy vấn kiểm chứng CSDL PostgreSQL (R3).
+3. Sau khi thu thập hơn 100 KB bằng chứng thực nghiệm, Orchestrator tổng hợp Báo cáo Chủ đạo `docs/BAO_CAO_DANH_GIA_UIUX_VA_CSDL_PHAN_HE_1_QUAN_TRI_HTX.md`.
+4. Báo cáo được đưa qua Cổng kiểm soát thẩm tra độc lập nội bộ: 2 Reviewers, 2 Challengers (thực nghiệm đối kháng) và 1 Forensic Auditor. Tất cả đều phê chuẩn (APPROVE/CONFIRMED/CLEAN).
+5. Khi Orchestrator gửi Victory Claim, Sentinel kích hoạt quy trình Victory Audit độc lập (BLOCKING) với `teamwork_preview_victory_auditor`. Thẩm định viên độc lập đã truy vấn CSDL thật qua Tinker, chạy toàn bộ bộ kiểm thử và ban hành phán quyết **VICTORY CONFIRMED**.
 
 ---
 
-## 5. VERIFICATION METHOD (Phương pháp Kiểm chứng)
+## 3. CAVEATS (LƯU Ý VẬN HÀNH & KHUYẾN NGHỊ KỸ THUẬT)
 
-Người dùng hoặc kiểm toán viên có thể tái hiện kiểm chứng độc lập bằng các lệnh sau:
-1. **Kiểm thử Backend OCOP:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\backend
-   php artisan test --filter=Ocop
-   ```
-2. **Kiểm thử Toàn diện Backend:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\backend
-   php artisan test
-   ```
-3. **Biên dịch Frontend:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\frontend
-   npm run build
-   ```
-4. **Kiểm tra Lint Frontend:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\frontend
-   npm run lint
-   ```
-5. **Kiểm thử Toán học & UX Đối kháng Frontend:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\frontend
-   node e2e/empirical_math_and_ux_check.mjs
-   ```
-6. **Kiểm tra Nạp Dữ liệu Tiêu chí:**
-   ```powershell
-   cd f:\HTX_OCOP_PROJECT\backend
-   php artisan db:seed --class=OcopSweetPalermoCriteriaSeeder
-   ```
+1. **Khuyết tật hiện hữu của Codebase:** Master Report đã vạch rõ các điểm nghẽn nghiêm trọng (silent mock tại `ProfitPage.tsx`, ngắt kết nối API tại `CoopProfilePage.tsx`, nuốt lỗi tại `memberService.ts`, lỗi HTTP 405 tại `meetingApi.ts`). Các lỗi này thuộc về mã nguồn cũ của dự án, đã được khoanh vùng chính xác từng dòng file để sẵn sàng thực hiện sửa đổi phẫu thuật.
+2. **Khối băm Seed cũ trong CSDL:** Chuỗi băm SHA-256 đạt 99.6% toàn vẹn (276/277 khối hợp lệ liên tục), 1 khối đứt gãy xuất phát từ migration seeder khởi thủy ban đầu (đã được ghi nhận minh bạch trong báo cáo kiểm toán).
+3. **Bán kính ảnh hưởng (Blast Radius):** Khi triển khai các giải pháp khắc phục (P0, P1, P2), các kỹ sư cần tuân thủ Nguyên tắc C (Thay đổi phẫu thuật, không refactor toàn bộ hệ thống) để bảo vệ các module backend đã vận hành ổn định.
+
+---
+
+## 4. CONCLUSION (KẾT LUẬN NGHIỆM THU)
+
+- Toàn bộ 4 Yêu cầu trọng tâm (R1, R2, R3, R4) và 100% Tiêu chí chấp thuận (Acceptance Criteria) của Milestone 4 đã được hoàn thành xuất sắc.
+- Tài liệu Master Deliverable `f:/HTX_OCOP_PROJECT/docs/BAO_CAO_DANH_GIA_UIUX_VA_CSDL_PHAN_HE_1_QUAN_TRI_HTX.md` phản ánh trung thực, khách quan và chuyên sâu hiện trạng của Phân hệ 1, cung cấp lộ trình tái cấu trúc giao diện chuẩn hóa cho nông dân và bộ kịch bản khắc phục lỗi chi tiết.
+- Hệ thống đã dọn dẹp sạch sẽ toàn bộ cron jobs và subagents, sẵn sàng cho các pha triển khai tiếp theo.
+
+---
+
+## 5. VERIFICATION METHOD (PHƯƠNG PHÁP KIỂM CHỨNG LẠI)
+
+1. **Kiểm tra tài liệu nghiệm thu Master Deliverable:**
+   - Đọc trực tiếp: `f:/HTX_OCOP_PROJECT/docs/BAO_CAO_DANH_GIA_UIUX_VA_CSDL_PHAN_HE_1_QUAN_TRI_HTX.md` (769 dòng, 91.8 KB).
+2. **Kiểm chứng Backend Test Suite:**
+   - Lệnh terminal: `php artisan test --filter="MemberTest|CapitalContributionTest|RolePersonaAuthorizationTest|AuditAndReportTest|FinanceManagementTest|DatabaseSchemaTest"` (41 tests, 179 assertions PASS).
+3. **Kiểm chứng Frontend Compilation:**
+   - Lệnh terminal: `cd frontend && npm run lint && npm run build` (0 lỗi lint, build Vite thành công).
+4. **Kiểm toán Độc lập:**
+   - Xem báo cáo pháp y của Victory Auditor tại: `f:/HTX_OCOP_PROJECT/.agents/teamwork/victory_auditor_4/handoff.md`.

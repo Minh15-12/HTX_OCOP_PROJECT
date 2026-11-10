@@ -12,6 +12,7 @@ use Modules\Cooperative\Infrastructure\Persistence\Models\CapitalContributionMod
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 use Modules\Finance\Application\DTOs\CreateSurplusDistributionPlanDTO;
 use Modules\Finance\Domain\Entities\SurplusDistributionPlan;
+use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
 use Modules\Finance\Infrastructure\Persistence\Models\SurplusDistributionAllocationModel;
 use Modules\Finance\Infrastructure\Persistence\Models\SurplusDistributionPlanModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\StockIssueModel;
@@ -101,6 +102,15 @@ class SurplusDistributionService
             );
         }
 
+        if ($dto->serviceUsageWeight < 50.0) {
+            throw new DomainException(
+                "Tỷ trọng phân phối theo mức độ sử dụng dịch vụ [{$dto->serviceUsageWeight}%] không được thấp hơn 50% theo Luật Hợp tác xã 2023 Điều 85",
+                'ERR_FINANCE_INVALID_SURPLUS_PLAN',
+                null,
+                422
+            );
+        }
+
         $planCode = $dto->customPlanCode ?: strtoupper("PADP-{$dto->financialYear}-" . Str::random(4));
 
         $exists = SurplusDistributionPlanModel::where('cooperative_id', $coopId)
@@ -174,17 +184,15 @@ class SurplusDistributionService
                 $mCap = $memberCapitals[$m->id];
                 $mSvc = $memberServices[$m->id];
 
-                $capShare = $totalCoopCapital > 0 ? round($capPool * ($mCap / $totalCoopCapital), 2) : 0.0;
-                $svcShare = $totalCoopService > 0 ? round($svcPool * ($mSvc / $totalCoopService), 2) : 0.0;
+                $capShare = $totalCoopCapital > 0 
+                    ? round($capPool * ($mCap / $totalCoopCapital), 2) 
+                    : round($capPool / max(1, $activeMembers->count()), 2);
 
-                // Fallback equal split if total capital & service usage are 0
-                if ($totalCoopCapital == 0 && $totalCoopService == 0) {
-                    $totalAllocated = round($domainEntity->distributableSurplus / $activeMembers->count(), 2);
-                    $capShare = round($totalAllocated / 2, 2);
-                    $svcShare = $totalAllocated - $capShare;
-                } else {
-                    $totalAllocated = $capShare + $svcShare;
-                }
+                $svcShare = $totalCoopService > 0 
+                    ? round($svcPool * ($mSvc / $totalCoopService), 2) 
+                    : round($svcPool / max(1, $activeMembers->count()), 2);
+
+                $totalAllocated = $capShare + $svcShare;
 
                 SurplusDistributionAllocationModel::create([
                     'id' => (string) Str::uuid(),
@@ -280,5 +288,102 @@ class SurplusDistributionService
         );
 
         return $plan->fresh(['allocations.member', 'creator', 'approver']);
+    }
+
+    public function executePlan(string $id, array $options = []): SurplusDistributionPlanModel
+    {
+        $plan = $this->getPlanById($id);
+
+        if ($plan->status === 'EXECUTED') {
+            return $plan; // Idempotent
+        }
+
+        if ($plan->status !== 'APPROVED') {
+            throw new DomainException('Chỉ có thể thực thi chi trả / tái đầu tư khi phương án đã được phê duyệt', 'INVALID_PLAN_STATUS', null, 400);
+        }
+
+        return DB::transaction(function () use ($plan, $options) {
+            $allocations = $plan->allocations;
+
+            foreach ($allocations as $alloc) {
+                $member = $alloc->member;
+                if (!$member) continue;
+
+                $payoutAmount = (float) $alloc->total_allocated_amount;
+                if ($payoutAmount <= 0) continue;
+
+                $reinvest = false;
+                if (isset($options['reinvest_member_ids']) && is_array($options['reinvest_member_ids'])) {
+                    $reinvest = in_array($alloc->member_id, $options['reinvest_member_ids']);
+                } elseif (isset($options['reinvest_as_capital'])) {
+                    $reinvest = (bool) $options['reinvest_as_capital'];
+                } else {
+                    $reinvest = (bool) $alloc->reinvest_as_capital;
+                }
+
+                if ($reinvest) {
+                    // Option A: REINVEST AS CAPITAL CONTRIBUTION -> Closes circle back to Stage 1!
+                    $certCode = 'GCN-' . date('Y') . '-' . strtoupper(Str::random(6));
+                    CapitalContributionModel::create([
+                        'id' => (string) Str::uuid(),
+                        'member_id' => $member->id,
+                        'contribution_type' => 'ADDITIONAL',
+                        'amount' => $payoutAmount,
+                        'actual_amount' => $payoutAmount,
+                        'committed_amount' => $member->committed_capital ?: $payoutAmount,
+                        'transaction_date' => now()->toDateString(),
+                        'value_description' => "Tái đầu tư thặng dư năm {$plan->financial_year} vào vốn điều lệ HTX",
+                        'status' => 'PAID',
+                        'certificate_code' => $certCode,
+                        'certificate_issue_date' => now()->toDateString(),
+                        'issue_count' => 1,
+                        'qr_code_url' => 'https://htx.ocop.gov.vn/verify-certificate?code=' . $certCode,
+                    ]);
+
+                    // Increase member credit limit by 50% of reinvested capital
+                    $newCreditLimit = (float) ($member->credit_limit ?? 0) + ($payoutAmount * 0.5);
+                    $member->update(['credit_limit' => $newCreditLimit]);
+
+                    $alloc->update([
+                        'reinvest_as_capital' => true,
+                        'net_payout_amount' => 0.00,
+                    ]);
+                } else {
+                    // Option B: CASH PAYOUT -> Records Cash Expense in Cashbook
+                    $voucherNo = strtoupper("PC-TD-{$plan->financial_year}-" . Str::random(4));
+                    CashTransactionModel::create([
+                        'id' => (string) Str::uuid(),
+                        'cooperative_id' => $plan->cooperative_id,
+                        'voucher_number' => $voucherNo,
+                        'transaction_type' => 'EXPENSE',
+                        'amount' => $payoutAmount,
+                        'transaction_date' => now()->toDateString(),
+                        'category' => 'PROFIT_DISTRIBUTION',
+                        'description' => "Chi trả thặng dư năm {$plan->financial_year} cho xã viên [{$member->member_code}]",
+                        'payer_payee' => $member->identity_information['full_name'] ?? $member->member_code,
+                        'member_id' => $member->id,
+                        'status' => 'POSTED',
+                        'created_by' => auth()->check() ? auth()->id() : null,
+                    ]);
+
+                    $alloc->update([
+                        'reinvest_as_capital' => false,
+                        'net_payout_amount' => $payoutAmount,
+                    ]);
+                }
+            }
+
+            $plan->update(['status' => 'EXECUTED']);
+
+            $this->auditService->log(
+                action: 'SURPLUS_PLAN_EXECUTED',
+                entityType: 'SurplusDistributionPlan',
+                entityId: $plan->id,
+                after: $plan->toArray(),
+                cooperativeId: $plan->cooperative_id
+            );
+
+            return $plan->fresh(['allocations.member', 'creator', 'approver']);
+        });
     }
 }
