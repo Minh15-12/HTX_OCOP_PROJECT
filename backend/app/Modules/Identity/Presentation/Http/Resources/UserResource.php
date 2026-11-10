@@ -26,7 +26,7 @@ class UserResource extends JsonResource
         }
 
         $roles = $this->relationLoaded('roles')
-            ? $this->roles->map(fn($r) => [
+            ? $this->roles->map(fn ($r) => [
                 'id' => $r->id,
                 'code' => $r->code,
                 'name' => $r->name,

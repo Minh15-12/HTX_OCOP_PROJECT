@@ -15,6 +15,7 @@ class DurableToolAndInventorySeeder extends Seeder
 
         if (!$coop) {
             $this->command->error('Không tìm thấy Hợp tác xã trong hệ thống.');
+
             return;
         }
 
@@ -321,7 +322,9 @@ class DurableToolAndInventorySeeder extends Seeder
 
         foreach ($durableLines as $line) {
             $mId = $toolIds[$line['sku']] ?? null;
-            if (!$mId) continue;
+            if (!$mId) {
+                continue;
+            }
 
             $hasLine = DB::table('stock_receipt_lines')->where('material_id', $mId)->exists();
             if (!$hasLine) {
@@ -381,7 +384,9 @@ class DurableToolAndInventorySeeder extends Seeder
 
         foreach ($consumableLines as $line) {
             $mat = DB::table('materials')->where('cooperative_id', $coopId)->where('sku', $line['sku'])->first();
-            if (!$mat) continue;
+            if (!$mat) {
+                continue;
+            }
 
             $hasLine = DB::table('stock_receipt_lines')->where('material_id', $mat->id)->exists();
             if (!$hasLine) {
@@ -579,7 +584,9 @@ class DurableToolAndInventorySeeder extends Seeder
             $plot = $plots[$assign['plot_code']] ?? $plots->first();
             $matId = $toolIds[$assign['tool_sku']] ?? null;
 
-            if (!$member || !$matId) continue;
+            if (!$member || !$matId) {
+                continue;
+            }
 
             DB::table('member_tool_trackings')->insert([
                 'id' => (string) Str::uuid(),
@@ -631,7 +638,9 @@ class DurableToolAndInventorySeeder extends Seeder
 
             foreach ($countLinesData as $cd) {
                 $mat = DB::table('materials')->where('cooperative_id', $coopId)->where('sku', $cd['sku'])->first();
-                if (!$mat) continue;
+                if (!$mat) {
+                    continue;
+                }
 
                 DB::table('stock_count_lines')->insert([
                     'id' => (string) Str::uuid(),

@@ -2,7 +2,6 @@
 
 namespace Modules\Inventory\Application\Services;
 
-use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -35,17 +34,17 @@ class ToolTrackingService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('serial_number', $likeOp, $search)
-                  ->orWhereHas('material', function ($mq) use ($search, $likeOp) {
-                      $mq->where('name', $likeOp, $search)->orWhere('sku', $likeOp, $search);
-                  })
-                  ->orWhereHas('member', function ($mq) use ($search, $likeOp) {
-                      $mq->where('member_code', $likeOp, $search)
-                         ->orWhereRaw("identity_information->>'full_name' {$likeOp} ?", [$search]);
-                  });
+                    ->orWhereHas('material', function ($mq) use ($search, $likeOp) {
+                        $mq->where('name', $likeOp, $search)->orWhere('sku', $likeOp, $search);
+                    })
+                    ->orWhereHas('member', function ($mq) use ($search, $likeOp) {
+                        $mq->where('member_code', $likeOp, $search)
+                            ->orWhereRaw("identity_information->>'full_name' {$likeOp} ?", [$search]);
+                    });
             });
         }
 
@@ -67,7 +66,7 @@ class ToolTrackingService
             'member_id' => $data['member_id'],
             'farm_plot_id' => $data['farm_plot_id'] ?? null,
             'material_id' => $data['material_id'],
-            'serial_number' => $data['serial_number'] ?? ('TOOL-' . strtoupper(Str::random(6))),
+            'serial_number' => $data['serial_number'] ?? ('TOOL-'.strtoupper(Str::random(6))),
             'quantity' => (int) ($data['quantity'] ?? 1),
             'status' => 'IN_USE',
             'assigned_date' => $data['assigned_date'] ?? now()->toDateString(),
@@ -96,7 +95,7 @@ class ToolTrackingService
             $tracking->update([
                 'status' => 'DAMAGED_RETURNED',
                 'returned_date' => now()->toDateString(),
-                'note' => ($tracking->note ? $tracking->note . ' | ' : '') . "Đổi trả 1:1 xác hỏng: {$note}",
+                'note' => ($tracking->note ? $tracking->note.' | ' : '')."Đổi trả 1:1 xác hỏng: {$note}",
             ]);
 
             // Issue replacement tool
@@ -106,7 +105,7 @@ class ToolTrackingService
                 'member_id' => $tracking->member_id,
                 'farm_plot_id' => $tracking->farm_plot_id,
                 'material_id' => $tracking->material_id,
-                'serial_number' => 'TOOL-REPLACE-' . strtoupper(Str::random(4)),
+                'serial_number' => 'TOOL-REPLACE-'.strtoupper(Str::random(4)),
                 'quantity' => $tracking->quantity,
                 'status' => 'IN_USE',
                 'assigned_date' => now()->toDateString(),

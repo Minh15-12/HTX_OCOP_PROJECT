@@ -5,7 +5,6 @@ namespace Modules\Agriculture\Infrastructure\Persistence\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class HarvestModel extends Model
 {
@@ -69,6 +68,7 @@ class HarvestModel extends Model
         if (isset($this->quality_information['grade_a_kg'])) {
             return (float) $this->quality_information['grade_a_kg'];
         }
+
         return (float) $this->quantity;
     }
 
@@ -77,6 +77,7 @@ class HarvestModel extends Model
         if (isset($this->quality_information['grade_b_kg'])) {
             return (float) $this->quality_information['grade_b_kg'];
         }
+
         return $this->grade === 'GRADE_B' ? (float) $this->quantity : 0.0;
     }
 
@@ -85,6 +86,7 @@ class HarvestModel extends Model
         if (isset($this->quality_information['reject_kg'])) {
             return (float) $this->quality_information['reject_kg'];
         }
+
         return $this->grade === 'REJECT' ? (float) $this->quantity : 0.0;
     }
 

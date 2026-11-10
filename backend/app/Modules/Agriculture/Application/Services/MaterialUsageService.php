@@ -23,6 +23,7 @@ class MaterialUsageService
     public function listUsagesByLog(string $logId): Collection
     {
         $log = $this->logService->getLogById($logId);
+
         return MaterialUsageModel::with('material')
             ->where('farming_log_id', $log->id)
             ->get();

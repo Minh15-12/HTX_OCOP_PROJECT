@@ -23,4 +23,3 @@ class CreateFarmPlotDTO extends BaseDTO
         public readonly ?string $landContractExpiredAt = null
     ) {}
 }
-

@@ -7,9 +7,9 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 use Illuminate\Support\Facades\Schedule;
-use Modules\Notification\Application\Jobs\CheckOverdueCapitalJob;
 use Modules\Notification\Application\Jobs\CheckExpiringOcopCertificatesJob;
 use Modules\Notification\Application\Jobs\CheckLowStockInventoryJob;
+use Modules\Notification\Application\Jobs\CheckOverdueCapitalJob;
 
 // Lên lịch chạy các Job thông báo tự động (thường chạy hàng ngày lúc 00:00)
 Schedule::job(new CheckOverdueCapitalJob)->daily();

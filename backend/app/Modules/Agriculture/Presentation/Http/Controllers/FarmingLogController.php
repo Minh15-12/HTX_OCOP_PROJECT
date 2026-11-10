@@ -204,7 +204,7 @@ class FarmingLogController extends BaseController
 
         return ApiResponse::success(
             data: $results,
-            message: 'Đã xử lý đồng bộ ' . count($results) . ' bản ghi nhật ký ngoại tuyến'
+            message: 'Đã xử lý đồng bộ '.count($results).' bản ghi nhật ký ngoại tuyến'
         );
     }
 

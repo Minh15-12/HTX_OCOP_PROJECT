@@ -2,10 +2,8 @@
 
 namespace Tests\Feature\Agriculture;
 
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Modules\Agriculture\Application\Services\HarvestSettlementService;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
@@ -25,11 +23,11 @@ use Tests\TestCase;
 
 class AgricultureNewFeaturesTest extends TestCase
 {
-    private function createCooperative(string $code = null): CooperativeModel
+    private function createCooperative(?string $code = null): CooperativeModel
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => $code ?: 'HTX_TEST_' . strtoupper(Str::random(4)),
+            'cooperative_code' => $code ?: 'HTX_TEST_'.strtoupper(Str::random(4)),
             'legal_name' => 'HTX Nông Nghiệp Tân Tiến',
             'status' => 'ACTIVE',
         ]);
@@ -39,7 +37,7 @@ class AgricultureNewFeaturesTest extends TestCase
     {
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_TEST_' . strtoupper(Str::random(4)),
+            'code' => 'ROLE_TEST_'.strtoupper(Str::random(4)),
             'name' => 'Test Role',
         ]);
 
@@ -49,15 +47,15 @@ class AgricultureNewFeaturesTest extends TestCase
         foreach ($allPerms as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Agriculture']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Agriculture']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'user_' . Str::random(6),
-            'email' => 'user_' . Str::random(6) . '@example.com',
+            'username' => 'user_'.Str::random(6),
+            'email' => 'user_'.Str::random(6).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Kỹ Sư Nông Nghiệp',
             'cooperative_id' => $coop->id,
@@ -74,7 +72,7 @@ class AgricultureNewFeaturesTest extends TestCase
         $unit = ProductionUnitModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $coop->id,
-            'unit_code' => 'PUC-49-015-' . strtoupper(Str::random(4)),
+            'unit_code' => 'PUC-49-015-'.strtoupper(Str::random(4)),
             'name' => 'Vùng Trồng Ớt Chuông Sweet Palermo Hòn Bồ',
             'crop' => 'Ớt chuông Sweet Palermo Đỏ Đà Lạt',
             'area' => 50.0,
@@ -579,13 +577,13 @@ class AgricultureNewFeaturesTest extends TestCase
         $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $hash);
 
         // 2. Query by lot_code WITHOUT authentication
-        $resByCode = $this->getJson("/api/v1/public/trace/LOT-TT-PLOT01-20261020-001");
+        $resByCode = $this->getJson('/api/v1/public/trace/LOT-TT-PLOT01-20261020-001');
         $resByCode->assertStatus(200);
         $resByCode->assertJsonPath('data.lot_id', $lot->id);
         $resByCode->assertJsonPath('data.integrity_hash', $hash);
 
         // 3. Query non-existent lot returns 404
-        $resNotFound = $this->getJson("/api/v1/public/trace/LOT-NON-EXISTENT");
+        $resNotFound = $this->getJson('/api/v1/public/trace/LOT-NON-EXISTENT');
         $resNotFound->assertStatus(404);
     }
 }

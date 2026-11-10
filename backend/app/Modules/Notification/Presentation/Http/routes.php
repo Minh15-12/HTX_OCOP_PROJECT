@@ -11,4 +11,3 @@ Route::group([
     Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead']);
     Route::post('/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
 });
-

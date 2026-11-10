@@ -25,7 +25,7 @@ class OcopEvaluationTest extends TestCase
     {
         $cooperative = $cooperative ?: CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_EVAL_' . Str::random(4),
+            'cooperative_code' => 'HTX_EVAL_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp Thẩm Định',
             'status' => 'ACTIVE',
         ]);
@@ -37,8 +37,8 @@ class OcopEvaluationTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'user_eval_' . Str::random(4),
-            'email' => 'user_eval_' . Str::random(4) . '@htx.vn',
+            'username' => 'user_eval_'.Str::random(4),
+            'email' => 'user_eval_'.Str::random(4).'@htx.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Nguyễn Văn Giám Khảo',
             'cooperative_id' => $cooperative->id,
@@ -64,7 +64,7 @@ class OcopEvaluationTest extends TestCase
         $product = ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $cooperativeId,
-            'product_code' => 'PROD-EVAL-' . Str::random(4),
+            'product_code' => 'PROD-EVAL-'.Str::random(4),
             'product_name' => 'Gạo Nếp Nương OCOP',
             'category' => 'FOOD',
             'unit' => 'KG',
@@ -73,7 +73,7 @@ class OcopEvaluationTest extends TestCase
 
         $version = CriteriaVersionModel::create([
             'id' => (string) Str::uuid(),
-            'version_code' => 'VER-EVAL-' . Str::random(4),
+            'version_code' => 'VER-EVAL-'.Str::random(4),
             'name' => 'Bộ Tiêu Chí Chấm Điểm 2026',
             'status' => 'PUBLISHED',
         ]);
@@ -113,7 +113,7 @@ class OcopEvaluationTest extends TestCase
 
         $councilLevel = CouncilLevelModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'DISTRICT_' . Str::random(4),
+            'code' => 'DISTRICT_'.Str::random(4),
             'name' => 'Hội đồng thẩm định Cấp Huyện',
             'is_active' => true,
         ]);
@@ -123,7 +123,7 @@ class OcopEvaluationTest extends TestCase
             'cooperative_id' => $cooperativeId,
             'product_id' => $product->id,
             'criteria_version_id' => $version->id,
-            'application_number' => 'HS-EVAL-' . Str::random(4),
+            'application_number' => 'HS-EVAL-'.Str::random(4),
             'status' => 'SUBMITTED',
         ]);
 

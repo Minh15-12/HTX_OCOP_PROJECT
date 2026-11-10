@@ -12,6 +12,7 @@ use Modules\Cooperative\Domain\Entities\CapitalContribution;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CapitalContributionModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\LandContributionModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
+use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
 
 class CapitalContributionService
 {
@@ -44,22 +45,22 @@ class CapitalContributionService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $driver = DB::connection()->getDriverName();
             $likeOp = $driver === 'pgsql' ? 'ILIKE' : 'LIKE';
 
             $query->where(function ($q) use ($search, $likeOp, $driver) {
                 $q->where('certificate_code', $likeOp, $search)
-                  ->orWhere('value_description', $likeOp, $search)
-                  ->orWhereHas('member', function ($mq) use ($search, $likeOp, $driver) {
-                      $mq->where('member_code', $likeOp, $search);
-                      if ($driver === 'pgsql') {
-                          $mq->orWhereRaw("identity_information->>'full_name' ILIKE ?", [$search])
-                             ->orWhereRaw("identity_information->>'citizen_id' ILIKE ?", [$search]);
-                      } else {
-                          $mq->orWhere('identity_information', 'LIKE', $search);
-                      }
-                  });
+                    ->orWhere('value_description', $likeOp, $search)
+                    ->orWhereHas('member', function ($mq) use ($search, $likeOp, $driver) {
+                        $mq->where('member_code', $likeOp, $search);
+                        if ($driver === 'pgsql') {
+                            $mq->orWhereRaw("identity_information->>'full_name' ILIKE ?", [$search])
+                                ->orWhereRaw("identity_information->>'citizen_id' ILIKE ?", [$search]);
+                        } else {
+                            $mq->orWhere('identity_information', 'LIKE', $search);
+                        }
+                    });
             });
         }
 
@@ -75,7 +76,7 @@ class CapitalContributionService
 
         if ($coopId) {
             $memberQuery->where('cooperative_id', $coopId);
-            $contribQuery->whereHas('member', fn($q) => $q->where('cooperative_id', $coopId));
+            $contribQuery->whereHas('member', fn ($q) => $q->where('cooperative_id', $coopId));
         }
 
         $totalCommittedCapital = (float) $memberQuery->sum('committed_capital');
@@ -152,7 +153,7 @@ class CapitalContributionService
             $newOwnershipRatio = ($newMemberCapital / $newCoopTotalCapital) * 100;
             if ($member->member_type === 'OFFICIAL' && $newOwnershipRatio > 30.0) {
                 throw new DomainException(
-                    "Giao dịch góp vốn làm tỷ lệ sở hữu của thành viên chính thức vượt trần 30% vốn điều lệ (dự kiến: " . round($newOwnershipRatio, 2) . "%). Vi phạm Điều 74 Luật HTX 2023.",
+                    'Giao dịch góp vốn làm tỷ lệ sở hữu của thành viên chính thức vượt trần 30% vốn điều lệ (dự kiến: '.round($newOwnershipRatio, 2).'%). Vi phạm Điều 74 Luật HTX 2023.',
                     'ERR_CAPITAL_EXCEED_LIMIT',
                     null,
                     422
@@ -164,13 +165,13 @@ class CapitalContributionService
         if ($member->member_type === 'CAPITAL_ASSOCIATE' || $member->member_type === 'LIEN_KET_GOP_VON') {
             $existingAssociateCapital = (float) CapitalContributionModel::whereHas('member', function ($q) use ($member) {
                 $q->where('cooperative_id', $member->cooperative_id)
-                  ->whereIn('member_type', ['CAPITAL_ASSOCIATE', 'LIEN_KET_GOP_VON']);
+                    ->whereIn('member_type', ['CAPITAL_ASSOCIATE', 'LIEN_KET_GOP_VON']);
             })->where('status', 'PAID')->sum('amount');
 
             $newAssociateTotal = $existingAssociateCapital + $dto->amount;
             if ($newCoopTotalCapital > 0 && ($newAssociateTotal / $newCoopTotalCapital) * 100 > 30.0) {
                 throw new DomainException(
-                    "Tổng vốn góp của nhóm Thành viên liên kết vượt trần 30% vốn điều lệ HTX. Vi phạm Luật HTX 2023.",
+                    'Tổng vốn góp của nhóm Thành viên liên kết vượt trần 30% vốn điều lệ HTX. Vi phạm Luật HTX 2023.',
                     'ERR_ASSOCIATE_GROUP_CAPITAL_EXCEED_LIMIT',
                     null,
                     422
@@ -189,7 +190,7 @@ class CapitalContributionService
             status: 'PAID'
         );
 
-        $certificateCode = 'GCN-' . date('Y') . '-' . strtoupper(Str::random(6));
+        $certificateCode = 'GCN-'.date('Y').'-'.strtoupper(Str::random(6));
 
         $contribution = CapitalContributionModel::create([
             'id' => $domainEntity->id,
@@ -206,7 +207,7 @@ class CapitalContributionService
             'certificate_code' => $certificateCode,
             'certificate_issue_date' => date('Y-m-d'),
             'issue_count' => 1,
-            'qr_code_url' => 'https://htx.ocop.gov.vn/verify-certificate?code=' . $certificateCode,
+            'qr_code_url' => 'https://htx.ocop.gov.vn/verify-certificate?code='.$certificateCode,
         ]);
 
         // Save Land Contribution details if LAND type
@@ -227,10 +228,10 @@ class CapitalContributionService
 
         // Synchronize with HTX Cashbook if contribution is cash or bank transfer
         if (in_array($domainEntity->contributionType, ['INITIAL', 'ADDITIONAL', 'TIEN_MAT', 'CHUYEN_KHOAN'])) {
-            \Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel::create([
+            CashTransactionModel::create([
                 'id' => (string) Str::uuid(),
                 'cooperative_id' => $member->cooperative_id,
-                'voucher_number' => 'PT-' . date('Ymd') . '-' . strtoupper(Str::random(4)),
+                'voucher_number' => 'PT-'.date('Ymd').'-'.strtoupper(Str::random(4)),
                 'transaction_type' => 'INCOME',
                 'amount' => $domainEntity->amount,
                 'transaction_date' => $domainEntity->transactionDate,
@@ -245,7 +246,7 @@ class CapitalContributionService
         }
 
         // Auto-assign / adjust member credit limit if not yet set
-        if (($member->credit_limit === null || (float)$member->credit_limit <= 0) && $newMemberCapital > 0) {
+        if (($member->credit_limit === null || (float) $member->credit_limit <= 0) && $newMemberCapital > 0) {
             $suggestedCredit = min($newMemberCapital * 0.5, 50000000.0);
             $member->update(['credit_limit' => $suggestedCredit]);
         }

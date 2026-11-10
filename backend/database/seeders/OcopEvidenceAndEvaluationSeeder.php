@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Modules\Ocop\Evaluation\Application\Services\EvaluationConsolidationService;
 
 class OcopEvidenceAndEvaluationSeeder extends Seeder
 {
@@ -79,13 +80,14 @@ class OcopEvidenceAndEvaluationSeeder extends Seeder
         }
 
         // Get admin user for uploader/verifier
-        $adminUserId = DB::table('users')->where('username', 'admin_htx')->value('id') 
+        $adminUserId = DB::table('users')->where('username', 'admin_htx')->value('id')
             ?? DB::table('users')->where('username', 'admin')->value('id');
 
         // 2. Fetch OCOP Application (OCOP-2026-DALAT-001: Ớt chuông Sweet Palermo)
         $application = DB::table('ocop_applications')->where('application_number', 'OCOP-2026-DALAT-001')->first();
         if (!$application) {
-            $this->command->error("Không tìm thấy hồ sơ OCOP-2026-DALAT-001. Vui lòng chạy HtxTanTienFullSystemSeeder trước.");
+            $this->command->error('Không tìm thấy hồ sơ OCOP-2026-DALAT-001. Vui lòng chạy HtxTanTienFullSystemSeeder trước.');
+
             return;
         }
         $appId = $application->id;
@@ -419,7 +421,7 @@ class OcopEvidenceAndEvaluationSeeder extends Seeder
         }
 
         // Auto-consolidate the session results to compute average score and proposed star level
-        $consolidationService = app(\Modules\Ocop\Evaluation\Application\Services\EvaluationConsolidationService::class);
+        $consolidationService = app(EvaluationConsolidationService::class);
         $consolidationService->consolidate($sessionId);
 
         // 7. Surplus Distribution Plan & Allocation for 31 Members (Phân Phối Thặng Dư & Trích Quỹ 2025)
@@ -476,7 +478,7 @@ class OcopEvidenceAndEvaluationSeeder extends Seeder
 
         // Allocations for all 31 members
         $members = DB::table('members')->where('cooperative_id', $coopId)->get();
-        $totalCapital = $members->sum(fn($m) => (float) ($m->committed_capital ?? 30000000)) ?: 1400000000;
+        $totalCapital = $members->sum(fn ($m) => (float) ($m->committed_capital ?? 30000000)) ?: 1400000000;
         $totalProduce = 2450000000; // Total internal service usage value across HTX
 
         $capitalPool = 168000000.00; // 40% of 420M
@@ -484,9 +486,11 @@ class OcopEvidenceAndEvaluationSeeder extends Seeder
 
         foreach ($members as $m) {
             $capContrib = (float) ($m->committed_capital ?? 30000000);
-            if ($capContrib <= 0) $capContrib = 20000000.00;
+            if ($capContrib <= 0) {
+                $capContrib = 20000000.00;
+            }
             // Estimated service usage based on plots or realistic farming volume (80M - 150M)
-            $serviceUsage = $capContrib * 1.75; 
+            $serviceUsage = $capContrib * 1.75;
 
             $capShare = round(($capContrib / $totalCapital) * $capitalPool, 0);
             $servShare = round(($serviceUsage / $totalProduce) * $servicePool, 0);
@@ -514,7 +518,7 @@ class OcopEvidenceAndEvaluationSeeder extends Seeder
                 'rule_reference' => json_encode([
                     'capital_weight' => '40%',
                     'service_weight' => '60%',
-                    'compliance' => 'Luật HTX 2023 Điều 64'
+                    'compliance' => 'Luật HTX 2023 Điều 64',
                 ]),
                 'created_at' => $now,
             ]);

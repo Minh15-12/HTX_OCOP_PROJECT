@@ -197,4 +197,3 @@ class FarmPlotController extends BaseController
         );
     }
 }
-

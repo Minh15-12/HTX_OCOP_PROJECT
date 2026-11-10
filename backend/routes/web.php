@@ -7,6 +7,6 @@ Route::get('/', function () {
         'system' => 'HTX-OCOP Management System API',
         'status' => 'ONLINE',
         'version' => '1.0.0',
-        'docs' => '/api/v1/health'
+        'docs' => '/api/v1/health',
     ]);
 });

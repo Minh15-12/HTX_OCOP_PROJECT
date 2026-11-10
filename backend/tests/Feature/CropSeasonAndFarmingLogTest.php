@@ -7,8 +7,6 @@ use Illuminate\Support\Str;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\MaterialUsageModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\PhiCalculationModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\ProductionUnitModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Identity\Infrastructure\Persistence\Models\PermissionModel;
@@ -19,11 +17,11 @@ use Tests\TestCase;
 
 class CropSeasonAndFarmingLogTest extends TestCase
 {
-    private function createCooperative(string $code = null): CooperativeModel
+    private function createCooperative(?string $code = null): CooperativeModel
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => $code ?: 'HTX_SEASON_' . Str::random(4),
+            'cooperative_code' => $code ?: 'HTX_SEASON_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp Mùa Vụ',
             'status' => 'ACTIVE',
         ]);
@@ -33,22 +31,22 @@ class CropSeasonAndFarmingLogTest extends TestCase
     {
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_SEASON_TEST_' . Str::random(4),
+            'code' => 'ROLE_SEASON_TEST_'.Str::random(4),
             'name' => 'Season Test Role',
         ]);
 
         foreach ($permissionCodes as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Agriculture']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Agriculture']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'season_user_' . Str::random(5),
-            'email' => 'season_user_' . Str::random(5) . '@example.com',
+            'username' => 'season_user_'.Str::random(5),
+            'email' => 'season_user_'.Str::random(5).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Quản Lý Mùa Vụ',
             'cooperative_id' => $coop->id,
@@ -65,7 +63,7 @@ class CropSeasonAndFarmingLogTest extends TestCase
         return ProductionUnitModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $coop->id,
-            'unit_code' => 'PUC_' . Str::random(5),
+            'unit_code' => 'PUC_'.Str::random(5),
             'name' => 'Vùng Sản Xuất Thử Nghiệm',
             'crop' => 'Lúa Tám Mới',
             'area' => 10.0,
@@ -78,7 +76,7 @@ class CropSeasonAndFarmingLogTest extends TestCase
         return FarmPlotModel::create([
             'id' => (string) Str::uuid(),
             'production_unit_id' => $unit->id,
-            'plot_code' => 'PLOT_' . Str::random(5),
+            'plot_code' => 'PLOT_'.Str::random(5),
             'area' => 2.0,
             'status' => 'ACTIVE',
         ]);

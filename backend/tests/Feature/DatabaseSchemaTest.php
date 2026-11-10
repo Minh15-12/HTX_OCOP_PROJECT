@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class DatabaseSchemaTest extends TestCase

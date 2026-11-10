@@ -35,7 +35,7 @@ class MemberApprovedMail extends Mailable
                 'contributedCapital' => $this->memberData['contributed_capital'] ?? 50000000,
                 'ownershipPercentage' => $this->memberData['ownership_percentage'] ?? 4.65,
                 'creditLimit' => $this->memberData['credit_limit'] ?? 15000000,
-                'portalUrl' => config('app.url', 'http://localhost:3000') . '/members',
+                'portalUrl' => config('app.url', 'http://localhost:3000').'/members',
             ]
         );
     }

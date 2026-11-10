@@ -7,7 +7,7 @@ use App\Shared\Application\DTOs\BaseDTO;
 class CreateStockCountDTO extends BaseDTO
 {
     /**
-     * @param StockCountLineDTO[] $lines
+     * @param  StockCountLineDTO[]  $lines
      */
     public function __construct(
         public readonly string $countDate,

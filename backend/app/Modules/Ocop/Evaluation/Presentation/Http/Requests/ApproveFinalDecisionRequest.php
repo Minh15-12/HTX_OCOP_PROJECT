@@ -3,12 +3,13 @@
 namespace Modules\Ocop\Evaluation\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 
 class ApproveFinalDecisionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return \Illuminate\Support\Facades\Gate::allows('OCOP_DECISION.APPROVE');
+        return Gate::allows('OCOP_DECISION.APPROVE');
     }
 
     public function rules(): array

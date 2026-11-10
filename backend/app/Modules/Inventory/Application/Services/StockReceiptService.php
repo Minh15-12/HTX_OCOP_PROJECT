@@ -10,6 +10,7 @@ use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\Services\TenantContext;
 use Modules\Inventory\Application\DTOs\CreateStockReceiptDTO;
 use Modules\Inventory\Domain\Entities\StockReceipt;
+use Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\StockReceiptLineModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\StockReceiptModel;
@@ -34,7 +35,7 @@ class StockReceiptService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where('receipt_number', $likeOp, $search);
         }
@@ -81,7 +82,7 @@ class StockReceiptService
             throw new DomainException('Phiếu nhập kho phải chứa ít nhất 1 dòng vật tư', 'EMPTY_RECEIPT_LINES', null, 400);
         }
 
-        $receiptNumber = $dto->customReceiptNumber ?: strtoupper('PNK-' . now()->format('Ymd') . '-' . Str::random(4));
+        $receiptNumber = $dto->customReceiptNumber ?: strtoupper('PNK-'.now()->format('Ymd').'-'.Str::random(4));
 
         $exists = StockReceiptModel::where('receipt_number', $receiptNumber)->exists();
         if ($exists) {
@@ -201,14 +202,14 @@ class StockReceiptService
 
             // Create material batch records for FEFO tracking
             foreach ($receipt->lines as $line) {
-                $existsBatch = \Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel::where('stock_receipt_line_id', $line->id)->exists();
+                $existsBatch = MaterialBatchModel::where('stock_receipt_line_id', $line->id)->exists();
                 if (!$existsBatch) {
-                    \Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel::create([
+                    MaterialBatchModel::create([
                         'id' => (string) Str::uuid(),
                         'cooperative_id' => $receipt->cooperative_id,
                         'material_id' => $line->material_id,
                         'stock_receipt_line_id' => $line->id,
-                        'batch_number' => $line->batch_code ?: ('BATCH-' . strtoupper(Str::random(6))),
+                        'batch_number' => $line->batch_code ?: ('BATCH-'.strtoupper(Str::random(6))),
                         'quantity' => $line->quantity,
                         'initial_quantity' => $line->quantity,
                         'expired_at' => $line->expiry_date,

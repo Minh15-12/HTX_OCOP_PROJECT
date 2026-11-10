@@ -14,7 +14,7 @@ class CropSeasonPlotAndBomSeeder extends Seeder
         $season = DB::table('crop_seasons')
             ->where(function ($q) {
                 $q->where('status', 'IN_PROGRESS')
-                  ->orWhere('status', 'ACTIVE');
+                    ->orWhere('status', 'ACTIVE');
             })
             ->where('name', 'NOT LIKE', '%Đã Quyết Toán%')
             ->first();
@@ -107,8 +107,8 @@ class CropSeasonPlotAndBomSeeder extends Seeder
                 $targetYield = round($areaM2 * 4.5, 2); // 4.5 kg/m2
                 $actualHarvested = round($targetYield * $cfg['actual_rate'], 2);
 
-                $plantingDate = date('Y-m-d', strtotime($season->start_date . " + {$cfg['offset_days']} days"));
-                $harvestStart = date('Y-m-d', strtotime($plantingDate . " + 75 days"));
+                $plantingDate = date('Y-m-d', strtotime($season->start_date." + {$cfg['offset_days']} days"));
+                $harvestStart = date('Y-m-d', strtotime($plantingDate.' + 75 days'));
                 $harvestEnd = $season->expected_end_date;
 
                 DB::table('crop_season_plots')->insert([
@@ -124,7 +124,7 @@ class CropSeasonPlotAndBomSeeder extends Seeder
                     'target_yield_kg' => $targetYield,
                     'actual_harvested_kg' => $actualHarvested,
                     'status' => $cfg['status'],
-                    'notes' => 'Rải vụ so le đợt ' . ($idx + 1) . ' theo cam kết giao hàng chuỗi siêu thị WinMart.',
+                    'notes' => 'Rải vụ so le đợt '.($idx + 1).' theo cam kết giao hàng chuỗi siêu thị WinMart.',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

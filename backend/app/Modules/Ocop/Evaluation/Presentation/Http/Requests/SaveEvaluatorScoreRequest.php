@@ -3,12 +3,13 @@
 namespace Modules\Ocop\Evaluation\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 
 class SaveEvaluatorScoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return \Illuminate\Support\Facades\Gate::allows('OCOP_EVALUATION.SCORE');
+        return Gate::allows('OCOP_EVALUATION.SCORE');
     }
 
     public function rules(): array

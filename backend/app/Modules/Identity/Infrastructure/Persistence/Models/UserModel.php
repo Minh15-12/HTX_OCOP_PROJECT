@@ -5,10 +5,12 @@ namespace Modules\Identity\Infrastructure\Persistence\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
+use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 
 class UserModel extends Authenticatable
 {
@@ -43,9 +45,9 @@ class UserModel extends Authenticatable
         return $this->belongsTo(CooperativeModel::class, 'cooperative_id');
     }
 
-    public function member(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function member(): HasOne
     {
-        return $this->hasOne(\Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::class, 'user_id');
+        return $this->hasOne(MemberModel::class, 'user_id');
     }
 
     public function roles(): BelongsToMany
@@ -70,6 +72,7 @@ class UserModel extends Authenticatable
                 return true;
             }
         }
+
         return false;
     }
 }

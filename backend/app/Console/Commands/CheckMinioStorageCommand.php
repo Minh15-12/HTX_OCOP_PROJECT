@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use Aws\S3\S3Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -27,9 +28,9 @@ class CheckMinioStorageCommand extends Command
      */
     public function handle(): int
     {
-        $this->info("==========================================================================");
-        $this->info(" KIỂM TRA TRẠNG THÁI MINIO OBJECT STORAGE (S3 COMPATIBLE VAULT)");
-        $this->info("==========================================================================");
+        $this->info('==========================================================================');
+        $this->info(' KIỂM TRA TRẠNG THÁI MINIO OBJECT STORAGE (S3 COMPATIBLE VAULT)');
+        $this->info('==========================================================================');
 
         $evidenceDisk = config('filesystems.evidence_disk', 'local');
         $minioConfig = config('filesystems.disks.minio', []);
@@ -44,7 +45,7 @@ class CheckMinioStorageCommand extends Command
         $this->line("• OCOP Evidence Bucket  : <fg=yellow>{$bucket}</>");
         $this->line("• Access Key ID         : <fg=yellow>{$key}</>");
         $this->line("• Path Style Endpoint   : <fg=yellow>{$pathStyle}</>");
-        $this->line("• Web Console UI        : <fg=yellow>http://localhost:9001</> (user: minioadmin / pass: minioadmin)");
+        $this->line('• Web Console UI        : <fg=yellow>http://localhost:9001</> (user: minioadmin / pass: minioadmin)');
         $this->newLine();
 
         $this->info(">>> Đang kiểm tra kết nối và quyền ghi/đọc tệp vào bucket [{$bucket}]...");
@@ -54,7 +55,7 @@ class CheckMinioStorageCommand extends Command
 
             // Auto-create bucket if missing
             try {
-                /** @var \Aws\S3\S3Client $client */
+                /** @var S3Client $client */
                 $client = $testDisk->getClient();
                 if (!$client->doesBucketExist($bucket)) {
                     $this->line("• Bucket [{$bucket}] chưa tồn tại, đang tự động khởi tạo...");
@@ -65,8 +66,8 @@ class CheckMinioStorageCommand extends Command
                 // S3Client might throw or already exist, proceed to put test
             }
 
-            $pingFile = "healthcheck/ping_" . uniqid() . ".txt";
-            $pingContent = "HTX_OCOP_MINIO_HEALTHCHECK_OK_" . now()->toIso8601String();
+            $pingFile = 'healthcheck/ping_'.uniqid().'.txt';
+            $pingContent = 'HTX_OCOP_MINIO_HEALTHCHECK_OK_'.now()->toIso8601String();
 
             // Attempt write
             $writeSuccess = $testDisk->put($pingFile, $pingContent);
@@ -78,32 +79,34 @@ class CheckMinioStorageCommand extends Command
             $readBack = $testDisk->get($pingFile);
 
             if ($readBack !== $pingContent) {
-                throw new \RuntimeException("Nội dung đọc lại từ MinIO không khớp với nội dung đã ghi.");
+                throw new \RuntimeException('Nội dung đọc lại từ MinIO không khớp với nội dung đã ghi.');
             }
 
             // Cleanup
             $testDisk->delete($pingFile);
 
-            $this->info("==========================================================================");
-            $this->info(" KẾT NỐI MINIO THÀNH CÔNG! (ONLINE - Read/Write Verified)");
-            $this->info("==========================================================================");
+            $this->info('==========================================================================');
+            $this->info(' KẾT NỐI MINIO THÀNH CÔNG! (ONLINE - Read/Write Verified)');
+            $this->info('==========================================================================');
             $this->line("<fg=green>✓</> Kết nối thành công tới S3 API: {$endpoint}");
             $this->line("<fg=green>✓</> Bucket [{$bucket}] tồn tại và có quyền ghi/đọc.");
-            $this->line("<fg=green>✓</> Hệ thống sẵn sàng lưu trữ minh chứng số OCOP (PDF, QUATEST 3, VietGAP) lên MinIO.");
+            $this->line('<fg=green>✓</> Hệ thống sẵn sàng lưu trữ minh chứng số OCOP (PDF, QUATEST 3, VietGAP) lên MinIO.');
+
             return Command::SUCCESS;
         } catch (Throwable $e) {
-            $this->warn("==========================================================================");
-            $this->warn(" CHÚ Ý: KHÔNG THỂ KẾT NỐI TỚI MINIO SERVICE");
-            $this->warn("==========================================================================");
-            $this->line("Chi tiết lỗi: " . $e->getMessage());
+            $this->warn('==========================================================================');
+            $this->warn(' CHÚ Ý: KHÔNG THỂ KẾT NỐI TỚI MINIO SERVICE');
+            $this->warn('==========================================================================');
+            $this->line('Chi tiết lỗi: '.$e->getMessage());
             $this->newLine();
-            $this->line("<fg=yellow>• Trạng thái hiện tại:</> Hệ thống đang kích hoạt cơ chế <fg=green>LOCAL FALLBACK</> an toàn.");
-            $this->line("  Mọi tệp minh chứng OCOP vẫn được lưu trữ và truy xuất đầy đủ từ ổ đĩa máy chủ: <fg=cyan>backend/storage/app/evidences/</>");
+            $this->line('<fg=yellow>• Trạng thái hiện tại:</> Hệ thống đang kích hoạt cơ chế <fg=green>LOCAL FALLBACK</> an toàn.');
+            $this->line('  Mọi tệp minh chứng OCOP vẫn được lưu trữ và truy xuất đầy đủ từ ổ đĩa máy chủ: <fg=cyan>backend/storage/app/evidences/</>');
             $this->newLine();
-            $this->line("<fg=yellow>• Để kích hoạt MinIO Container trên máy chủ:</>");
-            $this->line("  1. Khởi động MinIO bằng Docker: <fg=cyan>docker compose up -d minio createbuckets</>");
-            $this->line("  2. Truy cập MinIO Web Console: <fg=cyan>http://localhost:9001</> (Tài khoản: minioadmin / minioadmin)");
-            $this->line("  3. Đặt <fg=cyan>EVIDENCE_DISK=minio</> trong file <fg=cyan>.env</>");
+            $this->line('<fg=yellow>• Để kích hoạt MinIO Container trên máy chủ:</>');
+            $this->line('  1. Khởi động MinIO bằng Docker: <fg=cyan>docker compose up -d minio createbuckets</>');
+            $this->line('  2. Truy cập MinIO Web Console: <fg=cyan>http://localhost:9001</> (Tài khoản: minioadmin / minioadmin)');
+            $this->line('  3. Đặt <fg=cyan>EVIDENCE_DISK=minio</> trong file <fg=cyan>.env</>');
+
             return Command::SUCCESS; // Return success so build pipelines don't fail in environments without docker
         }
     }

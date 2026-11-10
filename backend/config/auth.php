@@ -1,5 +1,7 @@
 <?php
 
+use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
+
 return [
     'defaults' => [
         'guard' => 'sanctum',
@@ -24,7 +26,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => Modules\Identity\Infrastructure\Persistence\Models\UserModel::class,
+            'model' => UserModel::class,
         ],
     ],
 

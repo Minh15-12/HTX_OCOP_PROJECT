@@ -19,7 +19,7 @@ class CheckOverdueCapitalJob implements ShouldQueue
     public function handle(): void
     {
         $today = now()->format('Y-m-d');
-        
+
         $members = MemberModel::where('status', 'DANG_HOAT_DONG')
             ->whereNotNull('commitment_deadline')
             ->whereDate('commitment_deadline', '<', $today)
@@ -30,15 +30,15 @@ class CheckOverdueCapitalJob implements ShouldQueue
                 ->where('member_id', $member->id)
                 ->where('status', 'APPROVED')
                 ->sum('amount');
-                
+
             $deficit = $member->committed_capital - $totalContributed;
-            
+
             if ($deficit > 0) {
                 // Notify directors of the cooperative
                 $directors = UserModel::whereHas('roles', function ($q) {
                     $q->where('code', 'DIRECTOR');
                 })->where('cooperative_id', $member->cooperative_id)->get();
-                
+
                 foreach ($directors as $director) {
                     $director->notify(new OverdueCapitalNotification($member, $deficit));
                 }

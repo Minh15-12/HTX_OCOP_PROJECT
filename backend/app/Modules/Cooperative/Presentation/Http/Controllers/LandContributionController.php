@@ -5,7 +5,6 @@ namespace Modules\Cooperative\Presentation\Http\Controllers;
 use App\Shared\Application\Responses\ApiResponse;
 use App\Shared\Presentation\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Modules\Cooperative\Application\Services\LandContributionService;
 use Modules\Cooperative\Presentation\Http\Requests\CreateLandContributionRequest;

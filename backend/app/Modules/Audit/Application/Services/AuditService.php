@@ -3,6 +3,9 @@
 namespace Modules\Audit\Application\Services;
 
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Modules\Audit\Domain\Events\AuditEventCreated;
+use Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel;
 
 class AuditService
 {
@@ -23,8 +26,8 @@ class AuditService
             $ipAddress = request()->ip();
 
             // Append-only audit record creation (catches exceptions gracefully to avoid breaking main transaction)
-            if (\Illuminate\Support\Facades\Schema::hasTable('audit_events')) {
-                $lastEvent = \Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel::orderBy('created_at', 'desc')->orderBy('id', 'desc')->first();
+            if (Schema::hasTable('audit_events')) {
+                $lastEvent = AuditEventModel::orderBy('created_at', 'desc')->orderBy('id', 'desc')->first();
                 $prevHash = $lastEvent?->current_hash ?: str_repeat('0', 64);
 
                 $payload = json_encode([
@@ -38,9 +41,9 @@ class AuditService
                     'request_id' => $requestId,
                 ]);
 
-                $currentHash = hash('sha256', $payload . $prevHash);
+                $currentHash = hash('sha256', $payload.$prevHash);
 
-                $event = \Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel::create([
+                $event = AuditEventModel::create([
                     'actor_id' => $currentActorId,
                     'action' => $action,
                     'entity_type' => $entityType,
@@ -55,7 +58,7 @@ class AuditService
                     'created_at' => now(),
                 ]);
 
-                event(new \Modules\Audit\Domain\Events\AuditEventCreated($event));
+                event(new AuditEventCreated($event));
             }
 
             Log::info("AUDIT EVENT: [{$action}] on [{$entityType}:{$entityId}] by User [{$currentActorId}]", [
@@ -67,7 +70,7 @@ class AuditService
                 'request_id' => $requestId,
             ]);
         } catch (\Throwable $e) {
-            Log::error("AUDIT LOG ERROR: " . $e->getMessage(), ['exception' => $e]);
+            Log::error('AUDIT LOG ERROR: '.$e->getMessage(), ['exception' => $e]);
         }
     }
 }

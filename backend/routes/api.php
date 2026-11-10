@@ -13,6 +13,7 @@ use Modules\Agriculture\Presentation\Http\Controllers\PhiCalculationController;
 use Modules\Agriculture\Presentation\Http\Controllers\ProductionUnitController;
 use Modules\Agriculture\Presentation\Http\Controllers\PublicTraceabilityController;
 use Modules\Agriculture\Presentation\Http\Controllers\SeasonReconciliationController;
+use Modules\Audit\Presentation\Http\Controllers\AuditLogController;
 use Modules\Cooperative\Presentation\Http\Controllers\CapitalContributionController;
 use Modules\Cooperative\Presentation\Http\Controllers\CooperativeController;
 use Modules\Cooperative\Presentation\Http\Controllers\LandContributionController;
@@ -33,6 +34,7 @@ use Modules\Inventory\Presentation\Http\Controllers\StockIssueController;
 use Modules\Inventory\Presentation\Http\Controllers\StockReceiptController;
 use Modules\Inventory\Presentation\Http\Controllers\ToolTrackingController;
 use Modules\Inventory\Presentation\Http\Controllers\WarehouseController;
+use Modules\Notification\Presentation\Http\Controllers\NotificationController;
 use Modules\Ocop\Criteria\Presentation\Http\Controllers\CouncilLevelController;
 use Modules\Ocop\Criteria\Presentation\Http\Controllers\CriteriaGroupController;
 use Modules\Ocop\Criteria\Presentation\Http\Controllers\CriteriaVersionController;
@@ -40,18 +42,16 @@ use Modules\Ocop\Criteria\Presentation\Http\Controllers\CriterionController;
 use Modules\Ocop\Criteria\Presentation\Http\Controllers\IndicatorController;
 use Modules\Ocop\Dossier\Presentation\Http\Controllers\OcopApplicationController;
 use Modules\Ocop\Dossier\Presentation\Http\Controllers\SelfAssessmentController;
-use Modules\Ocop\Evidence\Presentation\Http\Controllers\EvidenceController;
-use Modules\Ocop\Evidence\Presentation\Http\Controllers\EvidenceLinkController;
-use Modules\Ocop\Evidence\Presentation\Http\Controllers\EvidenceVersionController;
-use Modules\Audit\Presentation\Http\Controllers\AuditLogController;
 use Modules\Ocop\Evaluation\Presentation\Http\Controllers\ConsolidatedResultController;
 use Modules\Ocop\Evaluation\Presentation\Http\Controllers\EvaluationSessionController;
 use Modules\Ocop\Evaluation\Presentation\Http\Controllers\EvaluatorScoreController;
 use Modules\Ocop\Evaluation\Presentation\Http\Controllers\FinalDecisionController;
+use Modules\Ocop\Evidence\Presentation\Http\Controllers\EvidenceController;
+use Modules\Ocop\Evidence\Presentation\Http\Controllers\EvidenceLinkController;
+use Modules\Ocop\Evidence\Presentation\Http\Controllers\EvidenceVersionController;
 use Modules\Product\Presentation\Http\Controllers\ProductController;
 use Modules\Report\Presentation\Http\Controllers\DocumentController;
 use Modules\Report\Presentation\Http\Controllers\ReportController;
-use Modules\Notification\Presentation\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -385,4 +385,3 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
     Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('api.notifications.mark-as-read');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('api.notifications.mark-all-read');
 });
-

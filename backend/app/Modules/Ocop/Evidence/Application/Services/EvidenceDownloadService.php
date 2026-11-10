@@ -5,7 +5,6 @@ namespace Modules\Ocop\Evidence\Application\Services;
 use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
-use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel;
 
 class EvidenceDownloadService
 {

@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
+use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 
 class CashTransactionPolicy
 {

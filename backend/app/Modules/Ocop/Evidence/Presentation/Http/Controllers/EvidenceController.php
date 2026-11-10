@@ -5,6 +5,7 @@ namespace Modules\Ocop\Evidence\Presentation\Http\Controllers;
 use App\Shared\Presentation\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
 use Modules\Ocop\Evidence\Application\DTOs\UploadEvidenceDTO;
 use Modules\Ocop\Evidence\Application\DTOs\VerifyEvidenceDTO;
 use Modules\Ocop\Evidence\Application\Services\EvidenceDownloadService;
@@ -68,7 +69,7 @@ class EvidenceController extends BaseController
     {
         $applicationId = $request->input('application_id');
         if (!$applicationId) {
-            $latestApp = \Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel::orderBy('created_at', 'desc')->first();
+            $latestApp = OcopApplicationModel::orderBy('created_at', 'desc')->first();
             $applicationId = $latestApp ? $latestApp->id : null;
         }
 

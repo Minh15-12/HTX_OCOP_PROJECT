@@ -9,12 +9,7 @@ use Illuminate\Support\Str;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
-use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaGroupModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaVersionModel;
-use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriterionModel;
-use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\IndicatorModel;
-use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\MandatoryConditionModel;
-use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\ScoringRuleModel;
 use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
 use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel;
 use Modules\Product\Infrastructure\Persistence\Models\ProductModel;
@@ -83,8 +78,8 @@ class OcopSweetPalermoIntegrationTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'tantien_' . Str::random(4),
-            'email' => 'tan_' . Str::random(4) . '@tantien.vn',
+            'username' => 'tantien_'.Str::random(4),
+            'email' => 'tan_'.Str::random(4).'@tantien.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Nguyễn Văn Tân',
             'cooperative_id' => $cooperative->id,
@@ -399,7 +394,7 @@ class OcopSweetPalermoIntegrationTest extends TestCase
                 ->postJson("/api/v1/ocop/applications/{$appId}/self-assessments", [
                     'indicator_id' => $sug['indicator_id'],
                     'score' => $sug['suggested_score'],
-                    'explanation' => 'Chủ thể thống nhất áp dụng điểm gợi ý từ hệ thống: ' . $sug['reason'],
+                    'explanation' => 'Chủ thể thống nhất áp dụng điểm gợi ý từ hệ thống: '.$sug['reason'],
                 ]);
             $saveResp->assertStatus(201);
         }

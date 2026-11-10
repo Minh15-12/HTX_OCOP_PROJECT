@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
+use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 
 class ReceivablePayableModel extends Model
 {
@@ -44,12 +46,12 @@ class ReceivablePayableModel extends Model
 
     public function member(): BelongsTo
     {
-        return $this->belongsTo(\Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::class, 'member_id');
+        return $this->belongsTo(MemberModel::class, 'member_id');
     }
 
     public function cropSeason(): BelongsTo
     {
-        return $this->belongsTo(\Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel::class, 'crop_season_id');
+        return $this->belongsTo(CropSeasonModel::class, 'crop_season_id');
     }
 
     public function settlements(): HasMany
@@ -57,4 +59,3 @@ class ReceivablePayableModel extends Model
         return $this->hasMany(DebtSettlementModel::class, 'debt_id');
     }
 }
-

@@ -19,11 +19,17 @@ use Tests\TestCase;
 class CropSeasonAllocationAndBomTest extends TestCase
 {
     private CooperativeModel $coop;
+
     private UserModel $user;
+
     private ProductionUnitModel $unit;
+
     private CropSeasonModel $season;
+
     private FarmPlotModel $plot;
+
     private MemberModel $member;
+
     private MaterialModel $material;
 
     protected function setUp(): void
@@ -32,29 +38,29 @@ class CropSeasonAllocationAndBomTest extends TestCase
 
         $this->coop = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_SEASON_' . Str::random(4),
+            'cooperative_code' => 'HTX_SEASON_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp Thử Nghiệm Mùa Vụ',
             'status' => 'ACTIVE',
         ]);
 
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_SEASON_' . Str::random(4),
+            'code' => 'ROLE_SEASON_'.Str::random(4),
             'name' => 'Season Role',
         ]);
 
         foreach (['AGRICULTURE.READ', 'AGRICULTURE.CREATE', 'AGRICULTURE.UPDATE'] as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Agriculture']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Agriculture']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $this->user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'season_user_' . Str::random(5),
-            'email' => 'season_' . Str::random(5) . '@example.com',
+            'username' => 'season_user_'.Str::random(5),
+            'email' => 'season_'.Str::random(5).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Cán Bộ Kế Hoạch',
             'cooperative_id' => $this->coop->id,
@@ -65,7 +71,7 @@ class CropSeasonAllocationAndBomTest extends TestCase
         $this->member = MemberModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->coop->id,
-            'member_code' => 'MB-TEST-' . Str::random(4),
+            'member_code' => 'MB-TEST-'.Str::random(4),
             'user_id' => $this->user->id,
             'status' => 'ACTIVE',
             'identity_information' => [
@@ -77,7 +83,7 @@ class CropSeasonAllocationAndBomTest extends TestCase
         $this->unit = ProductionUnitModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->coop->id,
-            'unit_code' => 'PUC_TEST_' . Str::random(4),
+            'unit_code' => 'PUC_TEST_'.Str::random(4),
             'name' => 'Vùng Canh Tác Thử Nghiệm',
             'crop' => 'Ớt chuông Sweet Palermo',
             'area' => 10.0,
@@ -87,7 +93,7 @@ class CropSeasonAllocationAndBomTest extends TestCase
         $this->plot = FarmPlotModel::create([
             'id' => (string) Str::uuid(),
             'production_unit_id' => $this->unit->id,
-            'plot_code' => 'PLOT-TEST-' . Str::random(4),
+            'plot_code' => 'PLOT-TEST-'.Str::random(4),
             'area' => 3000.0,
             'status' => 'ACTIVE',
             'max_yield_rate_per_sqm' => 4.5,
@@ -112,7 +118,7 @@ class CropSeasonAllocationAndBomTest extends TestCase
         $this->material = MaterialModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->coop->id,
-            'sku' => 'MAT-TEST-' . Str::random(4),
+            'sku' => 'MAT-TEST-'.Str::random(4),
             'name' => 'Phân Bón Hữu Cơ Vi Lượng',
             'category' => 'FERTILIZER',
             'unit' => 'bao_25kg',
@@ -139,7 +145,7 @@ class CropSeasonAllocationAndBomTest extends TestCase
         $response->assertStatus(201);
         $response->assertJsonPath('data.plot_id', $this->plot->id);
         $response->assertJsonPath('data.crop_variety', 'Sweet Palermo Đỏ F1');
-        $response->assertJsonPath('data.target_yield_kg', 13500.0);
+        $response->assertJsonPath('data.target_yield_kg', 13500);
 
         $this->assertDatabaseHas('crop_season_plots', [
             'crop_season_id' => $this->season->id,
@@ -194,8 +200,8 @@ class CropSeasonAllocationAndBomTest extends TestCase
 
         $saveResponse->assertStatus(200);
         $saveResponse->assertJsonCount(1, 'data');
-        $saveResponse->assertJsonPath('data.0.planned_quantity', 45.0);
-        $saveResponse->assertJsonPath('data.0.estimated_total_cost', 9000000.0);
+        $saveResponse->assertJsonPath('data.0.planned_quantity', 45);
+        $saveResponse->assertJsonPath('data.0.estimated_total_cost', 9000000);
 
         $getResponse = $this->actingAs($this->user)
             ->withHeader('X-Cooperative-Id', $this->coop->id)
@@ -225,8 +231,8 @@ class CropSeasonAllocationAndBomTest extends TestCase
             ->getJson("/api/v1/crop-seasons/{$this->season->id}/supply-demand");
 
         $response->assertStatus(200);
-        $response->assertJsonPath('data.buyer_contract_quantity_kg', 13500.0);
-        $response->assertJsonPath('data.total_committed_quantity_kg', 13500.0);
+        $response->assertJsonPath('data.buyer_contract_quantity_kg', 13500);
+        $response->assertJsonPath('data.total_committed_quantity_kg', 13500);
         $response->assertJsonPath('data.buyer_name', 'Siêu thị Co.opMart');
         $response->assertJsonPath('data.is_shortage', false);
     }

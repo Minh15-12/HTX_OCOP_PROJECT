@@ -14,7 +14,6 @@ use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaVersionModel
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriterionModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\IndicatorModel;
 use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
-use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel;
 use Modules\Product\Infrastructure\Persistence\Models\ProductModel;
 use Tests\TestCase;
 
@@ -24,7 +23,7 @@ class OcopEvidenceTest extends TestCase
     {
         $cooperative = $cooperative ?: CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_EVID_' . Str::random(4),
+            'cooperative_code' => 'HTX_EVID_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp Minh Chứng',
             'status' => 'ACTIVE',
         ]);
@@ -36,8 +35,8 @@ class OcopEvidenceTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'user_evid_' . Str::random(4),
-            'email' => 'user_evid_' . Str::random(4) . '@htx.vn',
+            'username' => 'user_evid_'.Str::random(4),
+            'email' => 'user_evid_'.Str::random(4).'@htx.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Trần Văn Minh Chứng',
             'cooperative_id' => $cooperative->id,
@@ -63,7 +62,7 @@ class OcopEvidenceTest extends TestCase
         $product = ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $cooperativeId,
-            'product_code' => 'PROD-EVID-' . Str::random(4),
+            'product_code' => 'PROD-EVID-'.Str::random(4),
             'product_name' => 'Chè Shan Tuyết OCOP',
             'category' => 'FOOD',
             'unit' => 'KG',
@@ -72,7 +71,7 @@ class OcopEvidenceTest extends TestCase
 
         $version = CriteriaVersionModel::create([
             'id' => (string) Str::uuid(),
-            'version_code' => 'OCOP-VER-' . Str::random(4),
+            'version_code' => 'OCOP-VER-'.Str::random(4),
             'name' => 'Bộ tiêu chí OCOP Thẩm định',
             'status' => 'PUBLISHED',
         ]);
@@ -105,7 +104,7 @@ class OcopEvidenceTest extends TestCase
             'cooperative_id' => $cooperativeId,
             'product_id' => $product->id,
             'criteria_version_id' => $version->id,
-            'application_number' => 'HS-EVID-' . Str::random(4),
+            'application_number' => 'HS-EVID-'.Str::random(4),
             'status' => 'DRAFT',
         ]);
 

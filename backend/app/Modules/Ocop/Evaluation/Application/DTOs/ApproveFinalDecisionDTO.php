@@ -11,8 +11,7 @@ class ApproveFinalDecisionDTO
         public readonly ?array $authorityReference = null,
         public readonly ?string $effectiveDate = null,
         public readonly ?array $documentReference = null
-    ) {
-    }
+    ) {}
 
     public static function fromArray(array $data): self
     {

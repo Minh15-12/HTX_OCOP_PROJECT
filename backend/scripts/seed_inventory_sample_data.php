@@ -1,21 +1,21 @@
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
-$app = require_once __DIR__ . '/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+require __DIR__.'/../vendor/autoload.php';
+$app = require_once __DIR__.'/../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Str;
-use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\StockIssueModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\MemberToolTrackingModel;
-use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
-
+use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
+use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
+use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
+use Modules\Inventory\Infrastructure\Persistence\Models\MemberToolTrackingModel;
+use Modules\Inventory\Infrastructure\Persistence\Models\StockIssueModel;
 
-echo "=== SEEDING DỮ LIỆU NÂNG CẤP VẬT TƯ HTX ===" . PHP_EOL;
+echo '=== SEEDING DỮ LIỆU NÂNG CẤP VẬT TƯ HTX ==='.PHP_EOL;
 
 $coop = CooperativeModel::first();
 $coopId = $coop ? $coop->id : '00000000-0000-0000-0000-000000000001';
@@ -70,7 +70,7 @@ foreach ($toolsData as $td) {
         array_merge($td, ['id' => Str::uuid()->toString()])
     );
     $createdToolIds[] = $mat->id;
-    echo "  - Cập nhật nông cụ: {$mat->name} [TK {$mat->account_code}]" . PHP_EOL;
+    echo "  - Cập nhật nông cụ: {$mat->name} [TK {$mat->account_code}]".PHP_EOL;
 }
 
 // 2. Giao nông cụ lâu bền cho Xã viên (Theo dõi ngoài bảng TK 005)
@@ -122,7 +122,7 @@ if ($memberA && count($createdToolIds) >= 2) {
             'note' => 'Đã đổi mới 1:1 sang chiếc FELCO-2026-0089 do mòn lưỡi cắt',
         ]
     );
-    echo "  - Đã seed 3 bản ghi Nông cụ ngoài bảng TK 005 cho xã viên {$memberA->identity_information['full_name']}." . PHP_EOL;
+    echo "  - Đã seed 3 bản ghi Nông cụ ngoài bảng TK 005 cho xã viên {$memberA->identity_information['full_name']}.".PHP_EOL;
 }
 
 // 3. Cập nhật phiếu xuất kho để có Thu hồi vỏ chai thuốc BVTV (TTLT 05/2016)
@@ -137,7 +137,7 @@ if ($pesticideIssue) {
         'packaging_returned_at' => now()->subDays(2),
         'purpose' => "Cấp ứng nợ đầu vụ phân bón & thuốc BVTV sinh học vụ mùa {$season?->name}",
     ]);
-    echo "  - Đã cập nhật Phiếu xuất kho {$pesticideIssue->issue_code}: Yêu cầu thu 10 vỏ, đã thu 8 vỏ (súc rửa 3 lần)." . PHP_EOL;
+    echo "  - Đã cập nhật Phiếu xuất kho {$pesticideIssue->issue_code}: Yêu cầu thu 10 vỏ, đã thu 8 vỏ (súc rửa 3 lần).".PHP_EOL;
 }
 
-echo "=== SEEDING HOÀN TẤT THÀNH CÔNG ===" . PHP_EOL;
+echo '=== SEEDING HOÀN TẤT THÀNH CÔNG ==='.PHP_EOL;

@@ -9,7 +9,7 @@ class FinalDecision
     public const VALID_CLASSIFICATIONS = [
         '3_STAR', '4_STAR', '5_STAR',
         'THREE_STAR', 'FOUR_STAR', 'FIVE_STAR',
-        'REJECTED'
+        'REJECTED',
     ];
 
     public function __construct(

@@ -7,7 +7,7 @@ use App\Shared\Application\DTOs\BaseDTO;
 class CreateStockIssueDTO extends BaseDTO
 {
     /**
-     * @param StockIssueLineDTO[] $lines
+     * @param  StockIssueLineDTO[]  $lines
      */
     public function __construct(
         public readonly string $issueDate,

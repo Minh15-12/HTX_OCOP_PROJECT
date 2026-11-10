@@ -7,6 +7,7 @@ use DateTimeImmutable;
 class PhiCalculation
 {
     public readonly ?string $safetyDate;
+
     public readonly string $status;
 
     public function __construct(

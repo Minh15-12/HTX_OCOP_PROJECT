@@ -5,22 +5,23 @@ namespace Tests\Feature;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
+use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 use Modules\Identity\Infrastructure\Persistence\Models\PermissionModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
+use Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\StockIssueModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\StockReceiptModel;
-
 use Tests\TestCase;
 
 class InventoryManagementTest extends TestCase
 {
-    private function createCooperative(string $code = null): CooperativeModel
+    private function createCooperative(?string $code = null): CooperativeModel
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => $code ?: 'HTX_INV_' . Str::random(4),
+            'cooperative_code' => $code ?: 'HTX_INV_'.Str::random(4),
             'legal_name' => 'HTX Dịch Vụ Nông Nghiệp Tồn Kho',
             'status' => 'ACTIVE',
         ]);
@@ -30,22 +31,22 @@ class InventoryManagementTest extends TestCase
     {
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_INV_TEST_' . Str::random(4),
+            'code' => 'ROLE_INV_TEST_'.Str::random(4),
             'name' => 'Inventory Test Role',
         ]);
 
         foreach ($permissionCodes as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Inventory']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Inventory']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'inv_user_' . Str::random(5),
-            'email' => 'inv_user_' . Str::random(5) . '@example.com',
+            'username' => 'inv_user_'.Str::random(5),
+            'email' => 'inv_user_'.Str::random(5).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Thủ Kho HTX',
             'cooperative_id' => $coop->id,
@@ -391,7 +392,7 @@ class InventoryManagementTest extends TestCase
         $coop = $this->createCooperative();
         $user = $this->createUserWithPermissions($coop, ['INVENTORY.CREATE', 'INVENTORY.READ', 'INVENTORY.UPDATE']);
 
-        $member = \Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::create([
+        $member = MemberModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $coop->id,
             'member_code' => 'XV_CREDIT_TEST',
@@ -459,7 +460,7 @@ class InventoryManagementTest extends TestCase
         ]);
 
         // Create expired batch
-        \Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel::create([
+        MaterialBatchModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $coop->id,
             'material_id' => $material->id,
@@ -503,7 +504,7 @@ class InventoryManagementTest extends TestCase
         $coop = $this->createCooperative('HTX_CREDIT_ADVANCE');
         $user = $this->createUserWithPermissions($coop, ['INVENTORY.CREATE', 'INVENTORY.READ', 'INVENTORY.UPDATE']);
 
-        $member = \Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::create([
+        $member = MemberModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $coop->id,
             'member_code' => 'XV_NO_01',
@@ -581,4 +582,3 @@ class InventoryManagementTest extends TestCase
         $approveResp2->assertJsonPath('error.code', 'ERR_MEMBER_CREDIT_LIMIT_EXCEEDED');
     }
 }
-

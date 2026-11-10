@@ -15,11 +15,11 @@ use Tests\TestCase;
 
 class AgricultureInfrastructureTest extends TestCase
 {
-    private function createCooperative(string $code = null): CooperativeModel
+    private function createCooperative(?string $code = null): CooperativeModel
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => $code ?: 'HTX_AGRI_' . Str::random(4),
+            'cooperative_code' => $code ?: 'HTX_AGRI_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp Thử Nghiệm Vùng Trồng',
             'status' => 'ACTIVE',
         ]);
@@ -29,22 +29,22 @@ class AgricultureInfrastructureTest extends TestCase
     {
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_AGRI_TEST_' . Str::random(4),
+            'code' => 'ROLE_AGRI_TEST_'.Str::random(4),
             'name' => 'Agri Test Role',
         ]);
 
         foreach ($permissionCodes as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Agriculture']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Agriculture']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'agri_user_' . Str::random(5),
-            'email' => 'agri_user_' . Str::random(5) . '@example.com',
+            'username' => 'agri_user_'.Str::random(5),
+            'email' => 'agri_user_'.Str::random(5).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Cán Bộ Nông Nghiệp',
             'cooperative_id' => $coop->id,

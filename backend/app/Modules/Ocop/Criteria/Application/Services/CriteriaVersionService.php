@@ -27,11 +27,11 @@ class CriteriaVersionService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('version_code', $likeOp, $search)
-                  ->orWhere('name', $likeOp, $search);
+                    ->orWhere('name', $likeOp, $search);
             });
         }
 
@@ -53,7 +53,7 @@ class CriteriaVersionService
         $version = CriteriaVersionModel::with([
             'groups.criteria.indicators',
             'scoringRules',
-            'mandatoryConditions'
+            'mandatoryConditions',
         ])->find($id);
 
         if (!$version) {
@@ -119,10 +119,18 @@ class CriteriaVersionService
         $domainEntity->assertEditable();
 
         $updates = [];
-        if ($dto->name !== null) $updates['name'] = $dto->name;
-        if ($dto->effectiveFrom !== null) $updates['effective_from'] = $dto->effectiveFrom;
-        if ($dto->effectiveTo !== null) $updates['effective_to'] = $dto->effectiveTo;
-        if ($dto->sourceReference !== null) $updates['source_reference'] = $dto->sourceReference;
+        if ($dto->name !== null) {
+            $updates['name'] = $dto->name;
+        }
+        if ($dto->effectiveFrom !== null) {
+            $updates['effective_from'] = $dto->effectiveFrom;
+        }
+        if ($dto->effectiveTo !== null) {
+            $updates['effective_to'] = $dto->effectiveTo;
+        }
+        if ($dto->sourceReference !== null) {
+            $updates['source_reference'] = $dto->sourceReference;
+        }
 
         if (!empty($updates)) {
             $version->update($updates);

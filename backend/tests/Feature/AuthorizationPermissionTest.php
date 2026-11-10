@@ -17,28 +17,28 @@ class AuthorizationPermissionTest extends TestCase
     {
         $cooperative = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_' . Str::random(5),
+            'cooperative_code' => 'HTX_'.Str::random(5),
             'legal_name' => 'HTX Nông Nghiệp Test Authorization',
             'status' => 'ACTIVE',
         ]);
 
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_' . Str::random(5),
+            'code' => 'ROLE_'.Str::random(5),
             'name' => 'Custom Test Role',
         ]);
 
         $permission = PermissionModel::firstOrCreate(
             ['code' => $permissionCode],
-            ['id' => (string) Str::uuid(), 'name' => 'Permission ' . $permissionCode, 'module' => 'Test']
+            ['id' => (string) Str::uuid(), 'name' => 'Permission '.$permissionCode, 'module' => 'Test']
         );
 
         $role->permissions()->attach($permission->id);
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'auth_user_' . Str::random(5),
-            'email' => 'auth_user_' . Str::random(5) . '@example.com',
+            'username' => 'auth_user_'.Str::random(5),
+            'email' => 'auth_user_'.Str::random(5).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'User With Permission',
             'cooperative_id' => $cooperative->id,
@@ -74,8 +74,8 @@ class AuthorizationPermissionTest extends TestCase
     {
         $admin = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'sysadmin_' . Str::random(4),
-            'email' => 'sysadmin_' . Str::random(4) . '@example.com',
+            'username' => 'sysadmin_'.Str::random(4),
+            'email' => 'sysadmin_'.Str::random(4).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'System Administrator',
             'status' => 'ACTIVE',

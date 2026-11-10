@@ -2,9 +2,11 @@
 
 namespace Modules\Ocop\Evaluation\Presentation\Http\Controllers;
 
+use App\Shared\Application\Responses\ApiResponse;
 use App\Shared\Presentation\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Modules\Ocop\Evaluation\Application\DTOs\ApproveFinalDecisionDTO;
 use Modules\Ocop\Evaluation\Application\DTOs\RejectApplicationDTO;
 use Modules\Ocop\Evaluation\Application\Services\FinalDecisionService;
@@ -40,8 +42,8 @@ class FinalDecisionController extends BaseController
 
     public function approve(string $applicationId, ApproveFinalDecisionRequest $request): JsonResponse
     {
-        if (!\Illuminate\Support\Facades\Gate::allows('OCOP_DECISION.APPROVE')) {
-            return \App\Shared\Application\Responses\ApiResponse::error('FORBIDDEN', 'Bạn không có quyền phê duyệt quyết định OCOP', status: 403);
+        if (!Gate::allows('OCOP_DECISION.APPROVE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền phê duyệt quyết định OCOP', status: 403);
         }
 
         $dto = ApproveFinalDecisionDTO::fromArray($request->validated());

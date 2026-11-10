@@ -9,14 +9,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Agriculture\Application\DTOs\CreateFarmingLogDTO;
 use Modules\Agriculture\Application\DTOs\UpdateFarmingLogDTO;
-use Modules\Agriculture\Domain\Entities\FarmingLog;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonPlotModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogItemModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
+use Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\PhiCalculationModel;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\Services\TenantContext;
+use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
 
 class FarmingLogService
 {
@@ -74,7 +75,7 @@ class FarmingLogService
             'material',
             'items.material',
             'materialUsages',
-            'phiCalculations'
+            'phiCalculations',
         ]);
 
         if ($this->tenantContext->hasTenant()) {
@@ -135,7 +136,7 @@ class FarmingLogService
             'material',
             'items.material',
             'materialUsages',
-            'phiCalculations'
+            'phiCalculations',
         ])->find($id);
 
         if (!$log) {
@@ -213,7 +214,7 @@ class FarmingLogService
                 }
             }
         } elseif (($effectivePhi === 0 || $effectivePhi === null) && $dto->materialId) {
-            $mat = \Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel::find($dto->materialId);
+            $mat = MaterialModel::find($dto->materialId);
             if ($mat && isset($mat->safety_information['phi_days']) && is_numeric($mat->safety_information['phi_days'])) {
                 $effectivePhi = (int) $mat->safety_information['phi_days'];
             }
@@ -363,18 +364,42 @@ class FarmingLogService
         $before = $log->toArray();
         $updates = [];
 
-        if ($dto->activityType !== null) $updates['activity_type'] = $dto->activityType;
-        if ($dto->activityDate !== null) $updates['activity_date'] = $dto->activityDate;
-        if ($dto->description !== null) $updates['description'] = $dto->description;
-        if ($dto->performedBy !== null) $updates['performed_by'] = $dto->performedBy;
-        if ($dto->attachmentReference !== null) $updates['attachment_reference'] = $dto->attachmentReference;
-        if ($dto->materialId !== null) $updates['material_id'] = $dto->materialId;
-        if ($dto->materialBatchNumber !== null) $updates['material_batch_number'] = $dto->materialBatchNumber;
-        if ($dto->quantityApplied !== null) $updates['quantity_applied'] = $dto->quantityApplied;
-        if ($dto->unit !== null) $updates['unit'] = $dto->unit;
-        if ($dto->phiDays !== null) $updates['phi_days'] = $dto->phiDays;
-        if ($dto->gpsLatitude !== null) $updates['gps_latitude'] = $dto->gpsLatitude;
-        if ($dto->gpsLongitude !== null) $updates['gps_longitude'] = $dto->gpsLongitude;
+        if ($dto->activityType !== null) {
+            $updates['activity_type'] = $dto->activityType;
+        }
+        if ($dto->activityDate !== null) {
+            $updates['activity_date'] = $dto->activityDate;
+        }
+        if ($dto->description !== null) {
+            $updates['description'] = $dto->description;
+        }
+        if ($dto->performedBy !== null) {
+            $updates['performed_by'] = $dto->performedBy;
+        }
+        if ($dto->attachmentReference !== null) {
+            $updates['attachment_reference'] = $dto->attachmentReference;
+        }
+        if ($dto->materialId !== null) {
+            $updates['material_id'] = $dto->materialId;
+        }
+        if ($dto->materialBatchNumber !== null) {
+            $updates['material_batch_number'] = $dto->materialBatchNumber;
+        }
+        if ($dto->quantityApplied !== null) {
+            $updates['quantity_applied'] = $dto->quantityApplied;
+        }
+        if ($dto->unit !== null) {
+            $updates['unit'] = $dto->unit;
+        }
+        if ($dto->phiDays !== null) {
+            $updates['phi_days'] = $dto->phiDays;
+        }
+        if ($dto->gpsLatitude !== null) {
+            $updates['gps_latitude'] = $dto->gpsLatitude;
+        }
+        if ($dto->gpsLongitude !== null) {
+            $updates['gps_longitude'] = $dto->gpsLongitude;
+        }
 
         if (!empty($updates)) {
             $log->update($updates);
@@ -400,7 +425,7 @@ class FarmingLogService
             throw new DomainException('Không thể xóa nhật ký canh tác của mùa vụ đã đóng hoặc hủy', 'SEASON_CLOSED', null, 400);
         }
 
-        $hasHarvest = \Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel::where('crop_season_id', $log->crop_season_id)
+        $hasHarvest = HarvestModel::where('crop_season_id', $log->crop_season_id)
             ->where('plot_id', $log->plot_id)
             ->exists();
 
@@ -498,15 +523,15 @@ class FarmingLogService
                     attachmentReference: $itemData['attachment_reference'] ?? null,
                     materialId: $itemData['material_id'] ?? null,
                     materialBatchNumber: $itemData['material_batch_number'] ?? null,
-                    quantityApplied: isset($itemData['quantity_applied']) ? (float)$itemData['quantity_applied'] : null,
+                    quantityApplied: isset($itemData['quantity_applied']) ? (float) $itemData['quantity_applied'] : null,
                     unit: $itemData['unit'] ?? null,
-                    phiDays: isset($itemData['phi_days']) ? (int)$itemData['phi_days'] : null,
-                    gpsLatitude: isset($itemData['gps_latitude']) ? (float)$itemData['gps_latitude'] : null,
-                    gpsLongitude: isset($itemData['gps_longitude']) ? (float)$itemData['gps_longitude'] : null,
+                    phiDays: isset($itemData['phi_days']) ? (int) $itemData['phi_days'] : null,
+                    gpsLatitude: isset($itemData['gps_latitude']) ? (float) $itemData['gps_latitude'] : null,
+                    gpsLongitude: isset($itemData['gps_longitude']) ? (float) $itemData['gps_longitude'] : null,
                     fertigationMethod: $itemData['fertigation_method'] ?? null,
-                    ecSolution: isset($itemData['ec_solution']) ? (float)$itemData['ec_solution'] : null,
-                    ecDrain: isset($itemData['ec_drain']) ? (float)$itemData['ec_drain'] : null,
-                    phSolution: isset($itemData['ph_solution']) ? (float)$itemData['ph_solution'] : null,
+                    ecSolution: isset($itemData['ec_solution']) ? (float) $itemData['ec_solution'] : null,
+                    ecDrain: isset($itemData['ec_drain']) ? (float) $itemData['ec_drain'] : null,
+                    phSolution: isset($itemData['ph_solution']) ? (float) $itemData['ph_solution'] : null,
                     tankComposition: $itemData['tank_composition'] ?? null,
                     pestTarget: $itemData['pest_target'] ?? null,
                     pestDensity: $itemData['pest_density'] ?? null,
@@ -516,7 +541,7 @@ class FarmingLogService
                     materialExportSlipCode: $itemData['material_export_slip_code'] ?? null,
                     biocontrolAgentName: $itemData['biocontrol_agent_name'] ?? null,
                     biocontrolReleaseRate: $itemData['biocontrol_release_rate'] ?? null,
-                    waterVolumeLiters: isset($itemData['water_volume_liters']) ? (float)$itemData['water_volume_liters'] : null,
+                    waterVolumeLiters: isset($itemData['water_volume_liters']) ? (float) $itemData['water_volume_liters'] : null,
                     applicationEquipment: $itemData['application_equipment'] ?? null,
                     clientUuid: $itemData['client_uuid'] ?? null,
                     items: $itemData['items'] ?? null,
@@ -558,12 +583,14 @@ class FarmingLogService
 
     private function checkBannedActiveIngredient(?string $ingredient): void
     {
-        if (!$ingredient) return;
+        if (!$ingredient) {
+            return;
+        }
         $clean = mb_strtolower(trim($ingredient));
         foreach (self::BANNED_ACTIVE_INGREDIENTS as $banned) {
             if (str_contains($clean, $banned)) {
                 throw new DomainException(
-                    'Hoạt chất "' . $ingredient . '" nằm trong danh mục CẤM SỬ DỤNG theo Thông tư 75/2025/TT-BNNMT. Vui lòng dừng ngay hoạt động!',
+                    'Hoạt chất "'.$ingredient.'" nằm trong danh mục CẤM SỬ DỤNG theo Thông tư 75/2025/TT-BNNMT. Vui lòng dừng ngay hoạt động!',
                     'ERR_BANNED_PESTICIDE_VIOLATION',
                     null,
                     422
@@ -574,7 +601,9 @@ class FarmingLogService
 
     private function validateHarvestScheduleConflict(string $plotId, string $activityDate, int $phiDays): void
     {
-        if ($phiDays <= 0) return;
+        if ($phiDays <= 0) {
+            return;
+        }
 
         $safeDate = Carbon::parse($activityDate)->addDays($phiDays)->format('Y-m-d');
 
@@ -605,9 +634,10 @@ class FarmingLogService
 
             // Tầng 2: Khoảng cách ngắn nhất tới cạnh mép thửa đất
             $minDist = $this->minDistanceToPolygonEdges($lat, $lon, $boundary);
+
             return [
                 'distance' => round($minDist, 2),
-                'verified' => $minDist <= 50.0 // Dung sai 50m
+                'verified' => $minDist <= 50.0, // Dung sai 50m
             ];
         }
 
@@ -616,10 +646,11 @@ class FarmingLogService
         $cLon = $plot->gps_lng ?? ($plot->longitude ?? null);
 
         if ($cLat !== null && $cLon !== null) {
-            $dist = $this->haversineDistanceMeters($lat, $lon, (float)$cLat, (float)$cLon);
+            $dist = $this->haversineDistanceMeters($lat, $lon, (float) $cLat, (float) $cLon);
+
             return [
                 'distance' => round($dist, 2),
-                'verified' => $dist <= 50.0
+                'verified' => $dist <= 50.0,
             ];
         }
 
@@ -642,6 +673,7 @@ class FarmingLogService
                 $inside = !$inside;
             }
         }
+
         return $inside;
     }
 
@@ -660,6 +692,7 @@ class FarmingLogService
                 $minDist = $dist;
             }
         }
+
         return $minDist;
     }
 
@@ -701,6 +734,7 @@ class FarmingLogService
             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
             sin($dLon / 2) * sin($dLon / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
         return $r * $c;
     }
 
@@ -709,9 +743,9 @@ class FarmingLogService
         $hasActivePhi = PhiCalculationModel::whereHas('farmingLog', function ($q) use ($plotId) {
             $q->where('plot_id', $plotId);
         })
-        ->where('status', 'ACTIVE')
-        ->where('safety_date', '>=', now()->format('Y-m-d'))
-        ->exists();
+            ->where('status', 'ACTIVE')
+            ->where('safety_date', '>=', now()->format('Y-m-d'))
+            ->exists();
 
         if (!$hasActivePhi) {
             FarmPlotModel::where('id', $plotId)->update([

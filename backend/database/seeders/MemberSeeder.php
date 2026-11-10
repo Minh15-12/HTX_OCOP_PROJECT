@@ -210,7 +210,7 @@ class MemberSeeder extends Seeder
 
             if (!empty($m['contribution'])) {
                 $c = $m['contribution'];
-                $certCode = 'GCN-' . date('Y') . '-' . strtoupper(Str::random(6));
+                $certCode = 'GCN-'.date('Y').'-'.strtoupper(Str::random(6));
 
                 $contrib = CapitalContributionModel::firstOrCreate(
                     [
@@ -229,7 +229,7 @@ class MemberSeeder extends Seeder
                         'certificate_code' => $certCode,
                         'certificate_issue_date' => $c['date'],
                         'issue_count' => 1,
-                        'qr_code_url' => 'https://htx.ocop.gov.vn/verify-certificate?code=' . $certCode,
+                        'qr_code_url' => 'https://htx.ocop.gov.vn/verify-certificate?code='.$certCode,
                     ]
                 );
 

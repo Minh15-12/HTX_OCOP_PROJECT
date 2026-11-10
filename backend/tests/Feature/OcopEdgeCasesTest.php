@@ -26,7 +26,7 @@ class OcopEdgeCasesTest extends TestCase
     {
         $cooperative = $cooperative ?: CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_EDGE_' . Str::random(4),
+            'cooperative_code' => 'HTX_EDGE_'.Str::random(4),
             'legal_name' => 'HTX Tân Tiến Edge Cases',
             'status' => 'ACTIVE',
         ]);
@@ -38,8 +38,8 @@ class OcopEdgeCasesTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'edge_' . Str::random(4),
-            'email' => 'edge_' . Str::random(4) . '@htx.vn',
+            'username' => 'edge_'.Str::random(4),
+            'email' => 'edge_'.Str::random(4).'@htx.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Nông Dân Tân Tiến Test',
             'cooperative_id' => $cooperative->id,
@@ -65,7 +65,7 @@ class OcopEdgeCasesTest extends TestCase
         $product = ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $cooperativeId,
-            'product_code' => 'PROD-EDGE-' . Str::random(4),
+            'product_code' => 'PROD-EDGE-'.Str::random(4),
             'product_name' => 'Ớt chuông Sweet Palermo Đỏ Đà Lạt',
             'category' => 'FOOD',
             'unit' => 'KG',
@@ -74,7 +74,7 @@ class OcopEdgeCasesTest extends TestCase
 
         $version = CriteriaVersionModel::create([
             'id' => (string) Str::uuid(),
-            'version_code' => 'VER-EDGE-' . Str::random(4),
+            'version_code' => 'VER-EDGE-'.Str::random(4),
             'name' => 'Bộ Tiêu Chí QĐ 148 Đầy Đủ 2026',
             'status' => 'PUBLISHED',
         ]);
@@ -141,7 +141,7 @@ class OcopEdgeCasesTest extends TestCase
         ]);
 
         $response = $this->postJson("/api/v1/ocop/applications/{$app->id}/submit", [], $auth['headers']);
-        
+
         $response->assertStatus(400)
             ->assertJsonPath('success', false);
     }
@@ -170,7 +170,7 @@ class OcopEdgeCasesTest extends TestCase
 
         $councilLevel = CouncilLevelModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'PROVINCIAL_EDGE_' . Str::random(4),
+            'code' => 'PROVINCIAL_EDGE_'.Str::random(4),
             'name' => 'Hội đồng Tỉnh Lâm Đồng',
             'level_type' => 'PROVINCIAL',
         ]);
@@ -178,7 +178,7 @@ class OcopEdgeCasesTest extends TestCase
         $session = EvaluationSessionModel::create([
             'id' => (string) Str::uuid(),
             'application_id' => $app->id,
-            'session_code' => 'HD-EDGE-' . Str::random(4),
+            'session_code' => 'HD-EDGE-'.Str::random(4),
             'session_name' => 'Phiên chấm Ớt Palermo Tân Tiến',
             'council_level_id' => $councilLevel->id,
             'status' => 'IN_PROGRESS',
@@ -281,7 +281,7 @@ class OcopEdgeCasesTest extends TestCase
 
         $councilLevel = CouncilLevelModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'PROVINCIAL_EDGE_' . Str::random(4),
+            'code' => 'PROVINCIAL_EDGE_'.Str::random(4),
             'name' => 'Hội đồng Tỉnh Lâm Đồng',
             'level_type' => 'PROVINCIAL',
         ]);
@@ -289,7 +289,7 @@ class OcopEdgeCasesTest extends TestCase
         $session = EvaluationSessionModel::create([
             'id' => (string) Str::uuid(),
             'application_id' => $app->id,
-            'session_code' => 'HD-EDGE-' . Str::random(4),
+            'session_code' => 'HD-EDGE-'.Str::random(4),
             'session_name' => 'Phiên chấm Ớt Palermo Tân Tiến',
             'council_level_id' => $councilLevel->id,
             'status' => 'CONSOLIDATED',

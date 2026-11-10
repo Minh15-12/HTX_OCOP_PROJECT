@@ -3,10 +3,9 @@
 namespace Modules\Report\Application\Services;
 
 use App\Shared\Domain\Exceptions\DomainException;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardReportService
 {
@@ -81,7 +80,7 @@ class DashboardReportService
 
         // Total inventory volume from material batches
         $totalInventoryValue = 0.0;
-        if (\Illuminate\Support\Facades\Schema::hasTable('material_batches')) {
+        if (Schema::hasTable('material_batches')) {
             $batchQuery = DB::table('material_batches');
             if ($coopId) {
                 $batchQuery->where('cooperative_id', $coopId);
@@ -256,7 +255,7 @@ class DashboardReportService
 
         foreach ($decisions as $d) {
             $app = $apps->firstWhere('id', $d->application_id);
-            $effDate = $d->effective_date ? \Carbon\Carbon::parse($d->effective_date) : null;
+            $effDate = $d->effective_date ? Carbon::parse($d->effective_date) : null;
             $expDate = $effDate ? $effDate->copy()->addMonths(36) : null;
 
             $daysLeft = $expDate ? (int) $now->diffInDays($expDate, false) : 0;
@@ -391,7 +390,7 @@ class DashboardReportService
         $cashIncome = (float) DB::table('cash_transactions')
             ->where('transaction_type', 'INCOME')
             ->whereIn('status', ['APPROVED', 'COMPLETED', 'POSTED'])
-            ->when($coopId, fn($q) => $q->where('cooperative_id', $coopId))
+            ->when($coopId, fn ($q) => $q->where('cooperative_id', $coopId))
             ->sum('amount');
 
         return [

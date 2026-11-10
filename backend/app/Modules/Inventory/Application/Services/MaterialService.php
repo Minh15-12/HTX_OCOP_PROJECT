@@ -2,9 +2,9 @@
 
 namespace Modules\Inventory\Application\Services;
 
-use Illuminate\Support\Facades\DB;
 use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\Services\TenantContext;
@@ -39,12 +39,12 @@ class MaterialService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('sku', $likeOp, $search)
-                  ->orWhere('name', $likeOp, $search)
-                  ->orWhere('category', $likeOp, $search);
+                    ->orWhere('name', $likeOp, $search)
+                    ->orWhere('category', $likeOp, $search);
             });
         }
 
@@ -155,12 +155,24 @@ class MaterialService
         $before = $material->toArray();
 
         $updates = [];
-        if ($dto->name !== null) $updates['name'] = $dto->name;
-        if ($dto->category !== null) $updates['category'] = $dto->category;
-        if ($dto->unit !== null) $updates['unit'] = $dto->unit;
-        if ($dto->safetyInformation !== null) $updates['safety_information'] = $dto->safetyInformation;
-        if ($dto->reorderThreshold !== null) $updates['reorder_threshold'] = $dto->reorderThreshold;
-        if ($dto->status !== null) $updates['status'] = $dto->status;
+        if ($dto->name !== null) {
+            $updates['name'] = $dto->name;
+        }
+        if ($dto->category !== null) {
+            $updates['category'] = $dto->category;
+        }
+        if ($dto->unit !== null) {
+            $updates['unit'] = $dto->unit;
+        }
+        if ($dto->safetyInformation !== null) {
+            $updates['safety_information'] = $dto->safetyInformation;
+        }
+        if ($dto->reorderThreshold !== null) {
+            $updates['reorder_threshold'] = $dto->reorderThreshold;
+        }
+        if ($dto->status !== null) {
+            $updates['status'] = $dto->status;
+        }
 
         if (!empty($updates)) {
             if (isset($updates['name']) || isset($updates['safety_information'])) {
@@ -189,10 +201,10 @@ class MaterialService
     {
         $bannedSubstances = [
             'PARAQUAT', '2,4-D', 'GLYPHOSATE', 'METHAMIDOPHOS', 'CARBOFURAN',
-            'CHLORDANE', 'ENDOSULFAN', 'HOAT_CHAT_CAM'
+            'CHLORDANE', 'ENDOSULFAN', 'HOAT_CHAT_CAM',
         ];
 
-        $textToSearch = strtoupper(($name ?? '') . ' ' . json_encode($safetyInformation ?? []));
+        $textToSearch = strtoupper(($name ?? '').' '.json_encode($safetyInformation ?? []));
         $cooperativeId = $this->tenantContext->hasTenant() ? $this->tenantContext->getCooperativeId() : null;
 
         foreach ($bannedSubstances as $banned) {
@@ -203,7 +215,7 @@ class MaterialService
                     after: ['name' => $name, 'banned_substance' => $banned],
                     cooperativeId: $cooperativeId
                 );
-                
+
                 throw new DomainException(
                     "Vật tư hoặc chế phẩm chứa hoạt chất cấm [{$banned}] theo quy định của Bộ NN&PTNT",
                     'ERR_SUPPLY_PROHIBITED_SUBSTANCE',
@@ -222,7 +234,7 @@ class MaterialService
             );
 
             throw new DomainException(
-                "Vật tư đánh dấu chứa hoạt chất cấm theo quy định của Bộ NN&PTNT",
+                'Vật tư đánh dấu chứa hoạt chất cấm theo quy định của Bộ NN&PTNT',
                 'ERR_SUPPLY_PROHIBITED_SUBSTANCE',
                 null,
                 422

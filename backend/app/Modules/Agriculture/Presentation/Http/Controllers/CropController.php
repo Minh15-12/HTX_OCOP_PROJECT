@@ -20,13 +20,13 @@ class CropController extends BaseController
         }
 
         if ($request->filled('search')) {
-            $search = '%' . trim($request->input('search')) . '%';
+            $search = '%'.trim($request->input('search')).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('crop_code', $likeOp, $search)
-                  ->orWhere('name', $likeOp, $search)
-                  ->orWhere('scientific_name', $likeOp, $search)
-                  ->orWhere('category', $likeOp, $search);
+                    ->orWhere('name', $likeOp, $search)
+                    ->orWhere('scientific_name', $likeOp, $search)
+                    ->orWhere('category', $likeOp, $search);
             });
         }
 

@@ -21,7 +21,7 @@ class AuditAndReportTest extends TestCase
     {
         $cooperative = $cooperative ?: CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_RPT_' . Str::random(4),
+            'cooperative_code' => 'HTX_RPT_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp Báo Cáo',
             'status' => 'ACTIVE',
         ]);
@@ -33,8 +33,8 @@ class AuditAndReportTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'user_rpt_' . Str::random(4),
-            'email' => 'user_rpt_' . Str::random(4) . '@htx.vn',
+            'username' => 'user_rpt_'.Str::random(4),
+            'email' => 'user_rpt_'.Str::random(4).'@htx.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Nguyễn Văn Báo Cáo',
             'cooperative_id' => $cooperative->id,
@@ -60,7 +60,7 @@ class AuditAndReportTest extends TestCase
         $product = ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $cooperativeId,
-            'product_code' => 'PROD-RPT-' . Str::random(4),
+            'product_code' => 'PROD-RPT-'.Str::random(4),
             'product_name' => 'Mật Ong Rừng OCOP',
             'category' => 'FOOD',
             'unit' => 'BOTTLE',
@@ -69,7 +69,7 @@ class AuditAndReportTest extends TestCase
 
         $version = CriteriaVersionModel::create([
             'id' => (string) Str::uuid(),
-            'version_code' => 'VER-RPT-' . Str::random(4),
+            'version_code' => 'VER-RPT-'.Str::random(4),
             'name' => 'Bộ tiêu chí OCOP 2026',
             'status' => 'PUBLISHED',
         ]);
@@ -79,7 +79,7 @@ class AuditAndReportTest extends TestCase
             'cooperative_id' => $cooperativeId,
             'product_id' => $product->id,
             'criteria_version_id' => $version->id,
-            'application_number' => 'HS-RPT-' . Str::random(4),
+            'application_number' => 'HS-RPT-'.Str::random(4),
             'status' => 'APPROVED',
         ]);
 

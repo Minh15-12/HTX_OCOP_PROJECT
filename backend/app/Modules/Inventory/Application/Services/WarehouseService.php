@@ -31,12 +31,12 @@ class WarehouseService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('warehouse_code', $likeOp, $search)
-                  ->orWhere('name', $likeOp, $search)
-                  ->orWhere('location', $likeOp, $search);
+                    ->orWhere('name', $likeOp, $search)
+                    ->orWhere('location', $likeOp, $search);
             });
         }
 
@@ -72,8 +72,8 @@ class WarehouseService
 
     public function createWarehouse(array $data): WarehouseModel
     {
-        $coopId = $this->tenantContext->hasTenant() 
-            ? $this->tenantContext->getCooperativeId() 
+        $coopId = $this->tenantContext->hasTenant()
+            ? $this->tenantContext->getCooperativeId()
             : ($data['cooperative_id'] ?? null);
 
         if (!$coopId) {

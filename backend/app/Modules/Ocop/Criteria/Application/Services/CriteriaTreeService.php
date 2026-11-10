@@ -15,7 +15,6 @@ use Modules\Ocop\Criteria\Domain\Entities\CriteriaVersion;
 use Modules\Ocop\Criteria\Domain\Entities\Criterion;
 use Modules\Ocop\Criteria\Domain\Entities\Indicator;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaGroupModel;
-use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaVersionModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriterionModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\IndicatorModel;
 
@@ -31,6 +30,7 @@ class CriteriaTreeService
     public function listGroupsByVersion(string $versionId): Collection
     {
         $version = $this->versionService->getVersionById($versionId);
+
         return CriteriaGroupModel::with('criteria.indicators')
             ->where('criteria_version_id', $version->id)
             ->orderBy('display_order', 'asc')
@@ -235,17 +235,27 @@ class CriteriaTreeService
         $versionEntity->assertEditable();
 
         $updates = [];
-        if ($dto->name !== null) $updates['name'] = $dto->name;
-        if ($dto->description !== null) $updates['description'] = $dto->description;
+        if ($dto->name !== null) {
+            $updates['name'] = $dto->name;
+        }
+        if ($dto->description !== null) {
+            $updates['description'] = $dto->description;
+        }
         if ($dto->maxScore !== null) {
             if ($dto->maxScore < 0.0 || $dto->maxScore > 100.0) {
                 throw new DomainException('Điểm tối đa của chỉ tiêu phải từ 0 đến 100', 'INVALID_INDICATOR_SCORE', null, 400);
             }
             $updates['max_score'] = $dto->maxScore;
         }
-        if ($dto->mandatory !== null) $updates['mandatory'] = $dto->mandatory;
-        if ($dto->evidenceRequirement !== null) $updates['evidence_requirement'] = $dto->evidenceRequirement;
-        if ($dto->displayOrder !== null) $updates['display_order'] = $dto->displayOrder;
+        if ($dto->mandatory !== null) {
+            $updates['mandatory'] = $dto->mandatory;
+        }
+        if ($dto->evidenceRequirement !== null) {
+            $updates['evidence_requirement'] = $dto->evidenceRequirement;
+        }
+        if ($dto->displayOrder !== null) {
+            $updates['display_order'] = $dto->displayOrder;
+        }
 
         if (!empty($updates)) {
             $indicator->update($updates);

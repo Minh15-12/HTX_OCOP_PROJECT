@@ -2,10 +2,10 @@
 
 namespace Modules\Product\Application\Services;
 
-use Illuminate\Support\Facades\DB;
 use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Agriculture\Application\Services\LotService;
 use Modules\Audit\Application\Services\AuditService;
@@ -42,12 +42,12 @@ class ProductService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('product_code', $likeOp, $search)
-                  ->orWhere('product_name', $likeOp, $search)
-                  ->orWhere('category', $likeOp, $search);
+                    ->orWhere('product_name', $likeOp, $search)
+                    ->orWhere('category', $likeOp, $search);
             });
         }
 
@@ -138,12 +138,24 @@ class ProductService
         $before = $product->toArray();
 
         $updates = [];
-        if ($dto->productName !== null) $updates['product_name'] = $dto->productName;
-        if ($dto->category !== null) $updates['category'] = $dto->category;
-        if ($dto->specification !== null) $updates['specification'] = $dto->specification;
-        if ($dto->brand !== null) $updates['brand'] = $dto->brand;
-        if ($dto->qualityInformation !== null) $updates['quality_information'] = $dto->qualityInformation;
-        if ($dto->status !== null) $updates['status'] = $dto->status;
+        if ($dto->productName !== null) {
+            $updates['product_name'] = $dto->productName;
+        }
+        if ($dto->category !== null) {
+            $updates['category'] = $dto->category;
+        }
+        if ($dto->specification !== null) {
+            $updates['specification'] = $dto->specification;
+        }
+        if ($dto->brand !== null) {
+            $updates['brand'] = $dto->brand;
+        }
+        if ($dto->qualityInformation !== null) {
+            $updates['quality_information'] = $dto->qualityInformation;
+        }
+        if ($dto->status !== null) {
+            $updates['status'] = $dto->status;
+        }
 
         if (!empty($updates)) {
             $product->update($updates);
@@ -194,6 +206,7 @@ class ProductService
     public function listProductLots(string $productId): Collection
     {
         $product = $this->getProductById($productId);
+
         return $product->lots;
     }
 }

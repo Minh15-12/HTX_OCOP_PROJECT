@@ -14,11 +14,11 @@ use Tests\TestCase;
 
 class CapitalContributionTest extends TestCase
 {
-    private function createCooperative(string $code = null): CooperativeModel
+    private function createCooperative(?string $code = null): CooperativeModel
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => $code ?: 'HTX_' . Str::random(5),
+            'cooperative_code' => $code ?: 'HTX_'.Str::random(5),
             'legal_name' => 'HTX Thử Nghiệm Góp Vốn',
             'status' => 'ACTIVE',
         ]);
@@ -28,22 +28,22 @@ class CapitalContributionTest extends TestCase
     {
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_CAPITAL_TEST_' . Str::random(4),
+            'code' => 'ROLE_CAPITAL_TEST_'.Str::random(4),
             'name' => 'Capital Test Role',
         ]);
 
         foreach ($permissionCodes as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Finance']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Finance']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'cap_user_' . Str::random(5),
-            'email' => 'cap_user_' . Str::random(5) . '@example.com',
+            'username' => 'cap_user_'.Str::random(5),
+            'email' => 'cap_user_'.Str::random(5).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Kế Toán Góp Vốn',
             'cooperative_id' => $coop->id,

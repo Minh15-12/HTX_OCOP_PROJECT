@@ -3,14 +3,20 @@
 namespace Modules\Inventory\Application\Services;
 
 use App\Shared\Domain\Exceptions\DomainException;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\Services\TenantContext;
+use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
+use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
+use Modules\Finance\Infrastructure\Persistence\Models\ReceivablePayableModel;
 use Modules\Inventory\Application\DTOs\CreateStockIssueDTO;
 use Modules\Inventory\Domain\Entities\StockIssue;
+use Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
+use Modules\Inventory\Infrastructure\Persistence\Models\MemberToolTrackingModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\StockIssueLineModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\StockIssueModel;
 
@@ -35,7 +41,7 @@ class StockIssueService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where('issue_number', $likeOp, $search);
         }
@@ -82,7 +88,7 @@ class StockIssueService
             throw new DomainException('Phiếu xuất kho phải chứa ít nhất 1 dòng vật tư', 'EMPTY_ISSUE_LINES', null, 400);
         }
 
-        $issueNumber = $dto->customIssueNumber ?: strtoupper('PXK-' . now()->format('Ymd') . '-' . Str::random(4));
+        $issueNumber = $dto->customIssueNumber ?: strtoupper('PXK-'.now()->format('Ymd').'-'.Str::random(4));
 
         $exists = StockIssueModel::where('issue_number', $issueNumber)->exists();
         if ($exists) {
@@ -198,7 +204,7 @@ class StockIssueService
         return DB::transaction(function () use ($issue, $domainEntity, $approverId) {
             // Check member credit limit if issued on credit
             if ($issue->is_credit && $issue->member_id) {
-                $member = \Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::find($issue->member_id);
+                $member = MemberModel::find($issue->member_id);
                 if ($member) {
                     $existingCreditDebt = (float) StockIssueModel::where('member_id', $issue->member_id)
                         ->where('is_credit', true)
@@ -235,7 +241,7 @@ class StockIssueService
 
                 // FEFO Batch stock deduction
                 $needed = (float) $line->quantity;
-                $batchQuery = \Modules\Inventory\Infrastructure\Persistence\Models\MaterialBatchModel::where('material_id', $line->material_id)
+                $batchQuery = MaterialBatchModel::where('material_id', $line->material_id)
                     ->where('cooperative_id', $issue->cooperative_id)
                     ->where('quantity', '>', 0);
 
@@ -249,11 +255,13 @@ class StockIssueService
                 $batches = $batchQuery->get();
 
                 foreach ($batches as $batch) {
-                    if ($needed <= 0) break;
+                    if ($needed <= 0) {
+                        break;
+                    }
 
-                    if ($batch->expired_at && \Carbon\Carbon::parse($batch->expired_at)->isPast()) {
+                    if ($batch->expired_at && Carbon::parse($batch->expired_at)->isPast()) {
                         throw new DomainException(
-                            "Lô vật tư [{$batch->batch_number}] của [{$mat->name}] đã hết hạn vào ngày " . \Carbon\Carbon::parse($batch->expired_at)->format('d/m/Y') . ", bị khóa xuất kho theo quy chuẩn an toàn VietGAP!",
+                            "Lô vật tư [{$batch->batch_number}] của [{$mat->name}] đã hết hạn vào ngày ".Carbon::parse($batch->expired_at)->format('d/m/Y').', bị khóa xuất kho theo quy chuẩn an toàn VietGAP!',
                             'MATERIAL_BATCH_EXPIRED',
                             null,
                             400
@@ -267,12 +275,12 @@ class StockIssueService
 
                 // Auto-create off-balance Account 005 record if issuing durable tools
                 if ($mat->is_durable_tool && $issue->member_id) {
-                    \Modules\Inventory\Infrastructure\Persistence\Models\MemberToolTrackingModel::create([
+                    MemberToolTrackingModel::create([
                         'id' => (string) Str::uuid(),
                         'cooperative_id' => $issue->cooperative_id,
                         'member_id' => $issue->member_id,
                         'material_id' => $mat->id,
-                        'serial_number' => $line->batch_code ?: ('TOOL-' . strtoupper(Str::random(6))),
+                        'serial_number' => $line->batch_code ?: ('TOOL-'.strtoupper(Str::random(6))),
                         'quantity' => (int) $line->quantity,
                         'status' => 'IN_USE',
                         'assigned_date' => $issue->issue_date,
@@ -306,9 +314,9 @@ class StockIssueService
             if ($issue->is_credit && $issue->member_id && (float) $issue->total_amount > 0) {
                 $member = $issue->member;
                 $memberName = $member?->identity_information['full_name'] ?? $member?->member_code ?? 'Xã viên HTX';
-                $debtCode = strtoupper('CN-THU-' . now()->format('Ymd') . '-' . Str::random(4));
+                $debtCode = strtoupper('CN-THU-'.now()->format('Ymd').'-'.Str::random(4));
 
-                \Modules\Finance\Infrastructure\Persistence\Models\ReceivablePayableModel::create([
+                ReceivablePayableModel::create([
                     'id' => (string) Str::uuid(),
                     'cooperative_id' => $issue->cooperative_id,
                     'debt_code' => $debtCode,
@@ -323,12 +331,12 @@ class StockIssueService
                     'outstanding_amount' => (float) $issue->total_amount,
                     'due_date' => now()->addDays(90)->toDateString(),
                     'status' => 'OPEN',
-                    'description' => "Nợ vật tư trả chậm theo Phiếu xuất [{$issue->issue_number}]" . ($issue->cropSeason ? " - Vụ: {$issue->cropSeason->name}" : ''),
+                    'description' => "Nợ vật tư trả chậm theo Phiếu xuất [{$issue->issue_number}]".($issue->cropSeason ? " - Vụ: {$issue->cropSeason->name}" : ''),
                 ]);
             } elseif (!$issue->is_credit && (float) $issue->total_amount > 0) {
                 // GAP-FIN-02: Auto-record Cash Transaction (Income) when sold for immediate cash
-                $voucherNumber = strtoupper('PT-XK-' . now()->format('Ymd') . '-' . Str::random(4));
-                \Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel::create([
+                $voucherNumber = strtoupper('PT-XK-'.now()->format('Ymd').'-'.Str::random(4));
+                CashTransactionModel::create([
                     'id' => (string) Str::uuid(),
                     'cooperative_id' => $issue->cooperative_id,
                     'voucher_number' => $voucherNumber,
@@ -398,6 +406,7 @@ class StockIssueService
 
         $lines = $issue->lines->map(function ($line, $index) {
             $mat = $line->material;
+
             return [
                 'stt' => $index + 1,
                 'name' => $mat?->name ?? 'Vật tư nông nghiệp',
@@ -433,7 +442,7 @@ class StockIssueService
             'is_credit' => (bool) $issue->is_credit,
             'lines' => $lines,
             'total_amount' => (float) $issue->total_amount,
-            'total_amount_in_words' => number_format((float) $issue->total_amount, 0, ',', '.') . ' đồng chẵn',
+            'total_amount_in_words' => number_format((float) $issue->total_amount, 0, ',', '.').' đồng chẵn',
             'packaging_return' => [
                 'status' => $issue->packaging_returned_status ?? 'NOT_REQUIRED',
                 'expected' => (int) ($issue->empty_bottles_expected ?? 0),
@@ -446,7 +455,7 @@ class StockIssueService
                 'storekeeper' => 'Thủ Kho Trung Tâm',
                 'accountant' => 'Kế Toán Trưởng',
                 'director' => 'Giám Đốc Hợp Tác Xã',
-            ]
+            ],
         ];
     }
 }

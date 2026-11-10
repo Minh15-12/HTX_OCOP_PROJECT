@@ -9,8 +9,7 @@ class RejectApplicationDTO
         public readonly string $decisionDate,
         public readonly string $reason,
         public readonly ?array $authorityReference = null
-    ) {
-    }
+    ) {}
 
     public static function fromArray(array $data): self
     {

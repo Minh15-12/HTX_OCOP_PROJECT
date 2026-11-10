@@ -2,19 +2,19 @@
 
 namespace App\Shared\Presentation\Http\Middleware;
 
+use App\Shared\Infrastructure\Models\IdempotencyKeyModel;
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
-use App\Shared\Infrastructure\Models\IdempotencyKeyModel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 
 class IdempotencyMiddleware
 {
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -37,14 +37,16 @@ class IdempotencyMiddleware
                 // If it's still processing (no response_code yet)
                 if (is_null($record->response_code)) {
                     DB::rollBack();
+
                     return response()->json([
                         'error' => 'ERR_CONCURRENT_MODIFICATION',
-                        'message' => 'Request is already being processed.'
+                        'message' => 'Request is already being processed.',
                     ], 409);
                 }
 
                 // If already processed and successful (2xx), return cached response
                 DB::rollBack();
+
                 return response()->json($record->response_body, $record->response_code);
             }
 
@@ -64,7 +66,7 @@ class IdempotencyMiddleware
         // Process request
         $response = $next($request);
 
-        // Save response if it's successful (2xx) or specific business logic errors that are considered "done" (e.g. 400, 422). 
+        // Save response if it's successful (2xx) or specific business logic errors that are considered "done" (e.g. 400, 422).
         // We shouldn't cache 500s because we want the client to retry.
         $statusCode = $response->getStatusCode();
         if ($statusCode >= 200 && $statusCode < 500) {

@@ -3,6 +3,7 @@
 namespace Modules\Agriculture\Application\Services;
 
 use App\Shared\Domain\Exceptions\DomainException;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Modules\Agriculture\Application\DTOs\CreateHarvestDTO;
@@ -116,8 +117,12 @@ class HarvestService
         $qualityInfo['grade_a_kg'] = ($grade === 'GRADE_A') ? ($dto->gradeAKg !== null ? (float) $dto->gradeAKg : (float) $dto->quantity) : 0.0;
         $qualityInfo['grade_b_kg'] = $dto->gradeBKg !== null ? (float) $dto->gradeBKg : ($grade === 'GRADE_B' ? (float) $dto->quantity : 0.0);
         $qualityInfo['reject_kg'] = $dto->rejectKg !== null ? (float) $dto->rejectKg : ($grade === 'REJECT' ? (float) $dto->quantity : 0.0);
-        if ($dto->brixLevel !== null) $qualityInfo['brix_level'] = $dto->brixLevel;
-        if ($dto->uniformityRate !== null) $qualityInfo['uniformity_rate'] = $dto->uniformityRate;
+        if ($dto->brixLevel !== null) {
+            $qualityInfo['brix_level'] = $dto->brixLevel;
+        }
+        if ($dto->uniformityRate !== null) {
+            $qualityInfo['uniformity_rate'] = $dto->uniformityRate;
+        }
         $maxStage = HarvestModel::where('crop_season_id', $season->id)->where('plot_id', $plot->id)->max('stage_number');
         $stageNumber = $dto->stageNumber ?? (($maxStage ?? 0) + 1);
 
@@ -130,8 +135,8 @@ class HarvestService
 
         $lastSprayDate = $latestSprayLog?->activity_date;
         $lastActiveIngredient = $latestSprayLog?->active_ingredient;
-        $daysSinceLastSpray = $lastSprayDate ? \Carbon\Carbon::parse($dto->harvestDate)->diffInDays($lastSprayDate) : null;
-        $weighingSlip = $dto->weighingSlipCode ?? ('PC-SK-' . strtoupper(substr(str_replace('-', '', (string) Str::uuid()), 0, 6)));
+        $daysSinceLastSpray = $lastSprayDate ? Carbon::parse($dto->harvestDate)->diffInDays($lastSprayDate) : null;
+        $weighingSlip = $dto->weighingSlipCode ?? ('PC-SK-'.strtoupper(substr(str_replace('-', '', (string) Str::uuid()), 0, 6)));
 
         // Anti-fraud: calculate ecological harvest quota & detect over-quota
         $harvestQty = (float) $domainEntity->quantity;
@@ -208,14 +213,30 @@ class HarvestService
             $updates['quantity'] = $dto->quantity;
         }
 
-        if ($dto->unit !== null) $updates['unit'] = $dto->unit;
-        if ($dto->qualityInformation !== null) $updates['quality_information'] = $dto->qualityInformation;
-        if ($dto->kcsStatus !== null) $updates['kcs_status'] = $dto->kcsStatus;
-        if ($dto->kcsGateCheck !== null) $updates['kcs_gate_check'] = $dto->kcsGateCheck;
-        if ($dto->kcsQuickLab !== null) $updates['kcs_quick_lab'] = $dto->kcsQuickLab;
-        if ($dto->grade !== null) $updates['grade'] = $dto->grade;
-        if ($dto->brixLevel !== null) $updates['brix_level'] = $dto->brixLevel;
-        if ($dto->uniformityRate !== null) $updates['uniformity_rate'] = $dto->uniformityRate;
+        if ($dto->unit !== null) {
+            $updates['unit'] = $dto->unit;
+        }
+        if ($dto->qualityInformation !== null) {
+            $updates['quality_information'] = $dto->qualityInformation;
+        }
+        if ($dto->kcsStatus !== null) {
+            $updates['kcs_status'] = $dto->kcsStatus;
+        }
+        if ($dto->kcsGateCheck !== null) {
+            $updates['kcs_gate_check'] = $dto->kcsGateCheck;
+        }
+        if ($dto->kcsQuickLab !== null) {
+            $updates['kcs_quick_lab'] = $dto->kcsQuickLab;
+        }
+        if ($dto->grade !== null) {
+            $updates['grade'] = $dto->grade;
+        }
+        if ($dto->brixLevel !== null) {
+            $updates['brix_level'] = $dto->brixLevel;
+        }
+        if ($dto->uniformityRate !== null) {
+            $updates['uniformity_rate'] = $dto->uniformityRate;
+        }
 
         // Handle grade and kg updates if provided
         $currentQuality = $updates['quality_information'] ?? $harvest->quality_information ?? [];
@@ -225,13 +246,27 @@ class HarvestService
         } elseif ($dto->gradeAKg !== null) {
             $currentQuality['grade_a_kg'] = (float) $dto->gradeAKg;
         }
-        if ($dto->gradeBKg !== null) $currentQuality['grade_b_kg'] = (float) $dto->gradeBKg;
-        if ($dto->rejectKg !== null) $currentQuality['reject_kg'] = (float) $dto->rejectKg;
-        if ($dto->brixLevel !== null) $currentQuality['brix_level'] = $dto->brixLevel;
-        if ($dto->uniformityRate !== null) $currentQuality['uniformity_rate'] = $dto->uniformityRate;
-        if ($dto->stageNumber !== null) $updates['stage_number'] = $dto->stageNumber;
-        if ($dto->weighingSlipCode !== null) $updates['weighing_slip_code'] = $dto->weighingSlipCode;
-        if ($dto->rejectionWeightKg !== null) $updates['rejection_weight_kg'] = $dto->rejectionWeightKg;
+        if ($dto->gradeBKg !== null) {
+            $currentQuality['grade_b_kg'] = (float) $dto->gradeBKg;
+        }
+        if ($dto->rejectKg !== null) {
+            $currentQuality['reject_kg'] = (float) $dto->rejectKg;
+        }
+        if ($dto->brixLevel !== null) {
+            $currentQuality['brix_level'] = $dto->brixLevel;
+        }
+        if ($dto->uniformityRate !== null) {
+            $currentQuality['uniformity_rate'] = $dto->uniformityRate;
+        }
+        if ($dto->stageNumber !== null) {
+            $updates['stage_number'] = $dto->stageNumber;
+        }
+        if ($dto->weighingSlipCode !== null) {
+            $updates['weighing_slip_code'] = $dto->weighingSlipCode;
+        }
+        if ($dto->rejectionWeightKg !== null) {
+            $updates['rejection_weight_kg'] = $dto->rejectionWeightKg;
+        }
 
         if (!empty($updates)) {
             $harvest->update($updates);

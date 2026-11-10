@@ -11,8 +11,6 @@ use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
 use Modules\Finance\Infrastructure\Persistence\Models\DebtSettlementModel;
 use Modules\Finance\Infrastructure\Persistence\Models\ReceivablePayableModel;
-use Modules\Finance\Infrastructure\Persistence\Models\SurplusDistributionAllocationModel;
-use Modules\Finance\Infrastructure\Persistence\Models\SurplusDistributionPlanModel;
 use Modules\Identity\Infrastructure\Persistence\Models\PermissionModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
@@ -20,11 +18,11 @@ use Tests\TestCase;
 
 class FinanceManagementTest extends TestCase
 {
-    private function createCooperative(string $code = null): CooperativeModel
+    private function createCooperative(?string $code = null): CooperativeModel
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => $code ?: 'HTX_FIN_' . Str::random(4),
+            'cooperative_code' => $code ?: 'HTX_FIN_'.Str::random(4),
             'legal_name' => 'HTX Dịch Vụ Nông Nghiệp Tài Chính',
             'status' => 'ACTIVE',
         ]);
@@ -34,22 +32,22 @@ class FinanceManagementTest extends TestCase
     {
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_FIN_TEST_' . Str::random(4),
+            'code' => 'ROLE_FIN_TEST_'.Str::random(4),
             'name' => 'Finance Test Role',
         ]);
 
         foreach ($permissionCodes as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Finance']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Finance']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'fin_user_' . Str::random(5),
-            'email' => 'fin_user_' . Str::random(5) . '@example.com',
+            'username' => 'fin_user_'.Str::random(5),
+            'email' => 'fin_user_'.Str::random(5).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Kế Toán Trưởng HTX',
             'cooperative_id' => $coop->id,
@@ -548,4 +546,3 @@ class FinanceManagementTest extends TestCase
         $this->assertEquals('POSTED', $cashExpense->status);
     }
 }
-

@@ -75,18 +75,21 @@ class OcopDocumentService
     public function getForm01PreviewHtml(string $applicationId): string
     {
         $application = $this->getApplicationWithRelations($applicationId);
+
         return $this->buildForm01HtmlContent($application);
     }
 
     public function getForm02PreviewHtml(string $applicationId): string
     {
         $application = $this->getApplicationWithRelations($applicationId);
+
         return $this->buildForm02HtmlContent($application);
     }
 
     public function getForm03PreviewHtml(string $applicationId): string
     {
         $application = $this->getApplicationWithRelations($applicationId);
+
         return $this->buildForm03HtmlContent($application);
     }
 
@@ -123,7 +126,7 @@ class OcopDocumentService
         // Generate Certificate HTML / PDF Content
         $htmlContent = $this->buildCertificateHtmlContent($application, $decision, $expirationDate);
 
-        $fileName = "certificate_{$application->id}_" . Str::random(6) . ".html";
+        $fileName = "certificate_{$application->id}_".Str::random(6).'.html';
         $storagePath = "documents/certificates/{$application->id}/{$fileName}";
 
         Storage::disk('local')->put($storagePath, $htmlContent);
@@ -223,7 +226,7 @@ class OcopDocumentService
         string $requestedBy
     ): GeneratedDocumentModel {
         $prefix = strtolower(str_replace('_', '-', $documentType));
-        $fileName = "{$prefix}_{$application->id}_" . Str::random(6) . '.html';
+        $fileName = "{$prefix}_{$application->id}_".Str::random(6).'.html';
         $storagePath = "documents/{$prefix}/{$application->id}/{$fileName}";
 
         Storage::disk('local')->put($storagePath, $htmlContent);
@@ -266,7 +269,7 @@ class OcopDocumentService
         $licenseNo = htmlspecialchars($app->cooperative->legal_information['license_no'] ?? '5801234567 do UBND Thành phố Đà Lạt cấp ngày 10/10/2018');
 
         $prodName = htmlspecialchars($app->product->product_name ?? 'Ớt chuông Sweet Palermo Đỏ Đà Lạt');
-        $appNumber = htmlspecialchars($app->application_number ?? ('HS-OCOP-' . date('Y') . '-' . substr($app->id, 0, 6)));
+        $appNumber = htmlspecialchars($app->application_number ?? ('HS-OCOP-'.date('Y').'-'.substr($app->id, 0, 6)));
         $dateStr = date('d/m/Y');
 
         return <<<HTML
@@ -400,7 +403,7 @@ HTML;
         $repName = htmlspecialchars($app->cooperative->legal_information['representative_name'] ?? 'Nguyễn Văn Tân');
         $licenseNo = htmlspecialchars($app->cooperative->legal_information['license_no'] ?? '5801234567 cấp ngày 10/10/2018');
         $prodName = htmlspecialchars($app->product->product_name ?? 'Ớt chuông Sweet Palermo Đỏ Đà Lạt');
-        $appNumber = htmlspecialchars($app->application_number ?? ('HS-OCOP-' . date('Y') . '-' . substr($app->id, 0, 6)));
+        $appNumber = htmlspecialchars($app->application_number ?? ('HS-OCOP-'.date('Y').'-'.substr($app->id, 0, 6)));
         $dateStr = date('d/m/Y');
 
         // Calculate score summary from self-assessments
@@ -612,7 +615,7 @@ HTML;
         $address = htmlspecialchars($app->cooperative->contact_information['address'] ?? 'Tổ Hòn Bồ, Phường 12, Thành phố Đà Lạt, Tỉnh Lâm Đồng');
         $repName = htmlspecialchars($app->cooperative->legal_information['representative_name'] ?? 'Nguyễn Văn Tân');
         $prodName = htmlspecialchars($app->product->product_name ?? 'Ớt chuông Sweet Palermo Đỏ Đà Lạt');
-        $appNumber = htmlspecialchars($app->application_number ?? ('HS-OCOP-' . date('Y') . '-' . substr($app->id, 0, 6)));
+        $appNumber = htmlspecialchars($app->application_number ?? ('HS-OCOP-'.date('Y').'-'.substr($app->id, 0, 6)));
         $dateStr = date('d/m/Y');
 
         return <<<HTML

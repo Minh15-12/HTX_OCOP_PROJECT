@@ -21,7 +21,7 @@ class CheckExpiringOcopCertificatesJob implements ShouldQueue
         // We warn when there are 3 months left, meaning completed_at is <= 33 months ago
         $thirtyThreeMonthsAgo = now()->subMonths(33)->format('Y-m-d H:i:s');
         $thirtySixMonthsAgo = now()->subMonths(36)->format('Y-m-d H:i:s');
-        
+
         $applications = OcopApplicationModel::where('status', 'CERTIFIED')
             ->whereNotNull('completed_at')
             ->where('completed_at', '<=', $thirtyThreeMonthsAgo)
@@ -32,7 +32,7 @@ class CheckExpiringOcopCertificatesJob implements ShouldQueue
             $directors = UserModel::whereHas('roles', function ($q) {
                 $q->where('code', 'DIRECTOR');
             })->where('cooperative_id', $app->cooperative_id)->get();
-            
+
             foreach ($directors as $director) {
                 $director->notify(new ExpiringOcopNotification($app));
             }

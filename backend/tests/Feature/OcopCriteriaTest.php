@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
@@ -20,7 +19,7 @@ class OcopCriteriaTest extends TestCase
     {
         $cooperative = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_OCOP_' . Str::random(4),
+            'cooperative_code' => 'HTX_OCOP_'.Str::random(4),
             'legal_name' => 'Hợp tác xã OCOP Thử Nghiệm',
             'status' => 'ACTIVE',
         ]);
@@ -32,8 +31,8 @@ class OcopCriteriaTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'admin_' . Str::random(4),
-            'email' => 'admin_' . Str::random(4) . '@ocop.vn',
+            'username' => 'admin_'.Str::random(4),
+            'email' => 'admin_'.Str::random(4).'@ocop.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Quản trị Bộ Tiêu chí',
             'cooperative_id' => $cooperative->id,
@@ -69,7 +68,7 @@ class OcopCriteriaTest extends TestCase
     public function test_create_criteria_version_creates_draft_version(): void
     {
         $auth = $this->createAuthUser();
-        $code = 'OCOP-2026-V1-' . Str::random(4);
+        $code = 'OCOP-2026-V1-'.Str::random(4);
 
         $response = $this->withHeaders($auth['headers'])
             ->postJson('/api/v1/ocop/criteria-versions', [
@@ -92,7 +91,7 @@ class OcopCriteriaTest extends TestCase
     public function test_create_criteria_tree_groups_criteria_and_indicators(): void
     {
         $auth = $this->createAuthUser();
-        $code = 'OCOP-TREE-' . Str::random(4);
+        $code = 'OCOP-TREE-'.Str::random(4);
 
         $versionResp = $this->withHeaders($auth['headers'])
             ->postJson('/api/v1/ocop/criteria-versions', [
@@ -137,7 +136,7 @@ class OcopCriteriaTest extends TestCase
     public function test_publish_version_fails_when_total_score_is_not_100(): void
     {
         $auth = $this->createAuthUser();
-        $code = 'OCOP-ERR-SCORE-' . Str::random(4);
+        $code = 'OCOP-ERR-SCORE-'.Str::random(4);
 
         $versionResp = $this->withHeaders($auth['headers'])
             ->postJson('/api/v1/ocop/criteria-versions', [
@@ -180,7 +179,7 @@ class OcopCriteriaTest extends TestCase
     public function test_publish_version_succeeds_when_total_score_equals_100(): void
     {
         $auth = $this->createAuthUser();
-        $code = 'OCOP-VALID-100-' . Str::random(4);
+        $code = 'OCOP-VALID-100-'.Str::random(4);
 
         $versionResp = $this->withHeaders($auth['headers'])
             ->postJson('/api/v1/ocop/criteria-versions', [
@@ -246,7 +245,7 @@ class OcopCriteriaTest extends TestCase
     public function test_published_criteria_version_is_immutable(): void
     {
         $auth = $this->createAuthUser();
-        $code = 'OCOP-IMMUTABLE-' . Str::random(4);
+        $code = 'OCOP-IMMUTABLE-'.Str::random(4);
 
         $version = CriteriaVersionModel::create([
             'id' => (string) Str::uuid(),

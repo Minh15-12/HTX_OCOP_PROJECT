@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Ocop;
 
+use App\Shared\Domain\Exceptions\DomainException;
 use Database\Seeders\OcopSweetPalermoCriteriaSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -22,22 +23,15 @@ use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaGroupModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaVersionModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriterionModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\IndicatorModel;
-use Modules\Ocop\Dossier\Application\DTOs\SaveSelfAssessmentDTO;
-use Modules\Ocop\Dossier\Application\Services\SelfAssessmentService;
-use Modules\Ocop\Dossier\Domain\Entities\EvidenceVersion as DomainEvidenceVersion;
 use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
 use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\SelfAssessmentModel;
 use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\EvaluationSessionModel;
 use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\EvaluatorAssignmentModel;
 use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\EvaluatorScoreModel;
-use Modules\Ocop\Evidence\Application\DTOs\ReplaceEvidenceVersionDTO;
-use Modules\Ocop\Evidence\Application\Services\EvidenceVersionService;
 use Modules\Ocop\Evidence\Domain\Entities\EvidenceVersion;
 use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel;
-use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceVersionModel;
 use Modules\Ocop\Services\OcopScoreSuggestionService;
 use Modules\Product\Infrastructure\Persistence\Models\ProductModel;
-use Modules\Report\Infrastructure\Persistence\Models\GeneratedDocumentModel;
 use Tests\TestCase;
 
 class OcopAdversarialChallengeTest extends TestCase
@@ -46,7 +40,7 @@ class OcopAdversarialChallengeTest extends TestCase
     {
         $cooperative = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX-ADV-' . Str::random(5),
+            'cooperative_code' => 'HTX-ADV-'.Str::random(5),
             'legal_name' => 'HTX Tân Tiến Adversarial Test',
             'status' => 'ACTIVE',
         ]);
@@ -58,8 +52,8 @@ class OcopAdversarialChallengeTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'adv_' . Str::random(5),
-            'email' => 'adv_' . Str::random(5) . '@htx.vn',
+            'username' => 'adv_'.Str::random(5),
+            'email' => 'adv_'.Str::random(5).'@htx.vn',
             'password' => Hash::make('secret123'),
             'full_name' => 'Adversarial Tester',
             'cooperative_id' => $cooperative->id,
@@ -85,7 +79,7 @@ class OcopAdversarialChallengeTest extends TestCase
         return ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $cooperativeId,
-            'product_code' => 'PROD-ADV-' . Str::random(4),
+            'product_code' => 'PROD-ADV-'.Str::random(4),
             'product_name' => 'Ớt chuông Sweet Palermo Đỏ Đà Lạt Test',
             'category' => 'FOOD',
             'unit' => 'KG',
@@ -111,7 +105,7 @@ class OcopAdversarialChallengeTest extends TestCase
         // 1. Create a draft version
         $version = CriteriaVersionModel::create([
             'id' => (string) Str::uuid(),
-            'version_code' => 'VER-INVALID-TOTAL-' . Str::random(4),
+            'version_code' => 'VER-INVALID-TOTAL-'.Str::random(4),
             'name' => 'Draft Version for Score Challenge',
             'status' => 'DRAFT',
         ]);
@@ -150,7 +144,7 @@ class OcopAdversarialChallengeTest extends TestCase
         try {
             $versionService->publishVersion($version->id);
             $this->fail('Publishing criteria version with score 99.9 should have failed with TOTAL_SCORE_INVALID');
-        } catch (\App\Shared\Domain\Exceptions\DomainException $e) {
+        } catch (DomainException $e) {
             $this->assertEquals('TOTAL_SCORE_INVALID', $e->getErrorCode());
             $this->assertStringContainsString('100.00', $e->getMessage());
         }
@@ -171,7 +165,7 @@ class OcopAdversarialChallengeTest extends TestCase
         try {
             $versionService->publishVersion($version->id);
             $this->fail('Publishing criteria version with score 100.1 should have failed with TOTAL_SCORE_INVALID');
-        } catch (\App\Shared\Domain\Exceptions\DomainException $e) {
+        } catch (DomainException $e) {
             $this->assertEquals('TOTAL_SCORE_INVALID', $e->getErrorCode());
         }
 
@@ -323,7 +317,7 @@ class OcopAdversarialChallengeTest extends TestCase
         try {
             $versionService->updateVersion($version->id, new UpdateCriteriaVersionDTO(name: 'Hacked Name'));
             $this->fail('Updating published criteria version metadata should throw CRITERIA_VERSION_IMMUTABLE');
-        } catch (\App\Shared\Domain\Exceptions\DomainException $e) {
+        } catch (DomainException $e) {
             $this->assertEquals('CRITERIA_VERSION_IMMUTABLE', $e->getErrorCode());
         }
 
@@ -336,7 +330,7 @@ class OcopAdversarialChallengeTest extends TestCase
                 displayOrder: 99
             ));
             $this->fail('Adding group to published criteria version should throw CRITERIA_VERSION_IMMUTABLE');
-        } catch (\App\Shared\Domain\Exceptions\DomainException $e) {
+        } catch (DomainException $e) {
             $this->assertEquals('CRITERIA_VERSION_IMMUTABLE', $e->getErrorCode());
         }
 
@@ -351,7 +345,7 @@ class OcopAdversarialChallengeTest extends TestCase
                 displayOrder: 99
             ));
             $this->fail('Adding criterion to published criteria version should throw CRITERIA_VERSION_IMMUTABLE');
-        } catch (\App\Shared\Domain\Exceptions\DomainException $e) {
+        } catch (DomainException $e) {
             $this->assertEquals('CRITERIA_VERSION_IMMUTABLE', $e->getErrorCode());
         }
 
@@ -366,7 +360,7 @@ class OcopAdversarialChallengeTest extends TestCase
                 displayOrder: 99
             ));
             $this->fail('Adding indicator to published criteria version should throw CRITERIA_VERSION_IMMUTABLE');
-        } catch (\App\Shared\Domain\Exceptions\DomainException $e) {
+        } catch (DomainException $e) {
             $this->assertEquals('CRITERIA_VERSION_IMMUTABLE', $e->getErrorCode());
         }
 
@@ -374,7 +368,7 @@ class OcopAdversarialChallengeTest extends TestCase
         try {
             $treeService->updateIndicator($indicator->id, new UpdateIndicatorDTO(name: 'Tampered Indicator Name'));
             $this->fail('Updating indicator in published criteria version should throw CRITERIA_VERSION_IMMUTABLE');
-        } catch (\App\Shared\Domain\Exceptions\DomainException $e) {
+        } catch (DomainException $e) {
             $this->assertEquals('CRITERIA_VERSION_IMMUTABLE', $e->getErrorCode());
         }
 
@@ -382,7 +376,7 @@ class OcopAdversarialChallengeTest extends TestCase
         try {
             $versionService->publishVersion($version->id);
             $this->fail('Re-publishing an already published criteria version should throw CRITERIA_VERSION_IMMUTABLE');
-        } catch (\App\Shared\Domain\Exceptions\DomainException $e) {
+        } catch (DomainException $e) {
             $this->assertEquals('CRITERIA_VERSION_IMMUTABLE', $e->getErrorCode());
         }
     }
@@ -482,7 +476,7 @@ class OcopAdversarialChallengeTest extends TestCase
 
         $councilLevel = CouncilLevelModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'COUNCIL-ADV-' . Str::random(4),
+            'code' => 'COUNCIL-ADV-'.Str::random(4),
             'name' => 'Hội đồng Thẩm định Adversarial',
             'level_type' => 'DISTRICT',
         ]);
@@ -820,7 +814,7 @@ class OcopAdversarialChallengeTest extends TestCase
                 uploadedBy: 'adversary'
             );
             $this->fail('Domain entity EvidenceVersion must reject unsupported MIME types');
-        } catch (\App\Shared\Domain\Exceptions\DomainException $e) {
+        } catch (DomainException $e) {
             $this->assertEquals('INVALID_FILE_FORMAT', $e->getErrorCode());
         }
 
@@ -838,7 +832,7 @@ class OcopAdversarialChallengeTest extends TestCase
                 uploadedBy: 'adversary'
             );
             $this->fail('Domain entity EvidenceVersion must reject oversized files > 50MB');
-        } catch (\App\Shared\Domain\Exceptions\DomainException $e) {
+        } catch (DomainException $e) {
             $this->assertEquals('FILE_TOO_LARGE', $e->getErrorCode());
         }
     }

@@ -17,9 +17,9 @@ class HealthController extends BaseController
         try {
             $start = microtime(true);
             DB::connection()->getPdo();
-            $dbLatency = round((microtime(true) - $start) * 1000, 2) . 'ms';
+            $dbLatency = round((microtime(true) - $start) * 1000, 2).'ms';
         } catch (Throwable $e) {
-            $dbStatus = 'FAIL: ' . $e->getMessage();
+            $dbStatus = 'FAIL: '.$e->getMessage();
         }
 
         $redisStatus = 'OK';
@@ -27,9 +27,9 @@ class HealthController extends BaseController
         try {
             $start = microtime(true);
             Redis::connection()->ping();
-            $redisLatency = round((microtime(true) - $start) * 1000, 2) . 'ms';
+            $redisLatency = round((microtime(true) - $start) * 1000, 2).'ms';
         } catch (Throwable $e) {
-            $redisStatus = 'FAIL: ' . $e->getMessage();
+            $redisStatus = 'FAIL: '.$e->getMessage();
         }
 
         $allOk = ($dbStatus === 'OK');

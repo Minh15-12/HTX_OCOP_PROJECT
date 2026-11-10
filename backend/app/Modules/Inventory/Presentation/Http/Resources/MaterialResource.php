@@ -67,7 +67,7 @@ class MaterialResource extends JsonResource
             'expiry_date' => $expiryDate,
             'safety_information' => $this->safety_information,
             'status' => $this->status,
-            'batches' => $this->relationLoaded('batches') ? $this->batches->map(fn($b) => [
+            'batches' => $this->relationLoaded('batches') ? $this->batches->map(fn ($b) => [
                 'id' => $b->id,
                 'batch_code' => $b->batch_number,
                 'quantity' => (float) $b->quantity,

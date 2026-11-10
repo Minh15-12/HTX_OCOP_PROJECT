@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
+use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 
 class MemberPolicy
 {

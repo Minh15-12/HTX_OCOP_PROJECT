@@ -19,6 +19,7 @@ class OcopExpiringMail extends Mailable
     public function envelope(): Envelope
     {
         $product = $this->ocopData['product_name'] ?? 'Sản phẩm OCOP';
+
         return new Envelope(
             subject: "CẢNH BÁO: Chứng Nhận OCOP Sản Phẩm [{$product}] Sắp Hết Hạn Hiệu Lực"
         );
@@ -35,7 +36,7 @@ class OcopExpiringMail extends Mailable
                 'decisionNumber' => $this->ocopData['decision_number'] ?? 'QĐ 842/QĐ-UBND Lâm Đồng',
                 'expiryDate' => $this->ocopData['expiry_date'] ?? '15/01/2027',
                 'daysRemaining' => $this->ocopData['days_remaining'] ?? 85,
-                'portalUrl' => config('app.url', 'http://localhost:3000') . '/ocop/dossiers',
+                'portalUrl' => config('app.url', 'http://localhost:3000').'/ocop/dossiers',
             ]
         );
     }

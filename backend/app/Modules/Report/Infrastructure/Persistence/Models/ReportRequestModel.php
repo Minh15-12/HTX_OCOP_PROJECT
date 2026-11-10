@@ -2,9 +2,9 @@
 
 namespace Modules\Report\Infrastructure\Persistence\Models;
 
-use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 
 class ReportRequestModel extends Model
 {

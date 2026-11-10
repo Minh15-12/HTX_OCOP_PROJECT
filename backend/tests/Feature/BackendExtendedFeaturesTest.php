@@ -8,26 +8,20 @@ use Illuminate\Support\Str;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\HarvestRecordModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\ProductionUnitModel;
 use Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel;
-use Modules\Cooperative\Infrastructure\Persistence\Models\CapitalContributionModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
-use Modules\Cooperative\Infrastructure\Persistence\Models\LandContributionModel;
-use Modules\Cooperative\Infrastructure\Persistence\Models\MeetingModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
-use Modules\Cooperative\Infrastructure\Persistence\Models\VoteModel;
-use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
 use Modules\Finance\Infrastructure\Persistence\Models\ReceivablePayableModel;
 use Modules\Identity\Infrastructure\Persistence\Models\PermissionModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\WarehouseModel;
 use Tests\TestCase;
 
 class BackendExtendedFeaturesTest extends TestCase
 {
     private CooperativeModel $cooperative;
+
     private UserModel $adminUser;
 
     protected function setUp(): void
@@ -36,7 +30,7 @@ class BackendExtendedFeaturesTest extends TestCase
 
         $this->cooperative = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_EXT_' . Str::random(4),
+            'cooperative_code' => 'HTX_EXT_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp Mở Rộng',
             'display_name' => 'HTX Mở Rộng',
             'status' => 'ACTIVE',
@@ -44,7 +38,7 @@ class BackendExtendedFeaturesTest extends TestCase
 
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_SUPER_ADMIN_' . Str::random(4),
+            'code' => 'ROLE_SUPER_ADMIN_'.Str::random(4),
             'name' => 'Super Admin Role',
         ]);
 
@@ -60,15 +54,15 @@ class BackendExtendedFeaturesTest extends TestCase
         foreach ($permissions as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Common']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Common']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $this->adminUser = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'admin_ext_' . Str::random(4),
-            'email' => 'admin_ext_' . Str::random(4) . '@htxext.vn',
+            'username' => 'admin_ext_'.Str::random(4),
+            'email' => 'admin_ext_'.Str::random(4).'@htxext.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Admin Mở Rộng',
             'cooperative_id' => $this->cooperative->id,
@@ -78,19 +72,19 @@ class BackendExtendedFeaturesTest extends TestCase
         $this->adminUser->roles()->attach($role->id);
     }
 
-    private function createMember(string $code = null): MemberModel
+    private function createMember(?string $code = null): MemberModel
     {
         return MemberModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->cooperative->id,
-            'member_code' => $code ?: 'MB_' . Str::random(5),
+            'member_code' => $code ?: 'MB_'.Str::random(5),
             'status' => 'ACTIVE',
             'member_type' => 'OFFICIAL',
             'admission_date' => now()->toDateString(),
             'identity_information' => [
-                'full_name' => 'Nguyễn Văn ' . Str::random(4),
-                'citizen_id' => '07920' . rand(1000000, 9999999),
-                'phone' => '090' . rand(1000000, 9999999),
+                'full_name' => 'Nguyễn Văn '.Str::random(4),
+                'citizen_id' => '07920'.rand(1000000, 9999999),
+                'phone' => '090'.rand(1000000, 9999999),
                 'address' => 'Xã Tân Tiến, Huyện Đầm Dơi, Cà Mau',
             ],
             'committed_capital' => 10000000,
@@ -103,7 +97,7 @@ class BackendExtendedFeaturesTest extends TestCase
         $unit = ProductionUnitModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->cooperative->id,
-            'unit_code' => 'PUC_' . Str::random(4),
+            'unit_code' => 'PUC_'.Str::random(4),
             'name' => 'Vùng Ớt Chuông Palermo',
             'crop' => 'Sweet Palermo',
             'area' => 5.0,
@@ -113,7 +107,7 @@ class BackendExtendedFeaturesTest extends TestCase
         $plot1 = FarmPlotModel::create([
             'id' => (string) Str::uuid(),
             'production_unit_id' => $unit->id,
-            'plot_code' => 'PL_A1_' . Str::random(3),
+            'plot_code' => 'PL_A1_'.Str::random(3),
             'area' => 1.5,
             'status' => 'ACTIVE',
         ]);
@@ -121,7 +115,7 @@ class BackendExtendedFeaturesTest extends TestCase
         $plot2 = FarmPlotModel::create([
             'id' => (string) Str::uuid(),
             'production_unit_id' => $unit->id,
-            'plot_code' => 'PL_A2_' . Str::random(3),
+            'plot_code' => 'PL_A2_'.Str::random(3),
             'area' => 2.0,
             'status' => 'PREPARING',
         ]);
@@ -151,7 +145,7 @@ class BackendExtendedFeaturesTest extends TestCase
         $unit = ProductionUnitModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->cooperative->id,
-            'unit_code' => 'PUC_' . Str::random(4),
+            'unit_code' => 'PUC_'.Str::random(4),
             'name' => 'Vùng Lúa Hữu Cơ',
             'crop' => 'Lúa ST25',
             'area' => 8.0,
@@ -161,7 +155,7 @@ class BackendExtendedFeaturesTest extends TestCase
         $plot = FarmPlotModel::create([
             'id' => (string) Str::uuid(),
             'production_unit_id' => $unit->id,
-            'plot_code' => 'PL_MEM_' . Str::random(3),
+            'plot_code' => 'PL_MEM_'.Str::random(3),
             'area' => 2.5,
             'status' => 'ACTIVE',
             'land_relation' => [
@@ -184,7 +178,7 @@ class BackendExtendedFeaturesTest extends TestCase
         $unit = ProductionUnitModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->cooperative->id,
-            'unit_code' => 'PUC_' . Str::random(4),
+            'unit_code' => 'PUC_'.Str::random(4),
             'name' => 'Vùng Test Xóa Log',
             'crop' => 'Ớt chuông',
             'area' => 3.0,
@@ -194,7 +188,7 @@ class BackendExtendedFeaturesTest extends TestCase
         $plot = FarmPlotModel::create([
             'id' => (string) Str::uuid(),
             'production_unit_id' => $unit->id,
-            'plot_code' => 'PL_DEL_' . Str::random(3),
+            'plot_code' => 'PL_DEL_'.Str::random(3),
             'area' => 1.0,
             'status' => 'ACTIVE',
         ]);
@@ -259,7 +253,7 @@ class BackendExtendedFeaturesTest extends TestCase
         // 1. Create warehouse
         $createResponse = $this->actingAs($this->adminUser, 'sanctum')
             ->postJson('/api/v1/warehouses', [
-                'warehouse_code' => 'WH_MAIN_' . Str::random(4),
+                'warehouse_code' => 'WH_MAIN_'.Str::random(4),
                 'name' => 'Kho Tổng Vật Tư Nông Nghiệp',
                 'location' => 'Khu A - Tân Tiến',
                 'status' => 'ACTIVE',
@@ -449,8 +443,8 @@ class BackendExtendedFeaturesTest extends TestCase
         // 5. Critical resolution test (requires >= 75% per Luật HTX 2023 Điều 72)
         $user2 = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'member_voter_' . Str::random(4),
-            'email' => 'voter_' . Str::random(4) . '@htx.vn',
+            'username' => 'member_voter_'.Str::random(4),
+            'email' => 'voter_'.Str::random(4).'@htx.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Xã viên 2',
             'cooperative_id' => $this->cooperative->id,
@@ -531,7 +525,7 @@ class BackendExtendedFeaturesTest extends TestCase
         ReceivablePayableModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->cooperative->id,
-            'debt_code' => 'AR_' . Str::random(4),
+            'debt_code' => 'AR_'.Str::random(4),
             'debt_type' => 'RECEIVABLE',
             'counterparty_type' => 'BUYER',
             'counterparty_name' => 'Công ty Xuất Khẩu Nông Sản',
@@ -545,7 +539,7 @@ class BackendExtendedFeaturesTest extends TestCase
         ReceivablePayableModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->cooperative->id,
-            'debt_code' => 'AR_' . Str::random(4),
+            'debt_code' => 'AR_'.Str::random(4),
             'debt_type' => 'RECEIVABLE',
             'counterparty_type' => 'MEMBER',
             'counterparty_name' => 'Xã viên nợ vật tư',
@@ -559,7 +553,7 @@ class BackendExtendedFeaturesTest extends TestCase
         ReceivablePayableModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->cooperative->id,
-            'debt_code' => 'AP_' . Str::random(4),
+            'debt_code' => 'AP_'.Str::random(4),
             'debt_type' => 'PAYABLE',
             'counterparty_type' => 'SUPPLIER',
             'counterparty_name' => 'Công ty Cổ phần Phân bón Cà Mau',

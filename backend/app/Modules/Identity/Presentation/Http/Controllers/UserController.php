@@ -101,7 +101,7 @@ class UserController extends BaseController
         $validated = $request->validate([
             'full_name' => 'nullable|string|max:255',
             'phone_number' => 'nullable|string|max:30',
-            'email' => 'nullable|email|max:255|unique:users,email,' . $id,
+            'email' => 'nullable|email|max:255|unique:users,email,'.$id,
             'role_code' => 'nullable|string|exists:roles,code',
             'status' => 'nullable|string|in:ACTIVE,LOCKED,DISABLED',
         ]);

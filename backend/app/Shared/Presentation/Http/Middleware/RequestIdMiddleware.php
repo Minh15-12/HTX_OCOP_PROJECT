@@ -13,7 +13,7 @@ class RequestIdMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $requestId = $request->header('X-Request-ID') ?: (string) Str::uuid();
-        
+
         $request->headers->set('X-Request-ID', $requestId);
 
         Log::shareContext([

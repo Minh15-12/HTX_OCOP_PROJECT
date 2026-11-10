@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 use Modules\Identity\Infrastructure\Persistence\Models\PermissionModel;
@@ -14,11 +13,11 @@ use Tests\TestCase;
 
 class MemberTest extends TestCase
 {
-    private function createCooperative(string $code = null): CooperativeModel
+    private function createCooperative(?string $code = null): CooperativeModel
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => $code ?: 'HTX_' . Str::random(5),
+            'cooperative_code' => $code ?: 'HTX_'.Str::random(5),
             'legal_name' => 'HTX Thử Nghiệm Xã Viên',
             'status' => 'ACTIVE',
         ]);
@@ -28,22 +27,22 @@ class MemberTest extends TestCase
     {
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_MEMBER_TEST_' . Str::random(4),
+            'code' => 'ROLE_MEMBER_TEST_'.Str::random(4),
             'name' => 'Member Test Role',
         ]);
 
         foreach ($permissionCodes as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Member']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Member']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'member_user_' . Str::random(5),
-            'email' => 'member_user_' . Str::random(5) . '@example.com',
+            'username' => 'member_user_'.Str::random(5),
+            'email' => 'member_user_'.Str::random(5).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Quản Lý Xã Viên',
             'cooperative_id' => $coop->id,

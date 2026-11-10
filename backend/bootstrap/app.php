@@ -1,11 +1,13 @@
 <?php
 
 use App\Shared\Infrastructure\Exceptions\GlobalExceptionHandler;
+use App\Shared\Presentation\Http\Middleware\IdempotencyMiddleware;
 use App\Shared\Presentation\Http\Middleware\RequestIdMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Modules\Cooperative\Presentation\Http\Middleware\EnforceTenantScope;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,17 +19,18 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append(RequestIdMiddleware::class);
-        
+
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 return null;
             }
+
             return '/';
         });
 
         $middleware->alias([
-            'tenant.scope' => \Modules\Cooperative\Presentation\Http\Middleware\EnforceTenantScope::class,
-            'idempotency' => \App\Shared\Presentation\Http\Middleware\IdempotencyMiddleware::class,
+            'tenant.scope' => EnforceTenantScope::class,
+            'idempotency' => IdempotencyMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

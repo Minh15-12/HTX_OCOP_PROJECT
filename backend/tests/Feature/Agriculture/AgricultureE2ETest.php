@@ -2,28 +2,20 @@
 
 namespace Tests\Feature\Agriculture;
 
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\LotModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\PhiCalculationModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\ProductionUnitModel;
-use Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
-use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
-use Modules\Finance\Infrastructure\Persistence\Models\DebtSettlementModel;
 use Modules\Finance\Infrastructure\Persistence\Models\ReceivablePayableModel;
 use Modules\Identity\Infrastructure\Persistence\Models\PermissionModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
-use Modules\Product\Infrastructure\Persistence\Models\ProductModel;
 use Tests\TestCase;
 
 /**
@@ -39,11 +31,11 @@ class AgricultureE2ETest extends TestCase
     // HELPER METHODS
     // =========================================================================
 
-    private function createCooperative(string $code = null, string $name = null): CooperativeModel
+    private function createCooperative(?string $code = null, ?string $name = null): CooperativeModel
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => $code ?: 'HTX_E2E_' . strtoupper(Str::random(4)),
+            'cooperative_code' => $code ?: 'HTX_E2E_'.strtoupper(Str::random(4)),
             'legal_name' => $name ?: 'HTX Nông Nghiệp Tân Tiến E2E',
             'status' => 'ACTIVE',
         ]);
@@ -53,7 +45,7 @@ class AgricultureE2ETest extends TestCase
     {
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_AGRI_E2E_' . strtoupper(Str::random(4)),
+            'code' => 'ROLE_AGRI_E2E_'.strtoupper(Str::random(4)),
             'name' => 'Agri E2E Test Role',
         ]);
 
@@ -68,15 +60,15 @@ class AgricultureE2ETest extends TestCase
         foreach ($allPerms as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Agriculture']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Agriculture']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'agri_user_' . Str::random(6),
-            'email' => 'agri_user_' . Str::random(6) . '@tantien.vn',
+            'username' => 'agri_user_'.Str::random(6),
+            'email' => 'agri_user_'.Str::random(6).'@tantien.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Kỹ Sư Nông Nghiệp Tân Tiến',
             'cooperative_id' => $coop->id,
@@ -93,7 +85,7 @@ class AgricultureE2ETest extends TestCase
         $unit = ProductionUnitModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $coop->id,
-            'unit_code' => $overrides['unit_code'] ?? 'PUC-49-015-' . strtoupper(Str::random(4)),
+            'unit_code' => $overrides['unit_code'] ?? 'PUC-49-015-'.strtoupper(Str::random(4)),
             'name' => $overrides['unit_name'] ?? 'Vùng Trồng Công Nghệ Cao Hòn Bồ',
             'crop' => $overrides['crop'] ?? 'Ớt chuông Sweet Palermo Đỏ Đà Lạt',
             'area' => $overrides['unit_area'] ?? 40.0,
@@ -115,7 +107,7 @@ class AgricultureE2ETest extends TestCase
         $plot = FarmPlotModel::create([
             'id' => (string) Str::uuid(),
             'production_unit_id' => $unit->id,
-            'plot_code' => $overrides['plot_code'] ?? 'PLOT-TT-01-' . strtoupper(Str::random(3)),
+            'plot_code' => $overrides['plot_code'] ?? 'PLOT-TT-01-'.strtoupper(Str::random(3)),
             'area' => $overrides['plot_area'] ?? 2500.0,
             'status' => 'ACTIVE',
             'land_relation' => [
@@ -142,7 +134,7 @@ class AgricultureE2ETest extends TestCase
         return MaterialModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $coop->id,
-            'sku' => $overrides['sku'] ?? 'MAT-BIO-' . strtoupper(Str::random(5)),
+            'sku' => $overrides['sku'] ?? 'MAT-BIO-'.strtoupper(Str::random(5)),
             'name' => $overrides['name'] ?? 'Chế Phẩm Sinh Học Neem Oil',
             'category' => $overrides['category'] ?? 'PESTICIDE',
             'unit' => $overrides['unit'] ?? 'LIT',

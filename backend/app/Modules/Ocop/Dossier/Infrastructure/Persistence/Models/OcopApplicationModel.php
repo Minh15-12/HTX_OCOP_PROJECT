@@ -5,8 +5,11 @@ namespace Modules\Ocop\Dossier\Infrastructure\Persistence\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaVersionModel;
+use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\FinalDecisionModel;
+use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel;
 use Modules\Product\Infrastructure\Persistence\Models\ProductModel;
 
 class OcopApplicationModel extends Model
@@ -61,11 +64,11 @@ class OcopApplicationModel extends Model
 
     public function evidences(): HasMany
     {
-        return $this->hasMany(\Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel::class, 'application_id');
+        return $this->hasMany(EvidenceModel::class, 'application_id');
     }
 
-    public function finalDecision(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function finalDecision(): HasOne
     {
-        return $this->hasOne(\Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\FinalDecisionModel::class, 'application_id');
+        return $this->hasOne(FinalDecisionModel::class, 'application_id');
     }
 }

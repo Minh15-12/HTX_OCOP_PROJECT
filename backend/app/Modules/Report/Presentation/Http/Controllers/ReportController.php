@@ -6,9 +6,12 @@ use App\Shared\Infrastructure\Export\OpenXmlSpreadsheetService;
 use App\Shared\Presentation\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
 use Modules\Cooperative\Application\Services\TenantContext;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
+use Modules\Finance\Infrastructure\Persistence\Models\ReceivablePayableModel;
+use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
 use Modules\Report\Application\Services\DashboardReportService;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -93,7 +96,8 @@ class ReportController extends BaseController
             ];
         }
 
-        $filename = 'danh_ba_xa_vien_' . date('Ymd_His') . '.xlsx';
+        $filename = 'danh_ba_xa_vien_'.date('Ymd_His').'.xlsx';
+
         return $this->spreadsheetService->downloadXlsx($filename, 'Danh bạ xã viên', $headers, $rows);
     }
 
@@ -141,13 +145,14 @@ class ReportController extends BaseController
             ];
         }
 
-        $filename = 'so_quy_tien_mat_' . date('Ymd_His') . '.xlsx';
+        $filename = 'so_quy_tien_mat_'.date('Ymd_His').'.xlsx';
+
         return $this->spreadsheetService->downloadXlsx($filename, 'Sổ quỹ tiền mặt', $headers, $rows);
     }
 
     public function exportReceivablesPayables(Request $request): StreamedResponse
     {
-        $query = \Modules\Finance\Infrastructure\Persistence\Models\ReceivablePayableModel::query();
+        $query = ReceivablePayableModel::query();
         if ($this->tenantContext->hasTenant()) {
             $query->where('cooperative_id', $this->tenantContext->getCooperativeId());
         }
@@ -206,13 +211,14 @@ class ReportController extends BaseController
             ];
         }
 
-        $filename = 'so_cong_no_' . date('Ymd_His') . '.xlsx';
+        $filename = 'so_cong_no_'.date('Ymd_His').'.xlsx';
+
         return $this->spreadsheetService->downloadXlsx($filename, 'Sổ theo dõi công nợ', $headers, $rows);
     }
 
     public function exportInventoryStock(Request $request): StreamedResponse
     {
-        $query = \Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel::with('batches');
+        $query = MaterialModel::with('batches');
         if ($this->tenantContext->hasTenant()) {
             $query->where('cooperative_id', $this->tenantContext->getCooperativeId());
         }
@@ -244,7 +250,7 @@ class ReportController extends BaseController
         foreach ($materials as $m) {
             $totalStock = (float) $m->batches->sum('quantity');
             $nearestBatch = $m->batches->where('quantity', '>', 0)->sortBy('expired_at')->first();
-            
+
             $fefoStatus = 'Bình thường';
             $expiryStr = '';
             $batchNum = '';
@@ -275,14 +281,15 @@ class ReportController extends BaseController
             ];
         }
 
-        $filename = 'ton_kho_vat_tu_' . date('Ymd_His') . '.xlsx';
+        $filename = 'ton_kho_vat_tu_'.date('Ymd_His').'.xlsx';
+
         return $this->spreadsheetService->downloadXlsx($filename, 'Tồn kho & Cảnh báo FEFO', $headers, $rows);
     }
 
     public function exportFarmingLogs(Request $request): StreamedResponse
     {
-        $query = \Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel::with(['cropSeason', 'plot.productionUnit', 'performer', 'material']);
-        
+        $query = FarmingLogModel::with(['cropSeason', 'plot.productionUnit', 'performer', 'material']);
+
         if ($this->tenantContext->hasTenant()) {
             $coopId = $this->tenantContext->getCooperativeId();
             $query->whereHas('plot.productionUnit', function ($q) use ($coopId) {
@@ -327,7 +334,7 @@ class ReportController extends BaseController
             if ($log->plot) {
                 $plotLabel = $log->plot->plot_code;
                 if ($log->plot->productionUnit) {
-                    $plotLabel .= ' (' . $log->plot->productionUnit->name . ')';
+                    $plotLabel .= ' ('.$log->plot->productionUnit->name.')';
                 }
             }
 
@@ -348,7 +355,8 @@ class ReportController extends BaseController
             ];
         }
 
-        $filename = 'nhat_ky_canh_tac_vietgap_' . date('Ymd_His') . '.xlsx';
+        $filename = 'nhat_ky_canh_tac_vietgap_'.date('Ymd_His').'.xlsx';
+
         return $this->spreadsheetService->downloadXlsx($filename, 'Nhật ký canh tác VietGAP', $headers, $rows);
     }
 }

@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Modules\Audit\Infrastructure\Persistence\Models\AuditLogModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
@@ -13,6 +12,7 @@ use Tests\TestCase;
 class SystemSettingTest extends TestCase
 {
     private CooperativeModel $cooperative;
+
     private UserModel $user;
 
     protected function setUp(): void

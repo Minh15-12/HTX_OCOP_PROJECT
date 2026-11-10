@@ -2,13 +2,14 @@
 
 namespace Modules\Agriculture\Application\Services;
 
-use Illuminate\Support\Facades\DB;
 use App\Shared\Domain\Exceptions\DomainException;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Agriculture\Application\DTOs\CreateLotDTO;
 use Modules\Agriculture\Domain\Entities\Lot;
-use Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel;
+use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\LotModel;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\Services\TenantContext;
@@ -33,7 +34,7 @@ class LotService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where('lot_code', $likeOp, $search);
         }
@@ -88,7 +89,7 @@ class LotService
         $memberAssignment = $plot?->memberAssignments?->first();
         $assignedMember = $memberAssignment?->member?->full_name ?? 'Nguyễn Văn Nông (Xã viên Hòn Bồ)';
 
-        $logs = \Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel::with(['performer', 'material'])
+        $logs = FarmingLogModel::with(['performer', 'material'])
             ->where('crop_season_id', $season->id)
             ->where('plot_id', $plot->id)
             ->where('activity_date', '<=', $harvest->harvest_date->format('Y-m-d'))
@@ -159,7 +160,7 @@ class LotService
                 'cooperative_code' => $coop?->cooperative_code,
                 'legal_name' => $coop?->legal_name,
             ],
-            'tt02_traceability_logs' => $logs->map(fn($log) => [
+            'tt02_traceability_logs' => $logs->map(fn ($log) => [
                 'id' => $log->id,
                 'activity_type' => $log->activity_type,
                 'activity_date' => $log->activity_date?->format('Y-m-d'),
@@ -208,7 +209,7 @@ class LotService
         // Uniqueness check
         $exists = LotModel::where('lot_code', $lotCode)->exists();
         if ($exists) {
-            $lotCode = strtoupper("LOT-{$coopCode}-{$plotCode}-{$dateStr}-" . Str::random(4));
+            $lotCode = strtoupper("LOT-{$coopCode}-{$plotCode}-{$dateStr}-".Str::random(4));
         }
 
         $domainEntity = new Lot(
@@ -252,13 +253,13 @@ class LotService
     {
         $query = LotModel::with([
             'harvest.cropSeason.productionUnit.cooperative',
-            'harvest.plot.memberAssignments.member'
+            'harvest.plot.memberAssignments.member',
         ]);
 
         if (Str::isUuid($identifier)) {
             $lot = $query->where(function ($q) use ($identifier) {
                 $q->where('id', $identifier)
-                  ->orWhere('lot_code', $identifier);
+                    ->orWhere('lot_code', $identifier);
             })->first();
         } else {
             $lot = $query->where('lot_code', $identifier)->first();
@@ -277,7 +278,7 @@ class LotService
         $member = $memberAssignment?->member;
 
         // Retrieve farming logs for this plot and season
-        $logs = \Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel::with(['performer', 'material'])
+        $logs = FarmingLogModel::with(['performer', 'material'])
             ->where('crop_season_id', $season?->id)
             ->where('plot_id', $plot?->id)
             ->orderBy('activity_date', 'asc')
@@ -297,7 +298,7 @@ class LotService
                     'SPRAYING' => 'Xử lý thuốc sinh học & Kiểm soát cách ly PHI',
                     'CARE', 'PRUNING' => 'Chăm sóc tỉa cành, định hình 2 thân chính giàn treo',
                     'HARVEST', 'HARVESTING' => 'Thu hoạch chọn lọc tiêu chuẩn tại vườn',
-                    default => 'Hoạt động kỹ thuật: ' . $log->activity_type,
+                    default => 'Hoạt động kỹ thuật: '.$log->activity_type,
                 };
 
                 return [
@@ -342,7 +343,7 @@ class LotService
                 [
                     'stage_number' => 2,
                     'stage_name' => 'Tưới nhỏ giọt bù áp dinh dưỡng Israel',
-                    'date' => \Carbon\Carbon::parse($startDate)->addDays(20)->format('Y-m-d'),
+                    'date' => Carbon::parse($startDate)->addDays(20)->format('Y-m-d'),
                     'activity_type' => 'FERTILIZATION',
                     'description' => 'Châm dinh dưỡng hòa tan qua que ghim bù áp Israel. Kiểm soát EC đạt 2.2 mS/cm, pH 6.0',
                     'materials_used' => 'Phân NPK hòa tan Haifa Multi-K + Haifa Cal-Mag Israel',
@@ -354,7 +355,7 @@ class LotService
                 [
                     'stage_number' => 3,
                     'stage_name' => 'Giám sát IPM & Thả thiên địch Amblyseius swirskii',
-                    'date' => \Carbon\Carbon::parse($startDate)->addDays(35)->format('Y-m-d'),
+                    'date' => Carbon::parse($startDate)->addDays(35)->format('Y-m-d'),
                     'activity_type' => 'BIOCONTROL',
                     'description' => 'Điều tra mật độ bọ trĩ 1.2 con/hoa. Phóng thả nhện bắt mồi sinh học Amblyseius swirskii kiểm soát tự nhiên',
                     'materials_used' => 'Thiên địch Amblyseius swirskii (Koppert)',
@@ -366,7 +367,7 @@ class LotService
                 [
                     'stage_number' => 4,
                     'stage_name' => 'Xử lý thuốc sinh học & Kiểm soát thời gian cách ly PHI',
-                    'date' => \Carbon\Carbon::parse($startDate)->addDays(55)->format('Y-m-d'),
+                    'date' => Carbon::parse($startDate)->addDays(55)->format('Y-m-d'),
                     'activity_type' => 'SPRAYING',
                     'description' => 'Phun thuốc sinh học Radiant 60SC (Spinetoram - IRAC 5). Thời gian cách ly PHI quy định 3 ngày, thực tế 16 ngày',
                     'materials_used' => 'Radiant 60SC (Spinetoram 60g/L)',
@@ -441,7 +442,7 @@ class LotService
         $plotData = [
             'id' => $plot?->id,
             'plot_code' => $plot?->plot_code ?? 'PLOT-TT-XV001-01',
-            'plot_name' => 'Thửa Đất Nhà Kính CNC ' . ($plot?->plot_code ?? '01'),
+            'plot_name' => 'Thửa Đất Nhà Kính CNC '.($plot?->plot_code ?? '01'),
             'production_unit_name' => $unit?->name ?? 'Vùng trồng Ớt Chuông Sweet Palermo Hòn Bồ (Phường 12 - Đà Lạt)',
             'puc_code' => $unit?->unit_code ?? 'PUC-49-015-9923',
             'national_cadastral_code' => $plot?->national_cadastral_code ?? '49-302-05-128',
@@ -481,7 +482,7 @@ class LotService
                 'issuer' => 'Trung tâm Kiểm nghiệm & Chứng nhận Chất lượng Nông lâm thủy sản Lâm Đồng',
                 'valid_until' => '2027-12-31',
                 'badge_label' => 'VietGAP',
-                'description' => 'Quy trình sản xuất an toàn theo tiêu chuẩn VietGAP TCVN 11892-1:2017'
+                'description' => 'Quy trình sản xuất an toàn theo tiêu chuẩn VietGAP TCVN 11892-1:2017',
             ],
             [
                 'name' => 'Chứng nhận Sản phẩm OCOP 4 Sao Tỉnh Lâm Đồng',
@@ -489,7 +490,7 @@ class LotService
                 'issuer' => 'UBND Tỉnh Lâm Đồng (Quyết định 148/QĐ-TTg)',
                 'valid_until' => '2028-10-15',
                 'badge_label' => 'OCOP 4 Sao',
-                'description' => 'Ớt chuông Sweet Palermo Đỏ đạt chứng nhận sản phẩm OCOP 4 sao cấp tỉnh'
+                'description' => 'Ớt chuông Sweet Palermo Đỏ đạt chứng nhận sản phẩm OCOP 4 sao cấp tỉnh',
             ],
             [
                 'name' => 'Mã số Vùng trồng Quốc gia (PUC)',
@@ -497,8 +498,8 @@ class LotService
                 'issuer' => 'Cục Bảo vệ Thực vật - Bộ Nông nghiệp & PTNT',
                 'valid_until' => '2028-06-30',
                 'badge_label' => 'PUC Cục BVTV',
-                'description' => 'Mã số vùng trồng giám sát nguồn gốc và cấp quota xuất khẩu 26.250 kg'
-            ]
+                'description' => 'Mã số vùng trồng giám sát nguồn gốc và cấp quota xuất khẩu 26.250 kg',
+            ],
         ];
 
         $hashPayload = [

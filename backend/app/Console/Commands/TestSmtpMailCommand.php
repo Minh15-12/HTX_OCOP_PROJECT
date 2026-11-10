@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\HarvestSettlementMail;
+use App\Mail\MemberApprovedMail;
+use App\Mail\OcopExpiringMail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\MemberApprovedMail;
-use App\Mail\HarvestSettlementMail;
-use App\Mail\OcopExpiringMail;
 
 class TestSmtpMailCommand extends Command
 {
@@ -34,9 +34,9 @@ class TestSmtpMailCommand extends Command
         $recipient = $this->argument('recipient');
         $type = strtolower($this->option('type') ?? 'settlement');
 
-        $this->info("==========================================================================");
-        $this->info(" KIỂM THỬ KẾT NỐI SMTP & HỆ THỐNG EMAIL THÔNG BÁO HTX TÂN TIẾN OCOP");
-        $this->info("==========================================================================");
+        $this->info('==========================================================================');
+        $this->info(' KIỂM THỬ KẾT NỐI SMTP & HỆ THỐNG EMAIL THÔNG BÁO HTX TÂN TIẾN OCOP');
+        $this->info('==========================================================================');
 
         $mailer = config('mail.default');
         $host = config("mail.mailers.{$mailer}.host");
@@ -89,16 +89,18 @@ class TestSmtpMailCommand extends Command
 
         try {
             Mail::to($recipient)->send($mailable);
-            $this->info("==========================================================================");
-            $this->info(" GỬI EMAIL THÀNH CÔNG! (250 OK / Message Queued or Sent)");
-            $this->info("==========================================================================");
+            $this->info('==========================================================================');
+            $this->info(' GỬI EMAIL THÀNH CÔNG! (250 OK / Message Queued or Sent)');
+            $this->info('==========================================================================');
+
             return Command::SUCCESS;
         } catch (\Throwable $e) {
-            $this->error(">>> LỖI GỬI EMAIL: " . $e->getMessage());
-            $this->warn("Gợi ý khắc phục:");
-            $this->line("1. Nếu sử dụng Gmail SMTP, hãy đảm bảo đã tạo Mật khẩu ứng dụng (App Password) 16 ký tự tại: https://myaccount.google.com/apppasswords");
-            $this->line("2. Kiểm tra lại thông số MAIL_USERNAME và MAIL_PASSWORD trong file .env");
-            $this->line("3. Đảm bảo cổng 587 (TLS) hoặc 465 (SSL) không bị chặn tường lửa (Firewall).");
+            $this->error('>>> LỖI GỬI EMAIL: '.$e->getMessage());
+            $this->warn('Gợi ý khắc phục:');
+            $this->line('1. Nếu sử dụng Gmail SMTP, hãy đảm bảo đã tạo Mật khẩu ứng dụng (App Password) 16 ký tự tại: https://myaccount.google.com/apppasswords');
+            $this->line('2. Kiểm tra lại thông số MAIL_USERNAME và MAIL_PASSWORD trong file .env');
+            $this->line('3. Đảm bảo cổng 587 (TLS) hoặc 465 (SSL) không bị chặn tường lửa (Firewall).');
+
             return Command::FAILURE;
         }
     }

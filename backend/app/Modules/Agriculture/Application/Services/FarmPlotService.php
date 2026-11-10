@@ -9,9 +9,10 @@ use Illuminate\Support\Str;
 use Modules\Agriculture\Application\DTOs\AssignMemberPlotDTO;
 use Modules\Agriculture\Application\DTOs\CreateFarmPlotDTO;
 use Modules\Agriculture\Domain\Entities\FarmPlot;
+use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
+use Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\MemberPlotAssignmentModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\ProductionUnitModel;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\Services\TenantContext;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
@@ -50,7 +51,7 @@ class FarmPlotService
         }
 
         if (!empty($filters['search'])) {
-            $searchTerm = '%' . $filters['search'] . '%';
+            $searchTerm = '%'.$filters['search'].'%';
             $query->where('plot_code', 'ilike', $searchTerm);
         }
 
@@ -80,6 +81,7 @@ class FarmPlotService
     public function listPlotsByProductionUnit(string $unitId): Collection
     {
         $unit = $this->unitService->getProductionUnitById($unitId);
+
         return FarmPlotModel::with('assignments.member')
             ->where('production_unit_id', $unit->id)
             ->orderBy('plot_code', 'asc')
@@ -191,6 +193,7 @@ class FarmPlotService
     public function listPlotMemberAssignments(string $plotId): Collection
     {
         $plot = $this->getPlotById($plotId);
+
         return MemberPlotAssignmentModel::with('member')
             ->where('plot_id', $plot->id)
             ->orderBy('start_date', 'desc')
@@ -238,8 +241,8 @@ class FarmPlotService
         $plot = $this->getPlotById($plotId);
 
         // Foreign Key Guard: Do not allow hard-delete if farming logs or harvests exist
-        $hasLogs = \Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel::where('plot_id', $plot->id)->exists();
-        $hasHarvests = \Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel::where('plot_id', $plot->id)->exists();
+        $hasLogs = FarmingLogModel::where('plot_id', $plot->id)->exists();
+        $hasHarvests = HarvestModel::where('plot_id', $plot->id)->exists();
 
         if ($hasLogs || $hasHarvests) {
             throw new DomainException(
@@ -261,4 +264,3 @@ class FarmPlotService
         return (bool) $plot->delete();
     }
 }
-

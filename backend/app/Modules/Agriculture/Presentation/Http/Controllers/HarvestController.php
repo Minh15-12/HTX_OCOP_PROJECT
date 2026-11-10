@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Gate;
 use Modules\Agriculture\Application\DTOs\CreateHarvestDTO;
 use Modules\Agriculture\Application\DTOs\UpdateHarvestDTO;
 use Modules\Agriculture\Application\Services\HarvestService;
+use Modules\Agriculture\Application\Services\HarvestSettlementService;
 use Modules\Agriculture\Presentation\Http\Requests\CreateHarvestRequest;
 use Modules\Agriculture\Presentation\Http\Requests\UpdateHarvestRequest;
 use Modules\Agriculture\Presentation\Http\Resources\HarvestResource;
@@ -167,7 +168,7 @@ class HarvestController extends BaseController
         );
     }
 
-    public function settleSeason(Request $request, \Modules\Agriculture\Application\Services\HarvestSettlementService $settlementService): JsonResponse
+    public function settleSeason(Request $request, HarvestSettlementService $settlementService): JsonResponse
     {
         if (!Gate::allows('AGRICULTURE.UPDATE')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền thực hiện quyết toán mùa vụ nông sản', status: 403);
@@ -195,7 +196,7 @@ class HarvestController extends BaseController
         );
     }
 
-    public function listSettlements(Request $request, \Modules\Agriculture\Application\Services\HarvestSettlementService $settlementService): JsonResponse
+    public function listSettlements(Request $request, HarvestSettlementService $settlementService): JsonResponse
     {
         if (!Gate::allows('AGRICULTURE.READ') && !Gate::allows('FINANCE.READ')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem lịch sử quyết toán mùa vụ', status: 403);
@@ -232,4 +233,3 @@ class HarvestController extends BaseController
         );
     }
 }
-

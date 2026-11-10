@@ -2,6 +2,7 @@
 
 namespace Modules\Notification\Domain\Notifications;
 
+use App\Mail\OcopExpiringMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
@@ -22,7 +23,8 @@ class ExpiringOcopNotification extends Notification
     public function toMail($notifiable)
     {
         $application = $this->application->loadMissing('product');
-        return (new \App\Mail\OcopExpiringMail([
+
+        return (new OcopExpiringMail([
             'product_name' => $application->product ? $application->product->name : 'N/A',
             'application_number' => $application->application_number,
             'star_rating' => $application->star_rating ?? 4,
@@ -35,6 +37,7 @@ class ExpiringOcopNotification extends Notification
     public function toDatabase($notifiable): array
     {
         $application = $this->application->loadMissing('product');
+
         return [
             'type' => 'OCOP_EXPIRING',
             'application_id' => $application->id,

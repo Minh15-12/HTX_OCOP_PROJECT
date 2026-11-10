@@ -17,7 +17,6 @@ use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaVersionModel
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriterionModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\IndicatorModel;
 use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
-use Modules\Ocop\Evidence\Application\Services\OcopEvidenceAutoExtractionService;
 use Modules\Product\Infrastructure\Persistence\Models\ProductModel;
 use Tests\TestCase;
 
@@ -27,7 +26,7 @@ class OcopMemberAndLaborEvidenceExtractionTest extends TestCase
     {
         $coop = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => "COOP-{$codePrefix}-" . Str::random(4),
+            'cooperative_code' => "COOP-{$codePrefix}-".Str::random(4),
             'legal_name' => "Hợp tác xã Nông nghiệp {$codePrefix}",
             'status' => 'ACTIVE',
         ]);
@@ -39,8 +38,8 @@ class OcopMemberAndLaborEvidenceExtractionTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => "user_{$codePrefix}_" . Str::random(4),
-            'email' => "user_{$codePrefix}_" . Str::random(4) . '@htx.vn',
+            'username' => "user_{$codePrefix}_".Str::random(4),
+            'email' => "user_{$codePrefix}_".Str::random(4).'@htx.vn',
             'password' => Hash::make('Secret123!'),
             'full_name' => "Quản trị viên {$codePrefix}",
             'cooperative_id' => $coop->id,
@@ -89,7 +88,7 @@ class OcopMemberAndLaborEvidenceExtractionTest extends TestCase
             'cooperative_id' => $coop->id,
             'product_id' => $product->id,
             'criteria_version_id' => $version->id,
-            'application_number' => "APP-{$codePrefix}-" . Str::random(4),
+            'application_number' => "APP-{$codePrefix}-".Str::random(4),
             'current_stage' => 'INTERNAL_PREPARATION',
             'status' => 'DRAFT',
             'created_by' => $user->id,
@@ -206,6 +205,7 @@ class OcopMemberAndLaborEvidenceExtractionTest extends TestCase
             'plot_id' => $plot1->id,
             'assignment_type' => 'OWNER',
             'status' => 'ACTIVE',
+            'start_date' => '2026-01-01',
         ]);
 
         // Request extraction specifically for Unit 1

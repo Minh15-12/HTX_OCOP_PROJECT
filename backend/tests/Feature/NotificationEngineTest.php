@@ -3,16 +3,15 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Modules\Audit\Domain\Events\AuditEventCreated;
 use Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
-use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Notification\Application\Listeners\AuditEventListener;
 use Modules\Notification\Domain\Notifications\SecurityAlertNotification;
 use Tests\TestCase;
-use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 
 class NotificationEngineTest extends TestCase
 {
@@ -22,28 +21,28 @@ class NotificationEngineTest extends TestCase
     {
         Notification::fake();
 
-        $coopId = \Illuminate\Support\Str::uuid();
-        \Illuminate\Support\Facades\DB::table('cooperatives')->insert([
+        $coopId = Str::uuid();
+        DB::table('cooperatives')->insert([
             'id' => $coopId,
             'cooperative_code' => 'COOP_TEST',
             'legal_name' => 'HTX Test Legal',
             'display_name' => 'HTX Test',
             'status' => 'ACTIVE',
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
-        
-        $roleId = \Illuminate\Support\Str::uuid();
-        \Illuminate\Support\Facades\DB::table('roles')->insert([
+
+        $roleId = Str::uuid();
+        DB::table('roles')->insert([
             'id' => $roleId,
             'code' => 'DIRECTOR',
             'name' => 'Giám đốc',
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
-        
-        $directorId = \Illuminate\Support\Str::uuid();
-        \Illuminate\Support\Facades\DB::table('users')->insert([
+
+        $directorId = Str::uuid();
+        DB::table('users')->insert([
             'id' => $directorId,
             'username' => 'director',
             'cooperative_id' => $coopId,
@@ -51,31 +50,31 @@ class NotificationEngineTest extends TestCase
             'email' => 'director@test.com',
             'password' => bcrypt('password'),
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
-        
-        \Illuminate\Support\Facades\DB::table('user_roles')->insert([
+
+        DB::table('user_roles')->insert([
             'user_id' => $directorId,
             'role_id' => $roleId,
         ]);
-        
+
         $director = UserModel::find($directorId);
 
         $auditEvent = AuditEventModel::create([
-            'id' => \Illuminate\Support\Str::uuid(),
+            'id' => Str::uuid(),
             'action' => 'PHI_VIOLATION_ATTEMPTED',
             'cooperative_id' => $coopId,
             'entity_type' => 'Harvest',
             'entity_id' => 'test',
         ]);
 
-        $listener = new AuditEventListener();
+        $listener = new AuditEventListener;
         $listener->handle(new AuditEventCreated($auditEvent));
 
         Notification::assertSentTo(
             [$director], SecurityAlertNotification::class,
             function ($notification, $channels) use ($auditEvent) {
-                return $notification->actionCode === 'PHI_VIOLATION_ATTEMPTED' 
+                return $notification->actionCode === 'PHI_VIOLATION_ATTEMPTED'
                     && $notification->auditId === $auditEvent->id;
             }
         );
@@ -83,19 +82,19 @@ class NotificationEngineTest extends TestCase
 
     public function test_user_can_list_notifications_and_mark_as_read()
     {
-        $coopId = \Illuminate\Support\Str::uuid();
-        \Illuminate\Support\Facades\DB::table('cooperatives')->insert([
+        $coopId = Str::uuid();
+        DB::table('cooperatives')->insert([
             'id' => $coopId,
             'cooperative_code' => 'COOP_NOTIF',
             'legal_name' => 'HTX Notif Test',
             'display_name' => 'HTX Notif',
             'status' => 'ACTIVE',
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
 
-        $userId = \Illuminate\Support\Str::uuid();
-        \Illuminate\Support\Facades\DB::table('users')->insert([
+        $userId = Str::uuid();
+        DB::table('users')->insert([
             'id' => $userId,
             'username' => 'notif_user',
             'cooperative_id' => $coopId,
@@ -103,14 +102,14 @@ class NotificationEngineTest extends TestCase
             'email' => 'notif_user@test.com',
             'password' => bcrypt('password'),
             'created_at' => now(),
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
         $user = UserModel::find($userId);
 
-        $notif1Id = \Illuminate\Support\Str::uuid()->toString();
-        $notif2Id = \Illuminate\Support\Str::uuid()->toString();
+        $notif1Id = Str::uuid()->toString();
+        $notif2Id = Str::uuid()->toString();
 
-        \Illuminate\Support\Facades\DB::table('notifications')->insert([
+        DB::table('notifications')->insert([
             [
                 'id' => $notif1Id,
                 'type' => 'Modules\Notification\Domain\Notifications\LowStockNotification',
@@ -151,4 +150,3 @@ class NotificationEngineTest extends TestCase
         $this->assertEquals(0, $user->unreadNotifications()->count());
     }
 }
-

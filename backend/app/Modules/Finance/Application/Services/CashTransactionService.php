@@ -40,7 +40,7 @@ class CashTransactionService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where('voucher_number', $likeOp, $search);
         }
@@ -80,12 +80,12 @@ class CashTransactionService
         $tenantCoopId = $this->tenantContext->getCooperativeId() ?: $coopId;
 
         $income = (float) CashTransactionModel::where('status', 'POSTED')
-            ->when($tenantCoopId, fn($q) => $q->where('cooperative_id', $tenantCoopId))
+            ->when($tenantCoopId, fn ($q) => $q->where('cooperative_id', $tenantCoopId))
             ->where('transaction_type', 'INCOME')
             ->sum('amount');
 
         $expense = (float) CashTransactionModel::where('status', 'POSTED')
-            ->when($tenantCoopId, fn($q) => $q->where('cooperative_id', $tenantCoopId))
+            ->when($tenantCoopId, fn ($q) => $q->where('cooperative_id', $tenantCoopId))
             ->where('transaction_type', 'EXPENSE')
             ->sum('amount');
 
@@ -101,7 +101,7 @@ class CashTransactionService
         }
 
         $prefix = $dto->transactionType === 'INCOME' ? 'PT' : 'PC';
-        $voucherNumber = $dto->customVoucherNumber ?: strtoupper("{$prefix}-" . now()->format('Ymd') . '-' . Str::random(4));
+        $voucherNumber = $dto->customVoucherNumber ?: strtoupper("{$prefix}-".now()->format('Ymd').'-'.Str::random(4));
 
         $exists = CashTransactionModel::where('voucher_number', $voucherNumber)->exists();
         if ($exists) {

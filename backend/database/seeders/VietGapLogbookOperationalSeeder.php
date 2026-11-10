@@ -18,6 +18,7 @@ class VietGapLogbookOperationalSeeder extends Seeder
 
         if (!$coop) {
             $this->command->warn('Không tìm thấy HTX trong hệ thống.');
+
             return;
         }
 
@@ -31,6 +32,7 @@ class VietGapLogbookOperationalSeeder extends Seeder
 
         if (!$season) {
             $this->command->warn('Không tìm thấy Mùa vụ trong hệ thống.');
+
             return;
         }
 
@@ -64,9 +66,9 @@ class VietGapLogbookOperationalSeeder extends Seeder
         $plotIdx = 1;
         foreach ($plots as $p) {
             DB::table('farm_plots')->where('id', $p->id)->update([
-                'national_cadastral_code' => '49-302-05-' . (127 + $plotIdx),
+                'national_cadastral_code' => '49-302-05-'.(127 + $plotIdx),
                 'land_sheet_number' => '05',
-                'land_parcel_number' => (string)(127 + $plotIdx),
+                'land_parcel_number' => (string) (127 + $plotIdx),
                 'substrate_bag_count' => 2500,
                 'planting_density_per_sqm' => 2.5,
                 'greenhouse_type' => 'HIGH_TECH_GREENHOUSE',
@@ -231,7 +233,7 @@ class VietGapLogbookOperationalSeeder extends Seeder
             DB::table('farming_logs')->insert(array_merge([
                 'id' => (string) Str::uuid(),
                 'attachment_reference' => json_encode([
-                    'https://images.unsplash.com/photo-1592417817098-8f3d6910985b?auto=format&fit=crop&w=800&q=80'
+                    'https://images.unsplash.com/photo-1592417817098-8f3d6910985b?auto=format&fit=crop&w=800&q=80',
                 ]),
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -303,7 +305,7 @@ class VietGapLogbookOperationalSeeder extends Seeder
                     'phi_checked' => true,
                     'safe_harvest_date' => '2025-12-28',
                     'harvest_date' => $h['harvest_date'],
-                    'note' => 'Vượt hạn cách ly PHI an toàn ' . ($h['days_since_last_spray'] - 3) . ' ngày',
+                    'note' => 'Vượt hạn cách ly PHI an toàn '.($h['days_since_last_spray'] - 3).' ngày',
                 ]),
                 'grade' => $h['grade'],
                 'brix_level' => $h['brix_level'],
@@ -323,7 +325,7 @@ class VietGapLogbookOperationalSeeder extends Seeder
 
         $reconciliationsData = [
             [
-                'material_id' => $materialBioGrow ? $materialBioGrow->id : (string)Str::uuid(),
+                'material_id' => $materialBioGrow ? $materialBioGrow->id : (string) Str::uuid(),
                 'material_name' => 'Phân trùn quế hữu cơ Bio-Grow (25kg)',
                 'unit' => 'bao_25kg',
                 'opening_balance' => 0.0,
@@ -336,7 +338,7 @@ class VietGapLogbookOperationalSeeder extends Seeder
                 'reconciliation_notes' => 'Đã đối chiếu 100% vỏ bao bì rỗng với phiếu xuất kho PXK-HTX-0042',
             ],
             [
-                'material_id' => $materialHaifa ? $materialHaifa->id : (string)Str::uuid(),
+                'material_id' => $materialHaifa ? $materialHaifa->id : (string) Str::uuid(),
                 'material_name' => 'Phân bón vi lượng Haifa Cal-Mag Israel (25kg)',
                 'unit' => 'bao_25kg',
                 'opening_balance' => 0.0,
@@ -349,7 +351,7 @@ class VietGapLogbookOperationalSeeder extends Seeder
                 'reconciliation_notes' => 'Tồn thực tế 2 bao còn nguyên tem niêm phong tại kho hộ xã viên',
             ],
             [
-                'material_id' => $materialNeem ? $materialNeem->id : (string)Str::uuid(),
+                'material_id' => $materialNeem ? $materialNeem->id : (string) Str::uuid(),
                 'material_name' => 'Thuốc BVTV Sinh học Neem Oil 1000EC (Chai 1L)',
                 'unit' => 'chai_1L',
                 'opening_balance' => 0.0,

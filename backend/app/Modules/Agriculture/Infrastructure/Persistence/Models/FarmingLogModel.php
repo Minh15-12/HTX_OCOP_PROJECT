@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
+use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
 
 class FarmingLogModel extends Model
 {
@@ -104,7 +105,7 @@ class FarmingLogModel extends Model
 
     public function material(): BelongsTo
     {
-        return $this->belongsTo(\Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel::class, 'material_id');
+        return $this->belongsTo(MaterialModel::class, 'material_id');
     }
 
     public function materialUsages(): HasMany

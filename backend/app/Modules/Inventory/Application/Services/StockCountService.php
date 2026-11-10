@@ -35,7 +35,7 @@ class StockCountService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where('count_number', $likeOp, $search);
         }
@@ -82,7 +82,7 @@ class StockCountService
             throw new DomainException('Phiếu kiểm kê kho phải chứa ít nhất 1 dòng vật tư', 'EMPTY_COUNT_LINES', null, 400);
         }
 
-        $countNumber = $dto->customCountNumber ?: strtoupper('PKK-' . now()->format('Ymd') . '-' . Str::random(4));
+        $countNumber = $dto->customCountNumber ?: strtoupper('PKK-'.now()->format('Ymd').'-'.Str::random(4));
 
         $exists = StockCountModel::where('count_number', $countNumber)->exists();
         if ($exists) {

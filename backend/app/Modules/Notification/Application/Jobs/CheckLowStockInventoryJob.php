@@ -36,7 +36,7 @@ class CheckLowStockInventoryJob implements ShouldQueue
                 $staff = UserModel::whereHas('roles', function ($q) {
                     $q->whereIn('code', ['DIRECTOR', 'WAREHOUSE']);
                 })->where('cooperative_id', $material->cooperative_id)->get();
-                
+
                 foreach ($staff as $user) {
                     $user->notify(new LowStockNotification($material, $currentStock));
                 }

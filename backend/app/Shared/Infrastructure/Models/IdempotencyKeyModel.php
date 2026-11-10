@@ -7,8 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class IdempotencyKeyModel extends Model
 {
     protected $table = 'idempotency_keys';
+
     protected $primaryKey = 'idempotency_key';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

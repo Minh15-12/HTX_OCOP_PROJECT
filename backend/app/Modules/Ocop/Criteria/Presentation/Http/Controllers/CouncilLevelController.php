@@ -16,6 +16,7 @@ class CouncilLevelController extends BaseController
     public function index(): JsonResponse
     {
         $levels = $this->levelService->listCouncilLevels();
+
         return $this->success(
             data: CouncilLevelResource::collection($levels),
             message: 'Tải danh mục cấp hội đồng thành công'

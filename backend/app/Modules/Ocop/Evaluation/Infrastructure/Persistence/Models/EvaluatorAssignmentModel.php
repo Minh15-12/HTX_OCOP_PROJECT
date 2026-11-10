@@ -2,10 +2,10 @@
 
 namespace Modules\Ocop\Evaluation\Infrastructure\Persistence\Models;
 
-use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 
 class EvaluatorAssignmentModel extends Model
 {

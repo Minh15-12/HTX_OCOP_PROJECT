@@ -23,6 +23,7 @@ class PhiCalculationService
     public function listPhiCalculationsByLog(string $logId): Collection
     {
         $log = $this->logService->getLogById($logId);
+
         return PhiCalculationModel::with('material')
             ->where('farming_log_id', $log->id)
             ->get();

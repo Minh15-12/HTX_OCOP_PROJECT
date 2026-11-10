@@ -122,7 +122,7 @@ class DocumentController extends BaseController
 
         return response($fileInfo['content'], 200, [
             'Content-Type' => $fileInfo['mime_type'],
-            'Content-Disposition' => 'inline; filename="' . $fileInfo['file_name'] . '"',
+            'Content-Disposition' => 'inline; filename="'.$fileInfo['file_name'].'"',
         ]);
     }
 }

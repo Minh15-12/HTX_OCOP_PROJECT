@@ -10,6 +10,7 @@ use Modules\Agriculture\Infrastructure\Persistence\Models\MemberPlotAssignmentMo
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\Services\TenantContext;
 use Modules\Finance\Application\Services\ReceivablePayableService;
+use Modules\Finance\Infrastructure\Persistence\Models\DebtSettlementModel;
 
 class HarvestSettlementService
 {
@@ -55,7 +56,7 @@ class HarvestSettlementService
         }
 
         // Idempotency guard: filter out harvests already settled
-        $unsettledHarvests = $harvests->reject(fn($h) => !empty($h->quality_information['is_settled']));
+        $unsettledHarvests = $harvests->reject(fn ($h) => !empty($h->quality_information['is_settled']));
         if ($unsettledHarvests->isEmpty()) {
             throw new DomainException('Tất cả các đợt thu hoạch của xã viên trong mùa vụ này đã được quyết toán trước đó', 'ERR_HARVESTS_ALREADY_SETTLED', null, 400);
         }
@@ -166,18 +167,18 @@ class HarvestSettlementService
     {
         $coopId = $this->tenantContext->hasTenant() ? $this->tenantContext->getCooperativeId() : null;
 
-        $query = \Modules\Finance\Infrastructure\Persistence\Models\DebtSettlementModel::with([
+        $query = DebtSettlementModel::with([
             'debt',
-            'cashTransaction'
+            'cashTransaction',
         ])->where(function ($q) {
             $q->where('payment_method', 'HARVEST_OFFSET')
-              ->orWhere('settlement_type', 'HARVEST_OFFSET');
+                ->orWhere('settlement_type', 'HARVEST_OFFSET');
         });
 
         if ($coopId) {
             $query->where(function ($q) use ($coopId) {
                 $q->where('cooperative_id', $coopId)
-                  ->orWhereHas('debt', fn($dq) => $dq->where('cooperative_id', $coopId));
+                    ->orWhereHas('debt', fn ($dq) => $dq->where('cooperative_id', $coopId));
             });
         }
 
@@ -199,4 +200,3 @@ class HarvestSettlementService
         })->toArray();
     }
 }
-

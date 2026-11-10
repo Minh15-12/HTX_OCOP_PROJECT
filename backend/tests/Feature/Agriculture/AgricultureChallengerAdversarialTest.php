@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Agriculture;
 
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
@@ -10,10 +9,9 @@ use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\LotModel;
+use Modules\Agriculture\Infrastructure\Persistence\Models\MemberPlotAssignmentModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\PhiCalculationModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\ProductionUnitModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\MemberPlotAssignmentModel;
-use Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 use Modules\Identity\Infrastructure\Persistence\Models\PermissionModel;
@@ -31,11 +29,11 @@ use Tests\TestCase;
  */
 class AgricultureChallengerAdversarialTest extends TestCase
 {
-    private function createCooperative(string $code = null): CooperativeModel
+    private function createCooperative(?string $code = null): CooperativeModel
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => $code ?: 'TT_ADV_' . strtoupper(Str::random(4)),
+            'cooperative_code' => $code ?: 'TT_ADV_'.strtoupper(Str::random(4)),
             'legal_name' => 'HTX Nông Nghiệp Tân Tiến (Challenger Probe)',
             'status' => 'ACTIVE',
         ]);
@@ -45,7 +43,7 @@ class AgricultureChallengerAdversarialTest extends TestCase
     {
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_ADV_' . strtoupper(Str::random(4)),
+            'code' => 'ROLE_ADV_'.strtoupper(Str::random(4)),
             'name' => 'Challenger Role',
         ]);
 
@@ -58,15 +56,15 @@ class AgricultureChallengerAdversarialTest extends TestCase
         foreach ($perms as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Agriculture']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Agriculture']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'adv_user_' . Str::random(6),
-            'email' => 'adv_user_' . Str::random(6) . '@tantien.vn',
+            'username' => 'adv_user_'.Str::random(6),
+            'email' => 'adv_user_'.Str::random(6).'@tantien.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Challenger Adversary User',
             'cooperative_id' => $coop->id,
@@ -83,7 +81,7 @@ class AgricultureChallengerAdversarialTest extends TestCase
         $unit = ProductionUnitModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $coop->id,
-            'unit_code' => 'PUC-49-015-' . strtoupper(Str::random(4)),
+            'unit_code' => 'PUC-49-015-'.strtoupper(Str::random(4)),
             'name' => 'Vùng Canh Tác Hòn Bồ Adversarial',
             'crop' => 'Ớt chuông Sweet Palermo Đỏ Đà Lạt',
             'area' => 30.0,
@@ -720,7 +718,7 @@ class AgricultureChallengerAdversarialTest extends TestCase
         $resUuid->assertJsonPath('error.code', 'LOT_NOT_FOUND');
 
         // Random Lot Code
-        $resCode = $this->getJson("/api/v1/public/trace/LOT-DOES-NOT-EXIST-999");
+        $resCode = $this->getJson('/api/v1/public/trace/LOT-DOES-NOT-EXIST-999');
         $resCode->assertStatus(404);
         $resCode->assertJsonPath('error.code', 'LOT_NOT_FOUND');
     }
@@ -730,14 +728,14 @@ class AgricultureChallengerAdversarialTest extends TestCase
         $maliciousInputs = [
             "' OR '1'='1",
             "'; DROP TABLE lots; --",
-            "<script>alert(1)</script>",
-            "../../etc/passwd",
-            "%00%27%22",
+            '<script>alert(1)</script>',
+            '../../etc/passwd',
+            '%00%27%22',
             str_repeat('A', 500),
         ];
 
         foreach ($maliciousInputs as $input) {
-            $res = $this->getJson("/api/v1/public/trace/" . urlencode($input));
+            $res = $this->getJson('/api/v1/public/trace/'.urlencode($input));
             // Should safely return 404 Not Found, never 500 internal server error
             $this->assertEquals(404, $res->status(), "Failed on input: {$input}");
         }

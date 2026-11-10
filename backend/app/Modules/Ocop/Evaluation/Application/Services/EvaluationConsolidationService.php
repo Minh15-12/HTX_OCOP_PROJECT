@@ -11,7 +11,6 @@ use Modules\Ocop\Evaluation\Domain\Entities\ConsolidatedResult;
 use Modules\Ocop\Evaluation\Domain\Entities\ProposedClassification;
 use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\ConsolidatedResultModel;
 use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\EvaluationSessionModel;
-use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\EvaluatorAssignmentModel;
 use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\EvaluatorScoreModel;
 use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\ProposedClassificationModel;
 
@@ -141,10 +140,10 @@ class EvaluationConsolidationService
             if (!empty($failedMandatory) && $totalScore >= 70.0) {
                 if (in_array($rawClassification, ['4_STAR', '5_STAR'], true)) {
                     $proposedLevel = '3_STAR';
-                    $reasons[] = 'Tự động khống chế hạ mức xếp hạng xuống 3_STAR do không đạt chỉ tiêu bắt buộc dấu sao (*): ' . implode(', ', $failedMandatory);
+                    $reasons[] = 'Tự động khống chế hạ mức xếp hạng xuống 3_STAR do không đạt chỉ tiêu bắt buộc dấu sao (*): '.implode(', ', $failedMandatory);
                 } elseif ($rawClassification === '3_STAR') {
                     $proposedLevel = 'UNRATED';
-                    $reasons[] = 'Tự động khống chế không xếp hạng (UNRATED) do thiếu tiêu chuẩn bắt buộc dấu sao (*): ' . implode(', ', $failedMandatory);
+                    $reasons[] = 'Tự động khống chế không xếp hạng (UNRATED) do thiếu tiêu chuẩn bắt buộc dấu sao (*): '.implode(', ', $failedMandatory);
                 }
             }
 

@@ -31,8 +31,8 @@ class HtxTanTienFullSystemSeeder extends Seeder
                 'business_sectors' => [
                     'Trồng trọt rau, củ, quả công nghệ cao',
                     'Dịch vụ cung ứng vật tư nông nghiệp & phân bón sinh học',
-                    'Sơ chế, đóng gói & bao tiêu nông sản OCOP xuất khẩu'
-                ]
+                    'Sơ chế, đóng gói & bao tiêu nông sản OCOP xuất khẩu',
+                ],
             ]),
             'contact_information' => json_encode([
                 'phone_number' => '02633829988',
@@ -111,10 +111,10 @@ class HtxTanTienFullSystemSeeder extends Seeder
 
         $memberIdMap = [];
         foreach ($names as $idx => $m) {
-            $code = 'TV' . str_pad($idx + 1, 3, '0', STR_PAD_LEFT);
-            $cccd = '049' . str_pad(100000000 + $idx * 31415, 9, '0', STR_PAD_LEFT);
-            $phone = '09' . str_pad(12345678 + $idx * 7891, 8, '0', STR_PAD_LEFT);
-            $email = Str::slug($m[0], '') . '@htxtantien.vn';
+            $code = 'TV'.str_pad($idx + 1, 3, '0', STR_PAD_LEFT);
+            $cccd = '049'.str_pad(100000000 + $idx * 31415, 9, '0', STR_PAD_LEFT);
+            $phone = '09'.str_pad(12345678 + $idx * 7891, 8, '0', STR_PAD_LEFT);
+            $email = Str::slug($m[0], '').'@htxtantien.vn';
 
             $identity = [
                 'full_name' => $m[0],
@@ -128,7 +128,7 @@ class HtxTanTienFullSystemSeeder extends Seeder
                 'ward' => 'Xã Tân Hà',
                 'detail_address' => $m[8],
                 'address' => $m[8],
-                'bank_account' => '10' . substr($cccd, -8),
+                'bank_account' => '10'.substr($cccd, -8),
                 'bank_name' => ($idx % 2 === 0) ? 'Vietcombank - CN Lâm Đồng' : 'Agribank - CN Lâm Hà',
                 'account_holder' => strtoupper(Str::slug($m[0], ' ')),
                 'cccd_issue_date' => '2021-05-10',
@@ -209,14 +209,14 @@ class HtxTanTienFullSystemSeeder extends Seeder
                 'location' => json_encode([
                     'latitude' => $u['lat'],
                     'longitude' => $u['lng'],
-                    'address' => $u['name']
+                    'address' => $u['name'],
                 ]),
                 'status' => 'ACTIVE',
                 'registration_information' => json_encode([
                     'puc_code' => $u['puc'],
                     'puc_status' => 'ACTIVE',
                     'certified_date' => '2024-01-15',
-                    'standard' => $u['std']
+                    'standard' => $u['std'],
                 ]),
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -538,7 +538,7 @@ class HtxTanTienFullSystemSeeder extends Seeder
                 'description' => $log[4],
                 'performed_by' => $adminUserId,
                 'attachment_reference' => json_encode([
-                    'photo_url' => 'https://images.unsplash.com/photo-1592417817098-8f3d6910985b?auto=format&fit=crop&w=800&q=80'
+                    'photo_url' => 'https://images.unsplash.com/photo-1592417817098-8f3d6910985b?auto=format&fit=crop&w=800&q=80',
                 ]),
                 'material_id' => $log[5] ? $matIds[$log[5]] : null,
                 'material_batch_number' => $log[5] ? 'BATCH-DEFAULT-2025' : null,
@@ -572,7 +572,7 @@ class HtxTanTienFullSystemSeeder extends Seeder
                 'brand' => 'HTX Nông Nghiệp Tân Tiến Đà Lạt',
                 'specification' => json_encode([
                     'packaging' => 'Thùng carton 5 lớp có túi đục lỗ thoáng khí',
-                    'shelf_life' => '21 ngày ở 8-10°C'
+                    'shelf_life' => '21 ngày ở 8-10°C',
                 ]),
                 'quality_information' => json_encode([
                     'certification' => 'VietGAP TCVN 11892-1:2017',
@@ -620,7 +620,7 @@ class HtxTanTienFullSystemSeeder extends Seeder
                     'grade_a_kg' => $h[6],
                     'grade_b_kg' => $h[7],
                     'reject_kg' => $h[8],
-                    'is_settled' => $h[11]
+                    'is_settled' => $h[11],
                 ]),
                 'lot_id' => null,
                 'created_at' => $now,
@@ -641,7 +641,7 @@ class HtxTanTienFullSystemSeeder extends Seeder
                     'puc_code' => 'PUC-49-015-9923',
                     'crop' => 'Nông sản OCOP Tân Tiến',
                     'packaging_date' => $h[2],
-                    'qr_url' => 'https://trace.ocop.gov.vn/lot/' . $h[9]
+                    'qr_url' => 'https://trace.ocop.gov.vn/lot/'.$h[9],
                 ]),
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -758,7 +758,7 @@ class HtxTanTienFullSystemSeeder extends Seeder
                 'produce_value' => 43750000,
                 'service_fee' => 1093750,
                 'debt_offset' => 7500000,
-                'net_payout' => 35156250
+                'net_payout' => 35156250,
             ]),
             'status' => 'POSTED',
             'created_at' => $now,

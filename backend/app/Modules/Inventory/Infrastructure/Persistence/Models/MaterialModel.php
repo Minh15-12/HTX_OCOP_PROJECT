@@ -5,6 +5,7 @@ namespace Modules\Inventory\Infrastructure\Persistence\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 
 class MaterialModel extends Model
@@ -37,7 +38,7 @@ class MaterialModel extends Model
         return $this->belongsTo(CooperativeModel::class, 'cooperative_id');
     }
 
-    public function batches(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function batches(): HasMany
     {
         return $this->hasMany(MaterialBatchModel::class, 'material_id');
     }

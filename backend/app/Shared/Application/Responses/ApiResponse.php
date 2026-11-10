@@ -2,7 +2,9 @@
 
 namespace App\Shared\Application\Responses;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApiResponse
@@ -12,7 +14,7 @@ class ApiResponse
      */
     public static function success(mixed $data = null, string $message = 'Success', array $meta = [], int $status = Response::HTTP_OK): JsonResponse
     {
-        $traceId = request()->header('X-Request-ID', (string) \Illuminate\Support\Str::uuid());
+        $traceId = request()->header('X-Request-ID', (string) Str::uuid());
 
         $payload = [
             'success' => true,
@@ -32,14 +34,14 @@ class ApiResponse
      */
     public static function error(string $code, string $message, mixed $details = null, int $status = Response::HTTP_BAD_REQUEST): JsonResponse
     {
-        $traceId = request()->header('X-Request-ID', (string) \Illuminate\Support\Str::uuid());
+        $traceId = request()->header('X-Request-ID', (string) Str::uuid());
 
         $payload = [
             'success' => false,
             'error' => [
                 'code' => $code,
                 'message' => $message,
-                'details' => $details ?? (object)[],
+                'details' => $details ?? (object) [],
                 'trace_id' => $traceId,
                 'timestamp' => now()->toIso8601String(),
             ],
@@ -51,7 +53,7 @@ class ApiResponse
     /**
      * Standard paginated response.
      */
-    public static function paginated(\Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator, string $message = 'Success'): JsonResponse
+    public static function paginated(LengthAwarePaginator $paginator, string $message = 'Success'): JsonResponse
     {
         return self::success(
             data: $paginator->items(),

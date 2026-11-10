@@ -3,7 +3,6 @@
 namespace Modules\Ocop\Services;
 
 use App\Shared\Domain\Exceptions\DomainException;
-use Illuminate\Support\Facades\DB;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\PhiCalculationModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\ProductionUnitModel;

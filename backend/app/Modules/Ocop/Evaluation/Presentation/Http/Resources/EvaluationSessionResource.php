@@ -11,8 +11,8 @@ class EvaluationSessionResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'session_code' => 'HD-OCOP-' . strtoupper(substr($this->id, 0, 8)),
-            'session_name' => 'Hội đồng Đánh giá & Phân hạng OCOP ' . ($this->councilLevel?->name ?? 'Huyện Lạc Dương'),
+            'session_code' => 'HD-OCOP-'.strtoupper(substr($this->id, 0, 8)),
+            'session_name' => 'Hội đồng Đánh giá & Phân hạng OCOP '.($this->councilLevel?->name ?? 'Huyện Lạc Dương'),
             'council_level' => ($this->councilLevel?->code === 'CENTRAL') ? 'CENTRAL' : 'PROVINCIAL',
             'application_count' => 1,
             'application_id' => $this->application_id,

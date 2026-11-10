@@ -16,14 +16,14 @@ class CrossTenantIsolationTest extends TestCase
     {
         $coop = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_A_' . Str::random(4),
+            'cooperative_code' => 'HTX_A_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp A',
             'status' => 'ACTIVE',
         ]);
 
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'HTX_OWNER_' . Str::random(4),
+            'code' => 'HTX_OWNER_'.Str::random(4),
             'name' => 'HTX Owner',
         ]);
 
@@ -35,8 +35,8 @@ class CrossTenantIsolationTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'user_coop_a_' . Str::random(4),
-            'email' => 'user_a_' . Str::random(4) . '@example.com',
+            'username' => 'user_coop_a_'.Str::random(4),
+            'email' => 'user_a_'.Str::random(4).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Chủ HTX A',
             'cooperative_id' => $coop->id,
@@ -54,21 +54,21 @@ class CrossTenantIsolationTest extends TestCase
     {
         $coopA = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_A_' . Str::random(4),
+            'cooperative_code' => 'HTX_A_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp A',
             'status' => 'ACTIVE',
         ]);
 
         $coopB = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_B_' . Str::random(4),
+            'cooperative_code' => 'HTX_B_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp B',
             'status' => 'ACTIVE',
         ]);
 
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'HTX_STAFF_' . Str::random(4),
+            'code' => 'HTX_STAFF_'.Str::random(4),
             'name' => 'HTX Staff',
         ]);
 
@@ -80,8 +80,8 @@ class CrossTenantIsolationTest extends TestCase
 
         $userA = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'user_a_' . Str::random(4),
-            'email' => 'user_a_' . Str::random(4) . '@example.com',
+            'username' => 'user_a_'.Str::random(4),
+            'email' => 'user_a_'.Str::random(4).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Nhân viên HTX A',
             'cooperative_id' => $coopA->id,

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
-use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 use Tests\TestCase;
 
@@ -15,7 +14,7 @@ class AuthTest extends TestCase
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_' . Str::random(5),
+            'cooperative_code' => 'HTX_'.Str::random(5),
             'legal_name' => 'HTX Nông Nghiệp Thử Nghiệm',
             'status' => 'ACTIVE',
         ]);
@@ -52,8 +51,8 @@ class AuthTest extends TestCase
         $cooperative = $this->createCooperative();
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'testuser_' . Str::random(4),
-            'email' => 'testuser_' . Str::random(4) . '@example.com',
+            'username' => 'testuser_'.Str::random(4),
+            'email' => 'testuser_'.Str::random(4).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Nguyễn Văn A',
             'cooperative_id' => $cooperative->id,
@@ -76,8 +75,8 @@ class AuthTest extends TestCase
         $cooperative = $this->createCooperative();
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'testuser2_' . Str::random(4),
-            'email' => 'testuser2_' . Str::random(4) . '@example.com',
+            'username' => 'testuser2_'.Str::random(4),
+            'email' => 'testuser2_'.Str::random(4).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Nguyễn Văn B',
             'cooperative_id' => $cooperative->id,
@@ -98,8 +97,8 @@ class AuthTest extends TestCase
         $cooperative = $this->createCooperative();
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'suspended_' . Str::random(4),
-            'email' => 'suspended_' . Str::random(4) . '@example.com',
+            'username' => 'suspended_'.Str::random(4),
+            'email' => 'suspended_'.Str::random(4).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Trần Văn C',
             'cooperative_id' => $cooperative->id,

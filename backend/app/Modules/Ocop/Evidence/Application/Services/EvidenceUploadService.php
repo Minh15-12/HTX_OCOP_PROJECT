@@ -2,7 +2,6 @@
 
 namespace Modules\Ocop\Evidence\Application\Services;
 
-use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Audit\Application\Services\AuditService;
@@ -57,7 +56,7 @@ class EvidenceUploadService
 
         // Store file in private storage disk (under evidences/{application_id}/)
         $extension = $file->getClientOriginalExtension() ?: 'bin';
-        $storagePath = "evidences/{$app->id}/" . (string) Str::uuid() . ".{$extension}";
+        $storagePath = "evidences/{$app->id}/".(string) Str::uuid().".{$extension}";
         $disk = config('filesystems.evidence_disk', 'local');
         Storage::disk($disk)->put($storagePath, file_get_contents($file->getRealPath()));
 

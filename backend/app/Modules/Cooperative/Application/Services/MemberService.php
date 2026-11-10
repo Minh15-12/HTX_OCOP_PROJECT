@@ -6,10 +6,12 @@ use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Agriculture\Infrastructure\Persistence\Models\MemberPlotAssignmentModel;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\DTOs\CreateMemberDTO;
 use Modules\Cooperative\Application\DTOs\UpdateMemberDTO;
 use Modules\Cooperative\Domain\Entities\Member;
+use Modules\Cooperative\Infrastructure\Persistence\Models\LandContributionModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 
 class MemberService
@@ -38,7 +40,7 @@ class MemberService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $driver = DB::connection()->getDriverName();
             $likeOp = $driver === 'pgsql' ? 'ILIKE' : 'LIKE';
 
@@ -47,13 +49,13 @@ class MemberService
 
                 if ($driver === 'pgsql') {
                     $q->orWhereRaw("identity_information->>'full_name' ILIKE ?", [$search])
-                      ->orWhereRaw("identity_information->>'citizen_id' ILIKE ?", [$search])
-                      ->orWhereRaw("identity_information->>'phone_number' ILIKE ?", [$search]);
+                        ->orWhereRaw("identity_information->>'citizen_id' ILIKE ?", [$search])
+                        ->orWhereRaw("identity_information->>'phone_number' ILIKE ?", [$search]);
                 } elseif ($driver === 'sqlite') {
                     $q->orWhere('identity_information', 'LIKE', $search)
-                      ->orWhereRaw("json_extract(identity_information, '$.full_name') LIKE ?", [$search])
-                      ->orWhereRaw("json_extract(identity_information, '$.citizen_id') LIKE ?", [$search])
-                      ->orWhereRaw("json_extract(identity_information, '$.phone_number') LIKE ?", [$search]);
+                        ->orWhereRaw("json_extract(identity_information, '$.full_name') LIKE ?", [$search])
+                        ->orWhereRaw("json_extract(identity_information, '$.citizen_id') LIKE ?", [$search])
+                        ->orWhereRaw("json_extract(identity_information, '$.phone_number') LIKE ?", [$search]);
                 } else {
                     $q->orWhere('identity_information', 'LIKE', $search);
                 }
@@ -279,7 +281,7 @@ class MemberService
         $member = $this->getMemberById($memberId);
 
         // Active plot assignments
-        $assignedPlots = \Modules\Agriculture\Infrastructure\Persistence\Models\MemberPlotAssignmentModel::with('plot')
+        $assignedPlots = MemberPlotAssignmentModel::with('plot')
             ->where('member_id', $member->id)
             ->where(function ($q) {
                 $q->whereNull('status')->orWhere('status', 'ACTIVE');
@@ -289,7 +291,7 @@ class MemberService
         $totalPlotAreaHa = (float) $assignedPlots->sum(fn ($a) => (float) ($a->plot?->area ?? 0));
 
         // Land contributions
-        $landContributions = \Modules\Cooperative\Infrastructure\Persistence\Models\LandContributionModel::whereHas('contribution', function ($q) use ($member) {
+        $landContributions = LandContributionModel::whereHas('contribution', function ($q) use ($member) {
             $q->where('member_id', $member->id);
         })->get();
 

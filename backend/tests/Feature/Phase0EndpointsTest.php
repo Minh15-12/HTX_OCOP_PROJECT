@@ -15,7 +15,9 @@ use Tests\TestCase;
 class Phase0EndpointsTest extends TestCase
 {
     private UserModel $adminUser;
+
     private CooperativeModel $cooperative;
+
     private ProductionUnitModel $unit;
 
     protected function setUp(): void
@@ -24,14 +26,14 @@ class Phase0EndpointsTest extends TestCase
 
         $this->cooperative = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_P0_' . Str::random(4),
+            'cooperative_code' => 'HTX_P0_'.Str::random(4),
             'legal_name' => 'HTX Nông nghiệp Tân Tiến Phase 0',
             'status' => 'ACTIVE',
         ]);
 
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_ADMIN_P0_' . Str::random(4),
+            'code' => 'ROLE_ADMIN_P0_'.Str::random(4),
             'name' => 'Admin Role Phase 0',
         ]);
 
@@ -39,15 +41,15 @@ class Phase0EndpointsTest extends TestCase
         foreach ($permissions as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Common']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Common']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $this->adminUser = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'admin_p0_' . Str::random(4),
-            'email' => 'admin_p0_' . Str::random(4) . '@htxtantien.vn',
+            'username' => 'admin_p0_'.Str::random(4),
+            'email' => 'admin_p0_'.Str::random(4).'@htxtantien.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Admin Phase 0',
             'cooperative_id' => $this->cooperative->id,
@@ -58,7 +60,7 @@ class Phase0EndpointsTest extends TestCase
         $this->unit = ProductionUnitModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $this->cooperative->id,
-            'unit_code' => 'VT_P0_' . Str::random(4),
+            'unit_code' => 'VT_P0_'.Str::random(4),
             'name' => 'Vùng trồng Test Phase 0',
             'crop' => 'Ớt chuông Sweet Palermo',
             'area' => 10.0,
@@ -84,7 +86,7 @@ class Phase0EndpointsTest extends TestCase
         $plot = FarmPlotModel::create([
             'id' => (string) Str::uuid(),
             'production_unit_id' => $this->unit->id,
-            'plot_code' => 'PLOT-P0-' . Str::random(4),
+            'plot_code' => 'PLOT-P0-'.Str::random(4),
             'area' => 3.5,
             'status' => 'ACTIVE',
             'land_relation' => ['puc_code' => 'PUC-TEST-01'],
@@ -111,7 +113,7 @@ class Phase0EndpointsTest extends TestCase
         $plot = FarmPlotModel::create([
             'id' => (string) Str::uuid(),
             'production_unit_id' => $this->unit->id,
-            'plot_code' => 'PLOT-DEL-' . Str::random(4),
+            'plot_code' => 'PLOT-DEL-'.Str::random(4),
             'area' => 1.5,
             'status' => 'ACTIVE',
         ]);

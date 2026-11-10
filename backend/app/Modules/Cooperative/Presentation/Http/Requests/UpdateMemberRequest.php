@@ -23,7 +23,7 @@ class UpdateMemberRequest extends FormRequest
             'identity_information.gender' => ['nullable', 'string', 'max:20'],
             'identity_information.date_of_birth' => ['nullable', 'date'],
             'identity_information.ethnicity' => ['nullable', 'string', 'max:50'],
-            
+
             // Nested Emergency Contact
             'identity_information.emergency_contact' => ['nullable', 'array'],
             'identity_information.emergency_contact.name' => ['nullable', 'string', 'max:255'],

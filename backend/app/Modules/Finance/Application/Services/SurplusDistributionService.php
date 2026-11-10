@@ -41,7 +41,7 @@ class SurplusDistributionService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where('plan_code', $likeOp, $search);
         }
@@ -95,7 +95,7 @@ class SurplusDistributionService
 
         if (round($dto->capitalWeight + $dto->serviceUsageWeight, 2) != 100.0) {
             throw new DomainException(
-                "Tổng tỷ trọng phân phối theo vốn và dịch vụ phải bằng 100%",
+                'Tổng tỷ trọng phân phối theo vốn và dịch vụ phải bằng 100%',
                 'ERR_FINANCE_INVALID_SURPLUS_PLAN',
                 null,
                 400
@@ -111,7 +111,7 @@ class SurplusDistributionService
             );
         }
 
-        $planCode = $dto->customPlanCode ?: strtoupper("PADP-{$dto->financialYear}-" . Str::random(4));
+        $planCode = $dto->customPlanCode ?: strtoupper("PADP-{$dto->financialYear}-".Str::random(4));
 
         $exists = SurplusDistributionPlanModel::where('cooperative_id', $coopId)
             ->where('financial_year', $dto->financialYear)
@@ -184,12 +184,12 @@ class SurplusDistributionService
                 $mCap = $memberCapitals[$m->id];
                 $mSvc = $memberServices[$m->id];
 
-                $capShare = $totalCoopCapital > 0 
-                    ? round($capPool * ($mCap / $totalCoopCapital), 2) 
+                $capShare = $totalCoopCapital > 0
+                    ? round($capPool * ($mCap / $totalCoopCapital), 2)
                     : round($capPool / max(1, $activeMembers->count()), 2);
 
-                $svcShare = $totalCoopService > 0 
-                    ? round($svcPool * ($mSvc / $totalCoopService), 2) 
+                $svcShare = $totalCoopService > 0
+                    ? round($svcPool * ($mSvc / $totalCoopService), 2)
                     : round($svcPool / max(1, $activeMembers->count()), 2);
 
                 $totalAllocated = $capShare + $svcShare;
@@ -307,10 +307,14 @@ class SurplusDistributionService
 
             foreach ($allocations as $alloc) {
                 $member = $alloc->member;
-                if (!$member) continue;
+                if (!$member) {
+                    continue;
+                }
 
                 $payoutAmount = (float) $alloc->total_allocated_amount;
-                if ($payoutAmount <= 0) continue;
+                if ($payoutAmount <= 0) {
+                    continue;
+                }
 
                 $reinvest = false;
                 if (isset($options['reinvest_member_ids']) && is_array($options['reinvest_member_ids'])) {
@@ -323,7 +327,7 @@ class SurplusDistributionService
 
                 if ($reinvest) {
                     // Option A: REINVEST AS CAPITAL CONTRIBUTION -> Closes circle back to Stage 1!
-                    $certCode = 'GCN-' . date('Y') . '-' . strtoupper(Str::random(6));
+                    $certCode = 'GCN-'.date('Y').'-'.strtoupper(Str::random(6));
                     CapitalContributionModel::create([
                         'id' => (string) Str::uuid(),
                         'member_id' => $member->id,
@@ -337,7 +341,7 @@ class SurplusDistributionService
                         'certificate_code' => $certCode,
                         'certificate_issue_date' => now()->toDateString(),
                         'issue_count' => 1,
-                        'qr_code_url' => 'https://htx.ocop.gov.vn/verify-certificate?code=' . $certCode,
+                        'qr_code_url' => 'https://htx.ocop.gov.vn/verify-certificate?code='.$certCode,
                     ]);
 
                     // Increase member credit limit by 50% of reinvested capital
@@ -350,7 +354,7 @@ class SurplusDistributionService
                     ]);
                 } else {
                     // Option B: CASH PAYOUT -> Records Cash Expense in Cashbook
-                    $voucherNo = strtoupper("PC-TD-{$plan->financial_year}-" . Str::random(4));
+                    $voucherNo = strtoupper("PC-TD-{$plan->financial_year}-".Str::random(4));
                     CashTransactionModel::create([
                         'id' => (string) Str::uuid(),
                         'cooperative_id' => $plan->cooperative_id,

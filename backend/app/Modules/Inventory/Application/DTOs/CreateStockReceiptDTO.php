@@ -7,7 +7,7 @@ use App\Shared\Application\DTOs\BaseDTO;
 class CreateStockReceiptDTO extends BaseDTO
 {
     /**
-     * @param StockReceiptLineDTO[] $lines
+     * @param  StockReceiptLineDTO[]  $lines
      */
     public function __construct(
         public readonly string $receiptDate,

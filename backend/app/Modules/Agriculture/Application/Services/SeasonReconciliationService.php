@@ -7,10 +7,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\SeasonMaterialReconciliationModel;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\Services\TenantContext;
+use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
 
 class SeasonReconciliationService
 {
@@ -102,11 +102,11 @@ class SeasonReconciliationService
 
         // Tính toán chuỗi băm Merkle Root SHA-256 từ toàn bộ nhật ký canh tác và thu hoạch
         $logHashes = $season->farmingLogs->map(function ($log) {
-            return hash('sha256', $log->id . $log->activity_date . $log->activity_type . ($log->quantity_applied ?? '0') . ($log->active_ingredient ?? ''));
+            return hash('sha256', $log->id.$log->activity_date.$log->activity_type.($log->quantity_applied ?? '0').($log->active_ingredient ?? ''));
         })->values()->all();
 
         $harvestHashes = $season->harvests->map(function ($h) {
-            return hash('sha256', $h->id . $h->harvest_date . $h->quantity . ($h->weighing_slip_code ?? ''));
+            return hash('sha256', $h->id.$h->harvest_date.$h->quantity.($h->weighing_slip_code ?? ''));
         })->values()->all();
 
         $combinedHash = hash('sha256', implode('|', array_merge($logHashes, $harvestHashes, [
@@ -150,12 +150,14 @@ class SeasonReconciliationService
         $reconciliations = collect();
 
         foreach ($usedMaterials as $usage) {
-            $material = \Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel::find($usage->material_id);
-            if (!$material) continue;
+            $material = MaterialModel::find($usage->material_id);
+            if (!$material) {
+                continue;
+            }
 
             $totalUsed = (float) $usage->total_used;
             // Giả định nhập kho bằng tổng lượng dùng + lượng dự trữ an toàn
-            $received = $totalUsed; 
+            $received = $totalUsed;
 
             $item = SeasonMaterialReconciliationModel::create([
                 'id' => (string) Str::uuid(),
@@ -169,8 +171,8 @@ class SeasonReconciliationService
                 'used_in_logbook' => $totalUsed,
                 'actual_closing_balance' => 0,
                 'variance' => 0,
-                'empty_packaging_returned' => ceil($totalUsed / max(1, (float)($material->package_size ?? 1))),
-                'waste_disposal_slip_code' => 'TH-RTH-' . strtoupper(substr(str_replace('-', '', $season->id), 0, 6)),
+                'empty_packaging_returned' => ceil($totalUsed / max(1, (float) ($material->package_size ?? 1))),
+                'waste_disposal_slip_code' => 'TH-RTH-'.strtoupper(substr(str_replace('-', '', $season->id), 0, 6)),
                 'reconciliation_notes' => 'Tự động tổng hợp từ nhật ký canh tác',
                 'status' => 'DRAFT',
             ]);

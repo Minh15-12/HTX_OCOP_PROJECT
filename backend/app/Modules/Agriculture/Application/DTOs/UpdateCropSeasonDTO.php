@@ -19,4 +19,3 @@ class UpdateCropSeasonDTO extends BaseDTO
         public readonly ?float $pucQuotaKg = null
     ) {}
 }
-

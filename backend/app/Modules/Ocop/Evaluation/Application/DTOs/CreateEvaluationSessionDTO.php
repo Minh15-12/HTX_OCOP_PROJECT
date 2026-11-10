@@ -7,8 +7,7 @@ class CreateEvaluationSessionDTO
     public function __construct(
         public readonly string $applicationId,
         public readonly string $councilLevelId
-    ) {
-    }
+    ) {}
 
     public static function fromArray(array $data): self
     {

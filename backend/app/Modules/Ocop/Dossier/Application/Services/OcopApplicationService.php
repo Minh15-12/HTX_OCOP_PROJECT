@@ -43,7 +43,7 @@ class OcopApplicationService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where('application_number', $likeOp, $search);
         }
@@ -68,7 +68,7 @@ class OcopApplicationService
             'product',
             'criteriaVersion.groups.criteria.indicators',
             'selfAssessments.indicator',
-            'reviews.reviewer'
+            'reviews.reviewer',
         ])->find($id);
 
         if (!$app) {
@@ -101,7 +101,7 @@ class OcopApplicationService
             throw new DomainException('Phiên bản bộ tiêu chí chưa được phát hành hoặc không hợp lệ', 'CRITERIA_VERSION_NOT_PUBLISHED', null, 400);
         }
 
-        $appNumber = $dto->customApplicationNumber ?: strtoupper('HS-OCOP-' . now()->format('Y') . '-' . Str::random(5));
+        $appNumber = $dto->customApplicationNumber ?: strtoupper('HS-OCOP-'.now()->format('Y').'-'.Str::random(5));
 
         $exists = OcopApplicationModel::where('application_number', $appNumber)->exists();
         if ($exists) {
@@ -156,7 +156,9 @@ class OcopApplicationService
         $domainEntity->assertEditable();
 
         $updates = [];
-        if ($dto->applicationType !== null) $updates['application_type'] = $dto->applicationType;
+        if ($dto->applicationType !== null) {
+            $updates['application_type'] = $dto->applicationType;
+        }
 
         if (!empty($updates)) {
             $app->update($updates);
@@ -247,7 +249,9 @@ class OcopApplicationService
     private function countTotalIndicatorsInVersion(string $versionId): int
     {
         $version = CriteriaVersionModel::with('groups.criteria.indicators')->find($versionId);
-        if (!$version) return 0;
+        if (!$version) {
+            return 0;
+        }
 
         $count = 0;
         foreach ($version->groups as $group) {
@@ -255,6 +259,7 @@ class OcopApplicationService
                 $count += $criterion->indicators->count();
             }
         }
+
         return $count;
     }
 }

@@ -3,6 +3,7 @@
 namespace Modules\Finance\Application\Services;
 
 use App\Shared\Domain\Exceptions\DomainException;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -49,11 +50,11 @@ class ReceivablePayableService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('debt_code', $likeOp, $search)
-                  ->orWhere('counterparty_name', $likeOp, $search);
+                    ->orWhere('counterparty_name', $likeOp, $search);
             });
         }
 
@@ -96,7 +97,7 @@ class ReceivablePayableService
         }
 
         $prefix = $dto->debtType === 'RECEIVABLE' ? 'CN-THU' : 'CN-TRA';
-        $debtCode = $dto->customDebtCode ?: strtoupper("{$prefix}-" . now()->format('Ymd') . '-' . Str::random(4));
+        $debtCode = $dto->customDebtCode ?: strtoupper("{$prefix}-".now()->format('Ymd').'-'.Str::random(4));
 
         $exists = ReceivablePayableModel::where('debt_code', $debtCode)->exists();
         if ($exists) {
@@ -150,8 +151,12 @@ class ReceivablePayableService
         $before = $debt->toArray();
 
         $updates = [];
-        if ($dto->dueDate !== null) $updates['due_date'] = $dto->dueDate;
-        if ($dto->description !== null) $updates['description'] = $dto->description;
+        if ($dto->dueDate !== null) {
+            $updates['due_date'] = $dto->dueDate;
+        }
+        if ($dto->description !== null) {
+            $updates['description'] = $dto->description;
+        }
 
         if (!empty($updates)) {
             $debt->update($updates);
@@ -207,7 +212,7 @@ class ReceivablePayableService
             if (strtoupper($dto->paymentMethod) === 'CASH') {
                 $txType = $debtModel->debt_type === 'RECEIVABLE' ? 'INCOME' : 'EXPENSE';
                 $prefix = $txType === 'INCOME' ? 'PT-CT' : 'PC-CT';
-                $voucherNumber = strtoupper("{$prefix}-" . now()->format('Ymd') . '-' . Str::random(4));
+                $voucherNumber = strtoupper("{$prefix}-".now()->format('Ymd').'-'.Str::random(4));
 
                 $cashTx = CashTransactionModel::create([
                     'id' => (string) Str::uuid(),
@@ -260,6 +265,7 @@ class ReceivablePayableService
     public function listSettlements(string $debtId): Collection
     {
         $debt = $this->getDebtById($debtId);
+
         return $debt->settlements;
     }
 
@@ -289,7 +295,9 @@ class ReceivablePayableService
             $remainingOffsetToApply = $debtOffset;
 
             foreach ($openDebts as $debtModel) {
-                if ($remainingOffsetToApply <= 0) break;
+                if ($remainingOffsetToApply <= 0) {
+                    break;
+                }
 
                 $offsetAmount = min((float) $debtModel->outstanding_amount, $remainingOffsetToApply);
                 $newOutstanding = (float) $debtModel->outstanding_amount - $offsetAmount;
@@ -321,12 +329,12 @@ class ReceivablePayableService
                 CashTransactionModel::create([
                     'id' => (string) Str::uuid(),
                     'cooperative_id' => $coopId,
-                    'voucher_number' => strtoupper("PC-QT-" . now()->format('Ymd') . '-' . Str::random(4)),
+                    'voucher_number' => strtoupper('PC-QT-'.now()->format('Ymd').'-'.Str::random(4)),
                     'transaction_type' => 'EXPENSE',
                     'amount' => $netPayout,
                     'transaction_date' => now()->toDateString(),
                     'category' => 'QUYET_TOAN_MUA_VU',
-                    'description' => "Thực chi thanh toán quyết toán nông sản sau cấn trừ nợ",
+                    'description' => 'Thực chi thanh toán quyết toán nông sản sau cấn trừ nợ',
                     'member_id' => $memberId,
                     'status' => 'POSTED',
                     'created_by' => auth()->check() ? auth()->id() : null,
@@ -338,12 +346,12 @@ class ReceivablePayableService
                 CashTransactionModel::create([
                     'id' => (string) Str::uuid(),
                     'cooperative_id' => $coopId,
-                    'voucher_number' => strtoupper("PT-DV-" . now()->format('Ymd') . '-' . Str::random(4)),
+                    'voucher_number' => strtoupper('PT-DV-'.now()->format('Ymd').'-'.Str::random(4)),
                     'transaction_type' => 'INCOME',
                     'amount' => $serviceFee,
                     'transaction_date' => now()->toDateString(),
                     'category' => 'FEE_SERVICE',
-                    'description' => "Thu phí dịch vụ hỗ trợ thu mua nông sản",
+                    'description' => 'Thu phí dịch vụ hỗ trợ thu mua nông sản',
                     'member_id' => $memberId,
                     'status' => 'POSTED',
                     'created_by' => auth()->check() ? auth()->id() : null,
@@ -400,7 +408,7 @@ class ReceivablePayableService
 
         foreach ($allDebts as $debt) {
             $amount = (float) $debt->outstanding_amount;
-            $dueDate = $debt->due_date ? \Carbon\Carbon::parse($debt->due_date)->startOfDay() : null;
+            $dueDate = $debt->due_date ? Carbon::parse($debt->due_date)->startOfDay() : null;
             $isOverdue = $dueDate && $dueDate->lt($today);
 
             if ($debt->debt_type === 'RECEIVABLE') {

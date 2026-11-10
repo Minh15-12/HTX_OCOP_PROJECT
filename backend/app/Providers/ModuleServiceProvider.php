@@ -15,11 +15,11 @@ class ModuleServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(TenantContext::class, function ($app) {
-            return new TenantContext();
+            return new TenantContext;
         });
 
         $this->app->singleton(AuditService::class, function ($app) {
-            return new AuditService();
+            return new AuditService;
         });
 
         $this->app->scoped(AuthenticationService::class);

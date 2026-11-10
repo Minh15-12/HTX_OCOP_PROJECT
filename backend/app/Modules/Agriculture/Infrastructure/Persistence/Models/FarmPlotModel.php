@@ -2,6 +2,7 @@
 
 namespace Modules\Agriculture\Infrastructure\Persistence\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -53,6 +54,7 @@ class FarmPlotModel extends Model
         $area = (float) $this->area;
         $areaM2 = $area < 100 ? $area * 10000 : $area;
         $yieldRate = (float) ($this->max_yield_rate_per_sqm ?? 5.00);
+
         return round($areaM2 * $yieldRate * (1.0 + $tolerance), 2);
     }
 
@@ -68,13 +70,14 @@ class FarmPlotModel extends Model
 
     public function isInQuarantine(?string $checkDate = null): bool
     {
-        $date = $checkDate ? \Carbon\Carbon::parse($checkDate) : now();
+        $date = $checkDate ? Carbon::parse($checkDate) : now();
         if ($this->status === 'IN_QUARANTINE') {
             return true;
         }
         if ($this->quarantine_until && $date->lessThanOrEqualTo($this->quarantine_until)) {
             return true;
         }
+
         return false;
     }
 

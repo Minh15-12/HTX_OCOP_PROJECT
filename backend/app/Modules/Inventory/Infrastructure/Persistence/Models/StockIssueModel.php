@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
@@ -57,7 +58,7 @@ class StockIssueModel extends Model
 
     public function cropSeason(): BelongsTo
     {
-        return $this->belongsTo(\Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel::class, 'crop_season_id');
+        return $this->belongsTo(CropSeasonModel::class, 'crop_season_id');
     }
 
     public function creator(): BelongsTo
@@ -75,4 +76,3 @@ class StockIssueModel extends Model
         return $this->hasMany(StockIssueLineModel::class, 'stock_issue_id');
     }
 }
-

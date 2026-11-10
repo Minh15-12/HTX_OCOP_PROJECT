@@ -9,7 +9,6 @@ use Illuminate\Support\Str;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CapitalContributionModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\LandContributionModel;
-use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 
 class LandContributionService
 {

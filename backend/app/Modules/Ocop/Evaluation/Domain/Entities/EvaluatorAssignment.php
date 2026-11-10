@@ -14,8 +14,7 @@ class EvaluatorAssignment
         public string $status = 'ASSIGNED', // ASSIGNED, SCORING, SUBMITTED, LOCKED
         public readonly ?string $assignedAt = null,
         public ?string $completedAt = null
-    ) {
-    }
+    ) {}
 
     public function lock(): void
     {

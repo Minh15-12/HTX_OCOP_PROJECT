@@ -2,35 +2,20 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Modules\Cooperative\Application\Services\CapitalContributionService;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CapitalContributionModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
-use Modules\Finance\Application\Services\ReceivablePayableService;
-use Modules\Finance\Application\Services\SurplusDistributionService;
 use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
-use Modules\Finance\Infrastructure\Persistence\Models\DebtSettlementModel;
 use Modules\Finance\Infrastructure\Persistence\Models\ReceivablePayableModel;
-use Modules\Finance\Infrastructure\Persistence\Models\SurplusDistributionAllocationModel;
-use Modules\Finance\Infrastructure\Persistence\Models\SurplusDistributionPlanModel;
 use Modules\Identity\Infrastructure\Persistence\Models\PermissionModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
-use Modules\Inventory\Application\Services\StockIssueService;
-use Modules\Inventory\Application\Services\StockReceiptService;
 use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\StockBalanceModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\StockIssueItemModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\StockIssueModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\StockReceiptItemModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\StockReceiptModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\WarehouseModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaVersionModel;
 use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
 use Modules\Ocop\Evidence\Application\Services\OcopEvidenceAutoExtractionService;
-use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\OcopEvidenceModel;
 use Modules\Product\Infrastructure\Persistence\Models\ProductModel;
 use Tests\TestCase;
 
@@ -80,9 +65,9 @@ class CooperativeFinancialCircleE2ETest extends TestCase
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $coop->id,
-            'username' => 'director_' . Str::random(5),
+            'username' => 'director_'.Str::random(5),
             'full_name' => 'Nguyễn Quản Trị',
-            'email' => 'director.e2e.' . Str::random(5) . '@htx.vn',
+            'email' => 'director.e2e.'.Str::random(5).'@htx.vn',
             'password' => bcrypt('Secret123!'),
             'role_id' => $role->id,
             'status' => 'ACTIVE',

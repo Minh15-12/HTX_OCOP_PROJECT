@@ -36,11 +36,11 @@ class MeetingService
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
             $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('title', $likeOp, $search)
-                  ->orWhere('description', $likeOp, $search);
+                    ->orWhere('description', $likeOp, $search);
             });
         }
 
@@ -224,7 +224,7 @@ class MeetingService
             // Luật HTX 2023 Điều 72:
             // Nghị quyết thông thường: >= 50%
             // Nghị quyết trọng yếu (sửa Điều lệ, tổ chức lại, sáp nhập, giải thể): >= 75%
-            $isCritical = $resVotes->contains(fn($v) => $v->resolution_type === 'CRITICAL')
+            $isCritical = $resVotes->contains(fn ($v) => $v->resolution_type === 'CRITICAL')
                 || (bool) preg_match('/(DIEULE|GIAITHE|SAPNHAP|CRITICAL|TRONG_YEU)/i', $resCode);
 
             $resType = $isCritical ? 'CRITICAL' : 'REGULAR';

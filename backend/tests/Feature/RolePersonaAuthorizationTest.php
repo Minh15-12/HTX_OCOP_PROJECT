@@ -2,26 +2,26 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
-use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
-use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaVersionModel;
-use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
-use Modules\Product\Infrastructure\Persistence\Models\ProductModel;
 use Tests\TestCase;
 
 class RolePersonaAuthorizationTest extends TestCase
 {
     private CooperativeModel $cooperative;
+
     private UserModel $sysAdmin;
+
     private UserModel $htxOwner;
+
     private UserModel $accountant;
+
     private UserModel $storekeeper;
+
     private UserModel $ocopPreparer;
+
     private UserModel $evaluator;
 
     protected function setUp(): void

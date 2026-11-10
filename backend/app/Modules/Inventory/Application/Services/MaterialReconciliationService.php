@@ -4,12 +4,10 @@ namespace Modules\Inventory\Application\Services;
 
 use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Support\Facades\DB;
-use Modules\Cooperative\Application\Services\TenantContext;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
+use Modules\Cooperative\Application\Services\TenantContext;
 use Modules\Inventory\Infrastructure\Persistence\Models\StockIssueModel;
-use Modules\Inventory\Infrastructure\Persistence\Models\StockIssueLineModel;
 
 class MaterialReconciliationService
 {
@@ -47,10 +45,10 @@ class MaterialReconciliationService
             ->where('status', 'APPROVED')
             ->where(function ($q) use ($season, $memberIds, $startDate, $endDate) {
                 $q->where('purpose', 'LIKE', "%{$season->name}%")
-                  ->orWhere(function ($sq) use ($memberIds, $startDate, $endDate) {
-                      $sq->whereIn('member_id', $memberIds)
-                         ->whereBetween('issue_date', [$startDate, $endDate]);
-                  });
+                    ->orWhere(function ($sq) use ($memberIds, $startDate, $endDate) {
+                        $sq->whereIn('member_id', $memberIds)
+                            ->whereBetween('issue_date', [$startDate, $endDate]);
+                    });
             })
             ->get();
 

@@ -2,22 +2,25 @@
 
 namespace Modules\Agriculture\Application\Services;
 
-use Illuminate\Support\Facades\DB;
 use App\Shared\Domain\Exceptions\DomainException;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Agriculture\Application\DTOs\CreateCropSeasonDTO;
 use Modules\Agriculture\Application\DTOs\UpdateCropSeasonDTO;
 use Modules\Agriculture\Domain\Entities\CropSeason;
+use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonBomModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonPlotModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonBomModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmingLogModel;
+use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\HarvestModel;
-use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Cooperative\Application\Services\TenantContext;
+use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
+use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
 
 class CropSeasonService
 {
@@ -49,14 +52,14 @@ class CropSeasonService
         $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
 
         if (!empty($filters['crop'])) {
-            $query->where('crop', $likeOp, '%' . trim($filters['crop']) . '%');
+            $query->where('crop', $likeOp, '%'.trim($filters['crop']).'%');
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('name', $likeOp, $search)
-                  ->orWhere('crop', $likeOp, $search);
+                    ->orWhere('crop', $likeOp, $search);
             });
         }
 
@@ -144,16 +147,22 @@ class CropSeasonService
                 'HARVESTING' => ['CANCELLED'],
             ];
             if (!in_array($dto->status, $allowed[$season->status] ?? [], true)) {
-                throw new DomainException('Không thể chuyển trạng thái mùa vụ từ ' . $season->status . ' sang ' . $dto->status, 'INVALID_STATUS_TRANSITION', null, 400);
+                throw new DomainException('Không thể chuyển trạng thái mùa vụ từ '.$season->status.' sang '.$dto->status, 'INVALID_STATUS_TRANSITION', null, 400);
             }
         }
 
         $before = $season->toArray();
         $updates = [];
 
-        if ($dto->name !== null) $updates['name'] = $dto->name;
-        if ($dto->crop !== null) $updates['crop'] = $dto->crop;
-        if ($dto->startDate !== null) $updates['start_date'] = $dto->startDate;
+        if ($dto->name !== null) {
+            $updates['name'] = $dto->name;
+        }
+        if ($dto->crop !== null) {
+            $updates['crop'] = $dto->crop;
+        }
+        if ($dto->startDate !== null) {
+            $updates['start_date'] = $dto->startDate;
+        }
         if ($dto->expectedEndDate !== null) {
             $startDate = $dto->startDate ?: $season->start_date->format('Y-m-d');
             if ($dto->expectedEndDate <= $startDate) {
@@ -161,12 +170,24 @@ class CropSeasonService
             }
             $updates['expected_end_date'] = $dto->expectedEndDate;
         }
-        if ($dto->status !== null) $updates['status'] = $dto->status;
-        if ($dto->planInformation !== null) $updates['plan_information'] = $dto->planInformation;
-        if ($dto->seedSupplier !== null) $updates['seed_supplier'] = $dto->seedSupplier;
-        if ($dto->seedlingStandardChecklist !== null) $updates['seedling_standard_checklist'] = $dto->seedlingStandardChecklist;
-        if ($dto->buyerContractInfo !== null) $updates['buyer_contract_info'] = $dto->buyerContractInfo;
-        if ($dto->pucQuotaKg !== null) $updates['puc_quota_kg'] = $dto->pucQuotaKg;
+        if ($dto->status !== null) {
+            $updates['status'] = $dto->status;
+        }
+        if ($dto->planInformation !== null) {
+            $updates['plan_information'] = $dto->planInformation;
+        }
+        if ($dto->seedSupplier !== null) {
+            $updates['seed_supplier'] = $dto->seedSupplier;
+        }
+        if ($dto->seedlingStandardChecklist !== null) {
+            $updates['seedling_standard_checklist'] = $dto->seedlingStandardChecklist;
+        }
+        if ($dto->buyerContractInfo !== null) {
+            $updates['buyer_contract_info'] = $dto->buyerContractInfo;
+        }
+        if ($dto->pucQuotaKg !== null) {
+            $updates['puc_quota_kg'] = $dto->pucQuotaKg;
+        }
 
         if (!empty($updates)) {
             $season->update($updates);
@@ -220,9 +241,10 @@ class CropSeasonService
         return $seasonModel->fresh('productionUnit');
     }
 
-    public function getAllocatedPlots(string $seasonId): \Illuminate\Support\Collection
+    public function getAllocatedPlots(string $seasonId): Collection
     {
         $season = $this->getSeasonById($seasonId);
+
         return CropSeasonPlotModel::with(['plot', 'member.user'])
             ->where('crop_season_id', $season->id)
             ->orderBy('planting_date', 'asc')
@@ -320,16 +342,17 @@ class CropSeasonService
         );
     }
 
-    public function getSeasonBoms(string $seasonId): \Illuminate\Support\Collection
+    public function getSeasonBoms(string $seasonId): Collection
     {
         $season = $this->getSeasonById($seasonId);
+
         return CropSeasonBomModel::with('material')
             ->where('crop_season_id', $season->id)
             ->orderBy('created_at', 'asc')
             ->get();
     }
 
-    public function saveSeasonBom(string $seasonId, array $items): \Illuminate\Support\Collection
+    public function saveSeasonBom(string $seasonId, array $items): Collection
     {
         $season = $this->getSeasonById($seasonId);
 
@@ -376,9 +399,9 @@ class CropSeasonService
     {
         $season = $this->getSeasonById($seasonId);
 
-        $contractKg = (float) ($season->buyer_contract_info['target_volume_kg'] 
-            ?? $season->buyer_contract_info['contract_volume_kg'] 
-            ?? $season->puc_quota_kg 
+        $contractKg = (float) ($season->buyer_contract_info['target_volume_kg']
+            ?? $season->buyer_contract_info['contract_volume_kg']
+            ?? $season->puc_quota_kg
             ?? 0);
         $buyerName = $season->buyer_contract_info['buyer_name'] ?? 'Chưa xác định';
         $phcCode = $season->buyer_contract_info['phc_code'] ?? null;
@@ -415,7 +438,7 @@ class CropSeasonService
         ];
     }
 
-    public function bulkAllocatePlots(string $seasonId, array $plotIds, array $commonData = []): \Illuminate\Support\Collection
+    public function bulkAllocatePlots(string $seasonId, array $plotIds, array $commonData = []): Collection
     {
         $season = $this->getSeasonById($seasonId);
 
@@ -442,8 +465,8 @@ class CropSeasonService
         $status = $commonData['status'] ?? 'PLANNED';
 
         // Mặc định ngày thu hoạch: sau 75 ngày đến ngày kết thúc vụ
-        $harvestStart = $commonData['expected_harvest_start'] ?? \Carbon\Carbon::parse($plantingDate)->addDays(75)->toDateString();
-        $harvestEnd = $commonData['expected_harvest_end'] ?? ($season->expected_end_date ? $season->expected_end_date->format('Y-m-d') : \Carbon\Carbon::parse($harvestStart)->addDays(45)->toDateString());
+        $harvestStart = $commonData['expected_harvest_start'] ?? Carbon::parse($plantingDate)->addDays(75)->toDateString();
+        $harvestEnd = $commonData['expected_harvest_end'] ?? ($season->expected_end_date ? $season->expected_end_date->format('Y-m-d') : Carbon::parse($harvestStart)->addDays(45)->toDateString());
 
         return DB::transaction(function () use ($season, $plots, $plantingDate, $harvestStart, $harvestEnd, $cropVariety, $status, $commonData) {
             $createdAllocations = collect();
@@ -496,10 +519,10 @@ class CropSeasonService
         $coopId = $this->tenantContext->getCooperativeId();
 
         // Lấy danh mục vật tư hiện có trong HTX để map SKU/ID nếu có
-        $availableMaterials = \Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel::where('cooperative_id', $coopId)
+        $availableMaterials = MaterialModel::where('cooperative_id', $coopId)
             ->get(['id', 'sku', 'name', 'unit', 'price', 'category']);
 
-        $findMat = function(string $keyword, string $category = '') use ($availableMaterials) {
+        $findMat = function (string $keyword, string $category = '') use ($availableMaterials) {
             $matched = $availableMaterials->first(function ($m) use ($keyword) {
                 return str_contains(mb_strtolower($m->name), mb_strtolower($keyword)) || str_contains(mb_strtolower($m->sku), mb_strtolower($keyword));
             });
@@ -512,6 +535,7 @@ class CropSeasonService
                     'unit_price' => (float) ($matched->price ?? 0),
                 ];
             }
+
             return [
                 'material_id' => null,
                 'material_name' => $keyword,
@@ -556,7 +580,7 @@ class CropSeasonService
                         'standard_rate_per_sqm' => 0.01,
                         'notes' => 'Phòng trừ sâu xanh đục quả, thời gian cách ly PHI 3 ngày',
                     ],
-                ]
+                ],
             ],
             [
                 'preset_code' => 'PRESET_CHERRY_TOMATO',
@@ -592,7 +616,7 @@ class CropSeasonService
                         'standard_rate_per_sqm' => 0.015,
                         'notes' => 'Kiểm soát nhện đỏ và bọ phấn trắng, an toàn thu hái',
                     ],
-                ]
+                ],
             ],
             [
                 'preset_code' => 'PRESET_DURIAN_VIETGAP',
@@ -621,9 +645,8 @@ class CropSeasonService
                         'standard_rate_per_sqm' => 0.12,
                         'notes' => 'Tăng độ béo, chống sượng cơm, bón trước thu hoạch 20 ngày',
                     ],
-                ]
+                ],
             ],
         ];
     }
 }
-

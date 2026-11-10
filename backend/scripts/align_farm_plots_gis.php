@@ -1,9 +1,10 @@
 <?php
 
-require_once __DIR__ . '/../vendor/autoload.php';
-$app = require_once __DIR__ . '/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+require_once __DIR__.'/../vendor/autoload.php';
+$app = require_once __DIR__.'/../bootstrap/app.php';
+$app->make(Kernel::class)->bootstrap();
 
+use Illuminate\Contracts\Console\Kernel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
 use Modules\Agriculture\Infrastructure\Persistence\Models\ProductionUnitModel;
 
@@ -22,7 +23,8 @@ if ($unit) {
 }
 
 // 2. Chuyển đổi ngược WGS-84 sang VN-2000
-function wgs84ToVn2000($latDeg, $lngDeg, $centralMeridian = 107.75) {
+function wgs84ToVn2000($latDeg, $lngDeg, $centralMeridian = 107.75)
+{
     $a = 6378137.0;
     $f = 1 / 298.257223563;
     $e2 = 2 * $f - $f * $f;
@@ -95,7 +97,7 @@ foreach ($plots as $idx => $plot) {
         [$pMaxLng, $pMinLat],
         [$pMaxLng, $pMaxLat],
         [$pMinLng, $pMaxLat],
-        [$pMinLng, $pMinLat]
+        [$pMinLng, $pMinLat],
     ];
 
     // Tọa độ Sổ đỏ VN-2000 4 đỉnh
@@ -114,16 +116,18 @@ foreach ($plots as $idx => $plot) {
     // Chuẩn hóa diện tích: nếu diện tích < 100, nhân 1000 để phản ánh diện tích thực tế m2
     $currentArea = (float) $plot->area;
     $nominalArea = ($currentArea < 100 && $currentArea > 0) ? ($currentArea * 1000) : $currentArea;
-    if ($nominalArea <= 0) $nominalArea = 3500;
+    if ($nominalArea <= 0) {
+        $nominalArea = 3500;
+    }
 
     $plot->geometry_geojson = [
         'type' => 'Polygon',
-        'coordinates' => [$ring]
+        'coordinates' => [$ring],
     ];
     $plot->vn2000_coordinates = $vnPoints;
     $plot->area = $nominalArea;
     $plot->max_yield_rate_per_sqm = $plot->max_yield_rate_per_sqm ?: 5.0;
-    
+
     // Gán thông tin canh tác và vị trí
     $rel = $plot->land_relation ?? [];
     $rel['gps_latitude'] = ($pMinLat + $pMaxLat) / 2;

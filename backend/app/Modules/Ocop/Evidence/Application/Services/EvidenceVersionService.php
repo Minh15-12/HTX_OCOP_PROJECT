@@ -81,7 +81,7 @@ class EvidenceVersionService
 
         // Store file in private storage disk (under evidences/{application_id}/)
         $extension = $file->getClientOriginalExtension() ?: 'bin';
-        $storagePath = "evidences/{$app->id}/" . (string) Str::uuid() . ".{$extension}";
+        $storagePath = "evidences/{$app->id}/".(string) Str::uuid().".{$extension}";
         $disk = config('filesystems.evidence_disk', 'local');
         Storage::disk($disk)->put($storagePath, file_get_contents($file->getRealPath()));
 

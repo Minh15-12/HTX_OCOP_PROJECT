@@ -19,6 +19,7 @@ class HarvestSettlementMail extends Mailable
     public function envelope(): Envelope
     {
         $voucher = $this->settlementData['voucher_number'] ?? 'PC-2026-QT01';
+
         return new Envelope(
             subject: "Thông Báo Quyết Toán Mùa Vụ & Cấn Trừ Nợ Nông Sản ({$voucher}) - HTX Tân Tiến"
         );
@@ -39,7 +40,7 @@ class HarvestSettlementMail extends Mailable
                 'debtDeduction' => $this->settlementData['debt_deduction'] ?? 7500000,
                 'coopFee' => $this->settlementData['coop_fee'] ?? 1093750,
                 'netPayout' => $this->settlementData['net_payout'] ?? 35156250,
-                'portalUrl' => config('app.url', 'http://localhost:3000') . '/finance',
+                'portalUrl' => config('app.url', 'http://localhost:3000').'/finance',
             ]
         );
     }

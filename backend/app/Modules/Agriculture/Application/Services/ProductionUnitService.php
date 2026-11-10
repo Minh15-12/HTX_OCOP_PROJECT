@@ -35,15 +35,15 @@ class ProductionUnitService
         $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
 
         if (!empty($filters['crop'])) {
-            $query->where('crop', $likeOp, '%' . trim($filters['crop']) . '%');
+            $query->where('crop', $likeOp, '%'.trim($filters['crop']).'%');
         }
 
         if (!empty($filters['search'])) {
-            $search = '%' . trim($filters['search']) . '%';
+            $search = '%'.trim($filters['search']).'%';
             $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('unit_code', $likeOp, $search)
-                  ->orWhere('name', $likeOp, $search)
-                  ->orWhere('crop', $likeOp, $search);
+                    ->orWhere('name', $likeOp, $search)
+                    ->orWhere('crop', $likeOp, $search);
             });
         }
 
@@ -136,17 +136,27 @@ class ProductionUnitService
         $before = $unit->toArray();
 
         $updates = [];
-        if ($dto->name !== null) $updates['name'] = $dto->name;
-        if ($dto->crop !== null) $updates['crop'] = $dto->crop;
+        if ($dto->name !== null) {
+            $updates['name'] = $dto->name;
+        }
+        if ($dto->crop !== null) {
+            $updates['crop'] = $dto->crop;
+        }
         if ($dto->area !== null) {
             if ($dto->area <= 0) {
                 throw new DomainException('Diện tích phải lớn hơn 0', 'INVALID_AREA', null, 400);
             }
             $updates['area'] = $dto->area;
         }
-        if ($dto->location !== null) $updates['location'] = $dto->location;
-        if ($dto->status !== null) $updates['status'] = $dto->status;
-        if ($dto->registrationInformation !== null) $updates['registration_information'] = $dto->registrationInformation;
+        if ($dto->location !== null) {
+            $updates['location'] = $dto->location;
+        }
+        if ($dto->status !== null) {
+            $updates['status'] = $dto->status;
+        }
+        if ($dto->registrationInformation !== null) {
+            $updates['registration_information'] = $dto->registrationInformation;
+        }
 
         if (!empty($updates)) {
             $unit->update($updates);

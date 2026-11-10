@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Identity\Application\DTOs\LoginData;
 use Modules\Identity\Application\Services\AuthenticationService;
+use Modules\Identity\Presentation\Http\Requests\ChangePasswordRequest;
 use Modules\Identity\Presentation\Http\Requests\LoginRequest;
 use Modules\Identity\Presentation\Http\Resources\UserResource;
 
@@ -54,7 +55,7 @@ class AuthController extends BaseController
         );
     }
 
-    public function changePassword(\Modules\Identity\Presentation\Http\Requests\ChangePasswordRequest $request): JsonResponse
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
         $this->authService->changePassword(
             user: $request->user(),

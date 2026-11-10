@@ -11,10 +11,7 @@ use Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
-use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaGroupModel;
 use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriteriaVersionModel;
-use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\CriterionModel;
-use Modules\Ocop\Criteria\Infrastructure\Persistence\Models\IndicatorModel;
 use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
 use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel;
 use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceVersionModel;
@@ -27,8 +24,8 @@ class SecurityHardeningAuditTest extends TestCase
     {
         $coop = CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_' . Str::random(5),
-            'legal_name' => 'HTX Security Hardening Test ' . Str::random(3),
+            'cooperative_code' => 'HTX_'.Str::random(5),
+            'legal_name' => 'HTX Security Hardening Test '.Str::random(3),
             'status' => 'ACTIVE',
         ]);
 
@@ -39,8 +36,8 @@ class SecurityHardeningAuditTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'sec_user_' . Str::random(5),
-            'email' => 'sec_' . Str::random(5) . '@htx.vn',
+            'username' => 'sec_user_'.Str::random(5),
+            'email' => 'sec_'.Str::random(5).'@htx.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Chuyên Viên Kiểm Thử',
             'cooperative_id' => $coop->id,
@@ -97,7 +94,7 @@ class SecurityHardeningAuditTest extends TestCase
         $product = ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $data['coop']->id,
-            'product_code' => 'PRD-' . Str::random(4),
+            'product_code' => 'PRD-'.Str::random(4),
             'product_name' => 'Sản phẩm thử nghiệm',
             'category' => 'FOOD',
             'status' => 'ACTIVE',
@@ -105,7 +102,7 @@ class SecurityHardeningAuditTest extends TestCase
 
         $version = CriteriaVersionModel::create([
             'id' => (string) Str::uuid(),
-            'version_code' => 'VER-' . Str::random(4),
+            'version_code' => 'VER-'.Str::random(4),
             'name' => 'Tiêu chí',
             'status' => 'PUBLISHED',
         ]);
@@ -115,7 +112,7 @@ class SecurityHardeningAuditTest extends TestCase
             'cooperative_id' => $data['coop']->id,
             'product_id' => $product->id,
             'criteria_version_id' => $version->id,
-            'application_number' => 'APP-' . Str::random(4),
+            'application_number' => 'APP-'.Str::random(4),
             'status' => 'DRAFT',
         ]);
 
@@ -172,7 +169,7 @@ class SecurityHardeningAuditTest extends TestCase
         $product = ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $storekeeperData['coop']->id,
-            'product_code' => 'PRD-' . Str::random(4),
+            'product_code' => 'PRD-'.Str::random(4),
             'product_name' => 'Sản phẩm test',
             'category' => 'FOOD',
             'status' => 'ACTIVE',
@@ -180,7 +177,7 @@ class SecurityHardeningAuditTest extends TestCase
 
         $version = CriteriaVersionModel::create([
             'id' => (string) Str::uuid(),
-            'version_code' => 'VER-' . Str::random(4),
+            'version_code' => 'VER-'.Str::random(4),
             'name' => 'Tiêu chí test',
             'status' => 'PUBLISHED',
         ]);
@@ -190,7 +187,7 @@ class SecurityHardeningAuditTest extends TestCase
             'cooperative_id' => $storekeeperData['coop']->id,
             'product_id' => $product->id,
             'criteria_version_id' => $version->id,
-            'application_number' => 'APP-' . Str::random(4),
+            'application_number' => 'APP-'.Str::random(4),
             'status' => 'READY_FOR_SUBMISSION',
         ]);
 
@@ -213,7 +210,7 @@ class SecurityHardeningAuditTest extends TestCase
         for ($i = 0; $i < 5; $i++) {
             $this->postJson('/api/v1/auth/login', [
                 'username' => 'attacker_probe',
-                'password' => 'wrong_pass_' . $i,
+                'password' => 'wrong_pass_'.$i,
             ]);
         }
 

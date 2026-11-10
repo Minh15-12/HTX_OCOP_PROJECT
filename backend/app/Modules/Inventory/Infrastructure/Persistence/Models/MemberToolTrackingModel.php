@@ -5,9 +5,9 @@ namespace Modules\Inventory\Infrastructure\Persistence\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\CooperativeModel;
 use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
-use Modules\Agriculture\Infrastructure\Persistence\Models\FarmPlotModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 
 class MemberToolTrackingModel extends Model

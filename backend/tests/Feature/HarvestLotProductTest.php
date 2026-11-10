@@ -16,16 +16,15 @@ use Modules\Identity\Infrastructure\Persistence\Models\PermissionModel;
 use Modules\Identity\Infrastructure\Persistence\Models\RoleModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
-use Modules\Product\Infrastructure\Persistence\Models\ProductModel;
 use Tests\TestCase;
 
 class HarvestLotProductTest extends TestCase
 {
-    private function createCooperative(string $code = null): CooperativeModel
+    private function createCooperative(?string $code = null): CooperativeModel
     {
         return CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => $code ?: 'HTX_HARVEST_' . Str::random(4),
+            'cooperative_code' => $code ?: 'HTX_HARVEST_'.Str::random(4),
             'legal_name' => 'HTX Nông Nghiệp Thu Hoạch & Lô Hàng',
             'status' => 'ACTIVE',
         ]);
@@ -35,22 +34,22 @@ class HarvestLotProductTest extends TestCase
     {
         $role = RoleModel::create([
             'id' => (string) Str::uuid(),
-            'code' => 'ROLE_HARVEST_TEST_' . Str::random(4),
+            'code' => 'ROLE_HARVEST_TEST_'.Str::random(4),
             'name' => 'Harvest Test Role',
         ]);
 
         foreach ($permissionCodes as $pCode) {
             $permission = PermissionModel::firstOrCreate(
                 ['code' => $pCode],
-                ['id' => (string) Str::uuid(), 'name' => 'Perm ' . $pCode, 'module' => 'Agriculture']
+                ['id' => (string) Str::uuid(), 'name' => 'Perm '.$pCode, 'module' => 'Agriculture']
             );
             $role->permissions()->attach($permission->id);
         }
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'harvest_user_' . Str::random(5),
-            'email' => 'harvest_user_' . Str::random(5) . '@example.com',
+            'username' => 'harvest_user_'.Str::random(5),
+            'email' => 'harvest_user_'.Str::random(5).'@example.com',
             'password' => Hash::make('password123'),
             'full_name' => 'Quản Lý Thu Hoạch',
             'cooperative_id' => $coop->id,
@@ -67,7 +66,7 @@ class HarvestLotProductTest extends TestCase
         $unit = ProductionUnitModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $coop->id,
-            'unit_code' => 'PUC_CONTEXT_' . Str::random(4),
+            'unit_code' => 'PUC_CONTEXT_'.Str::random(4),
             'name' => 'Vùng Trồng Cây Ăn Quả',
             'crop' => 'Cam Sành',
             'area' => 12.5,
@@ -77,7 +76,7 @@ class HarvestLotProductTest extends TestCase
         $plot = FarmPlotModel::create([
             'id' => (string) Str::uuid(),
             'production_unit_id' => $unit->id,
-            'plot_code' => 'PLOT_CTX_' . Str::random(4),
+            'plot_code' => 'PLOT_CTX_'.Str::random(4),
             'area' => 2.5,
             'status' => 'ACTIVE',
         ]);

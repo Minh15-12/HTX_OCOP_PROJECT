@@ -21,7 +21,7 @@ class OcopApplicationTest extends TestCase
     {
         $cooperative = $cooperative ?: CooperativeModel::create([
             'id' => (string) Str::uuid(),
-            'cooperative_code' => 'HTX_' . Str::random(5),
+            'cooperative_code' => 'HTX_'.Str::random(5),
             'legal_name' => 'HTX Nông Nghiệp Thử Nghiệm OCOP',
             'status' => 'ACTIVE',
         ]);
@@ -33,8 +33,8 @@ class OcopApplicationTest extends TestCase
 
         $user = UserModel::create([
             'id' => (string) Str::uuid(),
-            'username' => 'user_' . Str::random(4),
-            'email' => 'user_' . Str::random(4) . '@htx.vn',
+            'username' => 'user_'.Str::random(4),
+            'email' => 'user_'.Str::random(4).'@htx.vn',
             'password' => Hash::make('password123'),
             'full_name' => 'Nguyễn Văn Quản Lý',
             'cooperative_id' => $cooperative->id,
@@ -59,7 +59,7 @@ class OcopApplicationTest extends TestCase
     {
         $version = CriteriaVersionModel::create([
             'id' => (string) Str::uuid(),
-            'version_code' => 'OCOP-TEST-' . Str::random(4),
+            'version_code' => 'OCOP-TEST-'.Str::random(4),
             'name' => 'Bộ tiêu chí OCOP Thử Nghiệm 100D',
             'status' => 'PUBLISHED',
         ]);
@@ -103,7 +103,7 @@ class OcopApplicationTest extends TestCase
         return ProductModel::create([
             'id' => (string) Str::uuid(),
             'cooperative_id' => $cooperativeId,
-            'product_code' => 'PROD-' . Str::random(4),
+            'product_code' => 'PROD-'.Str::random(4),
             'product_name' => 'Gạo Nếp Nương OCOP',
             'category' => 'FOOD',
             'unit' => 'KG',
@@ -142,7 +142,7 @@ class OcopApplicationTest extends TestCase
 
         $draftVersion = CriteriaVersionModel::create([
             'id' => (string) Str::uuid(),
-            'version_code' => 'DRAFT-VER-' . Str::random(4),
+            'version_code' => 'DRAFT-VER-'.Str::random(4),
             'name' => 'Bộ tiêu chí Bản Nháp',
             'status' => 'DRAFT',
         ]);
@@ -321,7 +321,7 @@ class OcopApplicationTest extends TestCase
             'cooperative_id' => $auth['cooperative']->id,
             'product_id' => $product->id,
             'criteria_version_id' => $version->id,
-            'application_number' => 'HS-SUBMITTED-' . Str::random(4),
+            'application_number' => 'HS-SUBMITTED-'.Str::random(4),
             'status' => 'SUBMITTED',
             'submitted_at' => now(),
         ]);
@@ -352,7 +352,7 @@ class OcopApplicationTest extends TestCase
             'cooperative_id' => $auth1['cooperative']->id,
             'product_id' => $product->id,
             'criteria_version_id' => $version->id,
-            'application_number' => 'HS-TENANT-' . Str::random(4),
+            'application_number' => 'HS-TENANT-'.Str::random(4),
             'status' => 'DRAFT',
         ]);
 

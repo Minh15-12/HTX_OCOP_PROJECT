@@ -2,9 +2,11 @@
 
 namespace Modules\Ocop\Evaluation\Presentation\Http\Controllers;
 
+use App\Shared\Application\Responses\ApiResponse;
 use App\Shared\Presentation\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Modules\Ocop\Evaluation\Application\DTOs\SaveEvaluatorScoreDTO;
 use Modules\Ocop\Evaluation\Application\Services\EvaluatorScoreService;
 use Modules\Ocop\Evaluation\Presentation\Http\Requests\SaveEvaluatorScoreRequest;
@@ -32,8 +34,8 @@ class EvaluatorScoreController extends BaseController
 
     public function store(string $sessionId, SaveEvaluatorScoreRequest $request): JsonResponse
     {
-        if (!\Illuminate\Support\Facades\Gate::allows('OCOP_EVALUATION.SCORE')) {
-            return \App\Shared\Application\Responses\ApiResponse::error('FORBIDDEN', 'Bạn không có quyền chấm điểm đánh giá OCOP', status: 403);
+        if (!Gate::allows('OCOP_EVALUATION.SCORE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền chấm điểm đánh giá OCOP', status: 403);
         }
 
         $evaluatorId = auth()->id() ?: (string) $request->input('evaluator_id', '');
@@ -50,8 +52,8 @@ class EvaluatorScoreController extends BaseController
 
     public function lock(string $id, Request $request): JsonResponse
     {
-        if (!\Illuminate\Support\Facades\Gate::allows('OCOP_EVALUATION.LOCK') && !\Illuminate\Support\Facades\Gate::allows('OCOP_EVALUATION.SCORE')) {
-            return \App\Shared\Application\Responses\ApiResponse::error('FORBIDDEN', 'Bạn không có quyền khóa phiếu chấm điểm', status: 403);
+        if (!Gate::allows('OCOP_EVALUATION.LOCK') && !Gate::allows('OCOP_EVALUATION.SCORE')) {
+            return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền khóa phiếu chấm điểm', status: 403);
         }
 
         $evaluatorId = auth()->id() ?: (string) $request->input('evaluator_id', '');

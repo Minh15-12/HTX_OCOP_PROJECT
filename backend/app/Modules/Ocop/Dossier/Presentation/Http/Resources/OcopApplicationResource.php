@@ -19,7 +19,7 @@ class OcopApplicationResource extends JsonResource
         $decision = $this->relationLoaded('finalDecision') ? $this->finalDecision : null;
         $starRating = 0;
         if ($decision) {
-            $starRating = match($decision->final_classification) {
+            $starRating = match ($decision->final_classification) {
                 'FIVE_STAR' => 5,
                 'FOUR_STAR' => 4,
                 'THREE_STAR' => 3,
@@ -29,9 +29,13 @@ class OcopApplicationResource extends JsonResource
 
         $targetStar = 4;
         if ($totalScore !== null) {
-            if ($totalScore >= 90.0) $targetStar = 5;
-            elseif ($totalScore >= 70.0) $targetStar = 4;
-            elseif ($totalScore >= 50.0) $targetStar = 3;
+            if ($totalScore >= 90.0) {
+                $targetStar = 5;
+            } elseif ($totalScore >= 70.0) {
+                $targetStar = 4;
+            } elseif ($totalScore >= 50.0) {
+                $targetStar = 3;
+            }
         }
 
         return [

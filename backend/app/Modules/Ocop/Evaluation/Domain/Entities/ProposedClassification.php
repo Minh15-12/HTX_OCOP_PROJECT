@@ -14,8 +14,7 @@ class ProposedClassification
         public readonly ?string $ruleVersionReference = null,
         public readonly ?string $reason = null,
         public readonly string $status = 'PROPOSED'
-    ) {
-    }
+    ) {}
 
     /**
      * Determines raw star classification based on score according to OCOP business rules:

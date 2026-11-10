@@ -21,6 +21,7 @@ class FarmingLogFieldOperationsSeeder extends Seeder
 
         if (!$season) {
             $this->command->warn('Không tìm thấy mùa vụ nào để seed nhật ký canh tác.');
+
             return;
         }
 
@@ -65,7 +66,7 @@ class FarmingLogFieldOperationsSeeder extends Seeder
                 'gps_distance_to_edge_meters' => 5.2,
                 'is_gps_verified' => true,
                 'prev_hash' => str_repeat('0', 64),
-                'hash_sha256' => hash('sha256', 'LOG-FERTIGATION-HIGH-TECH-' . $log1Id),
+                'hash_sha256' => hash('sha256', 'LOG-FERTIGATION-HIGH-TECH-'.$log1Id),
             ]);
         }
 
@@ -92,8 +93,8 @@ class FarmingLogFieldOperationsSeeder extends Seeder
                 'gps_longitude' => 108.473500,
                 'gps_distance_to_edge_meters' => 0.0,
                 'is_gps_verified' => true,
-                'prev_hash' => hash('sha256', 'LOG-FERTIGATION-HIGH-TECH-' . ($log1Id ?? '1')),
-                'hash_sha256' => hash('sha256', 'LOG-TANK-MIX-SPRAYING-' . $log2Id),
+                'prev_hash' => hash('sha256', 'LOG-FERTIGATION-HIGH-TECH-'.($log1Id ?? '1')),
+                'hash_sha256' => hash('sha256', 'LOG-TANK-MIX-SPRAYING-'.$log2Id),
             ]);
 
             // Item 1 trong Tank-Mix: Neem Oil sinh học
@@ -167,8 +168,8 @@ class FarmingLogFieldOperationsSeeder extends Seeder
                 'gps_longitude' => 108.473200,
                 'gps_distance_to_edge_meters' => 2.1,
                 'is_gps_verified' => true,
-                'prev_hash' => hash('sha256', 'LOG-TANK-MIX-SPRAYING-' . ($log2Id ?? '2')),
-                'hash_sha256' => hash('sha256', 'LOG-BIOCONTROL-IPM-' . $log3Id),
+                'prev_hash' => hash('sha256', 'LOG-TANK-MIX-SPRAYING-'.($log2Id ?? '2')),
+                'hash_sha256' => hash('sha256', 'LOG-BIOCONTROL-IPM-'.$log3Id),
             ]);
         }
 
@@ -192,8 +193,8 @@ class FarmingLogFieldOperationsSeeder extends Seeder
                 'gps_longitude' => 108.474000,
                 'gps_distance_to_edge_meters' => 12.5,
                 'is_gps_verified' => true,
-                'prev_hash' => hash('sha256', 'LOG-BIOCONTROL-IPM-' . ($log3Id ?? '3')),
-                'hash_sha256' => hash('sha256', 'LOG-CARE-BACKDATED-' . $log4Id),
+                'prev_hash' => hash('sha256', 'LOG-BIOCONTROL-IPM-'.($log3Id ?? '3')),
+                'hash_sha256' => hash('sha256', 'LOG-CARE-BACKDATED-'.$log4Id),
             ]);
         }
 

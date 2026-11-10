@@ -17,7 +17,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -27,6 +27,11 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - uses: actions/checkout@v4
@@ -35,12 +40,12 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.2'
-        extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_pgsql, dom, filter, gd, iconv, json, mbstring
+        extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_pgsql, pdo_sqlite, sqlite3, dom, filter, gd, json, redis, bcmath, curl, fileinfo
         coverage: none
 
     - name: Install Backend Dependencies
       working-directory: ./backend
-      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+      run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
     - name: Copy .env
       working-directory: ./backend
@@ -50,12 +55,12 @@ jobs:
       working-directory: ./backend
       run: php artisan key:generate
 
-    - name: Run Migrations
+    - name: Run Migrations on PostgreSQL
       working-directory: ./backend
       env:
         DB_CONNECTION: pgsql
         DB_HOST: 127.0.0.1
-        DB_PORT: 5432
+        DB_PORT: 5433
         DB_DATABASE: htx_ocop
         DB_USERNAME: postgres
         DB_PASSWORD: postgres
@@ -64,19 +69,17 @@ jobs:
     - name: Check Code Style (Pint)
       working-directory: ./backend
       run: ./vendor/bin/pint --test
-      continue-on-error: true
 
     - name: Execute tests
       working-directory: ./backend
       env:
-        DB_CONNECTION: pgsql
-        DB_HOST: 127.0.0.1
-        DB_PORT: 5432
-        DB_DATABASE: htx_ocop
-        DB_USERNAME: postgres
-        DB_PASSWORD: postgres
-        REDIS_HOST: 127.0.0.1
-      run: php artisan test
+        DB_CONNECTION: sqlite
+        DB_DATABASE: ':memory:'
+        CACHE_STORE: array
+        SESSION_DRIVER: array
+        QUEUE_CONNECTION: sync
+        MAIL_MAILER: array
+      run: ./vendor/bin/phpunit --display-deprecations --display-warnings
 
   frontend-test:
     runs-on: ubuntu-latest

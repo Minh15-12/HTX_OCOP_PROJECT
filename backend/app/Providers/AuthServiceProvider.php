@@ -2,17 +2,25 @@
 
 namespace App\Providers;
 
+use App\Policies\CashTransactionPolicy;
+use App\Policies\InventoryPolicy;
+use App\Policies\MemberPolicy;
+use App\Policies\OcopApplicationPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
+use Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
+use Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel;
+use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
 
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
-        \Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::class => \App\Policies\MemberPolicy::class,
-        \Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel::class => \App\Policies\OcopApplicationPolicy::class,
-        \Modules\Inventory\Infrastructure\Persistence\Models\MaterialModel::class => \App\Policies\InventoryPolicy::class,
-        \Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel::class => \App\Policies\CashTransactionPolicy::class,
+        MemberModel::class => MemberPolicy::class,
+        OcopApplicationModel::class => OcopApplicationPolicy::class,
+        MaterialModel::class => InventoryPolicy::class,
+        CashTransactionModel::class => CashTransactionPolicy::class,
     ];
 
     public function boot(): void
@@ -150,6 +158,7 @@ class AuthServiceProvider extends ServiceProvider
                     }
                 }
             }
+
             return null;
         });
 

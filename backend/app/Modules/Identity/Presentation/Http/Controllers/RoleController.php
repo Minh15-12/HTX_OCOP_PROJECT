@@ -6,6 +6,7 @@ use App\Shared\Application\Responses\ApiResponse;
 use App\Shared\Presentation\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Modules\Audit\Application\Services\AuditService;
 use Modules\Identity\Infrastructure\Persistence\Models\PermissionModel;
@@ -17,7 +18,7 @@ class RoleController extends BaseController
 
     public function index(Request $request): JsonResponse
     {
-        if (!\Illuminate\Support\Facades\Gate::allows('ROLE.READ')) {
+        if (!Gate::allows('ROLE.READ')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem danh sách vai trò', status: 403);
         }
 
@@ -42,7 +43,7 @@ class RoleController extends BaseController
 
     public function store(Request $request): JsonResponse
     {
-        if (!\Illuminate\Support\Facades\Gate::allows('ROLE.MANAGE')) {
+        if (!Gate::allows('ROLE.MANAGE')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền quản lý vai trò', status: 403);
         }
 
@@ -82,7 +83,7 @@ class RoleController extends BaseController
 
     public function show(string $id): JsonResponse
     {
-        if (!\Illuminate\Support\Facades\Gate::allows('ROLE.READ')) {
+        if (!Gate::allows('ROLE.READ')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền xem thông tin vai trò', status: 403);
         }
 
@@ -105,7 +106,7 @@ class RoleController extends BaseController
 
     public function update(Request $request, string $id): JsonResponse
     {
-        if (!\Illuminate\Support\Facades\Gate::allows('ROLE.MANAGE')) {
+        if (!Gate::allows('ROLE.MANAGE')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền chỉnh sửa vai trò', status: 403);
         }
 
@@ -136,7 +137,7 @@ class RoleController extends BaseController
 
     public function updatePermissions(Request $request, string $id): JsonResponse
     {
-        if (!\Illuminate\Support\Facades\Gate::allows('ROLE.MANAGE')) {
+        if (!Gate::allows('ROLE.MANAGE')) {
             return ApiResponse::error('FORBIDDEN', 'Bạn không có quyền thay đổi ma trận phân quyền', status: 403);
         }
 

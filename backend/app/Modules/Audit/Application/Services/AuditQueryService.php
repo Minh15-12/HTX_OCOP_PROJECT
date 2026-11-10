@@ -5,8 +5,8 @@ namespace Modules\Audit\Application\Services;
 use App\Shared\Domain\Exceptions\DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Audit\Infrastructure\Persistence\Models\AuditEventModel;
+use Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel;
 use Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel;
-use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\ConsolidatedResultModel;
 use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\EvaluationSessionModel;
 use Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\FinalDecisionModel;
 use Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel;
@@ -101,7 +101,7 @@ class AuditQueryService
 
         $auditTimeline = AuditEventModel::where(function ($q) use ($entityIds, $applicationId) {
             $q->whereIn('entity_id', $entityIds)
-              ->orWhere('after_reference->application_id', $applicationId);
+                ->orWhere('after_reference->application_id', $applicationId);
         })->orderBy('created_at', 'asc')->get();
 
         return [
@@ -144,7 +144,7 @@ class AuditQueryService
 
     public function traceMember(string $memberId): array
     {
-        $member = \Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::with(['capitalContributions', 'user'])->find($memberId);
+        $member = MemberModel::with(['capitalContributions', 'user'])->find($memberId);
 
         if (!$member) {
             throw new DomainException(

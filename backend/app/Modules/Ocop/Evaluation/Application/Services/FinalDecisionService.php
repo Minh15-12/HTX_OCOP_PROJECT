@@ -3,6 +3,7 @@
 namespace Modules\Ocop\Evaluation\Application\Services;
 
 use App\Shared\Domain\Exceptions\DomainException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Audit\Application\Services\AuditService;
@@ -133,7 +134,7 @@ class FinalDecisionService
         return $decision;
     }
 
-    public function listDecisions(array $filters = []): \Illuminate\Database\Eloquent\Collection
+    public function listDecisions(array $filters = []): Collection
     {
         $query = FinalDecisionModel::with(['application.cooperative', 'application.product']);
 
@@ -148,4 +149,3 @@ class FinalDecisionService
         return $query->orderBy('decision_date', 'desc')->get();
     }
 }
-

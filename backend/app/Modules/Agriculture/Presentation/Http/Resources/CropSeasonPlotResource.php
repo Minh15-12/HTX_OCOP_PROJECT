@@ -9,12 +9,12 @@ class CropSeasonPlotResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $memberName = $this->member?->user?->full_name 
-            ?? $this->member?->identity_information['full_name'] 
+        $memberName = $this->member?->user?->full_name
+            ?? $this->member?->identity_information['full_name']
             ?? null;
 
-        $memberPhone = $this->member?->user?->phone_number 
-            ?? $this->member?->identity_information['phone'] 
+        $memberPhone = $this->member?->user?->phone_number
+            ?? $this->member?->identity_information['phone']
             ?? null;
 
         return [

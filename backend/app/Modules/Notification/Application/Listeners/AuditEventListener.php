@@ -3,17 +3,17 @@
 namespace Modules\Notification\Application\Listeners;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Log;
 use Modules\Audit\Domain\Events\AuditEventCreated;
 use Modules\Identity\Infrastructure\Persistence\Models\UserModel;
 use Modules\Notification\Domain\Notifications\SecurityAlertNotification;
-use Illuminate\Support\Facades\Log;
 
 class AuditEventListener implements ShouldQueue
 {
     public function handle(AuditEventCreated $event): void
     {
         $audit = $event->auditEvent;
-        
+
         $triggerActions = [
             'PHI_VIOLATION_ATTEMPTED' => 'Cảnh báo vi phạm thời gian cách ly an toàn (PHI Guard)',
             'PROHIBITED_SUBSTANCE_DETECTED' => 'Cảnh báo phát hiện hoạt chất cấm trong vật tư',
@@ -41,7 +41,7 @@ class AuditEventListener implements ShouldQueue
                 ));
             }
         } catch (\Throwable $e) {
-            Log::error("Failed to process AuditEventListener: " . $e->getMessage());
+            Log::error('Failed to process AuditEventListener: '.$e->getMessage());
         }
     }
 }
