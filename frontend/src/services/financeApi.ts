@@ -205,4 +205,24 @@ export const financeApi = {
     const res = await apiClient.post<any>(`/receivable-payables/${debtId}/settlements`, backendPayload);
     return res.data?.data || res.data || res;
   },
+
+  async getDebtAgingSummary(): Promise<{
+    total_receivable: number;
+    overdue_receivable: number;
+    total_payable: number;
+    overdue_payable: number;
+    net_debt_position: number;
+    total_open_debts_count: number;
+    aging_breakdown: {
+      current: number;
+      overdue_1_30: number;
+      overdue_31_60: number;
+      overdue_61_90: number;
+      overdue_90_plus: number;
+    };
+  }> {
+    const res: any = await apiClient.get('/receivable-payables/summary');
+    return res.data?.data || res.data || res;
+  },
 };
+

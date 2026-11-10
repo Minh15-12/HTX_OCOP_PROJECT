@@ -64,11 +64,30 @@ class HarvestSettlementService
         $totalGradeA = 0.0;
         $totalGradeB = 0.0;
         $totalReject = 0.0;
+        $totalHeldExcessKg = 0.0;
 
         foreach ($unsettledHarvests as $h) {
-            $totalGradeA += (float) $h->grade_a_kg;
-            $totalGradeB += (float) $h->grade_b_kg;
-            $totalReject += (float) $h->reject_kg;
+            $hGradeA = (float) $h->grade_a_kg;
+            $hGradeB = (float) $h->grade_b_kg;
+            $hReject = (float) $h->reject_kg;
+
+            // Anti-fraud Option B: Hold unapproved excess quantity pending reconciliation
+            if ($h->is_over_quota && $h->quota_audit_status === 'NEEDS_RECONCILIATION') {
+                $excess = (float) ($h->quota_excess_kg ?? 0);
+                $totalHeldExcessKg += $excess;
+                // Withhold excess from Grade B first, then Grade A
+                if ($hGradeB >= $excess) {
+                    $hGradeB -= $excess;
+                } else {
+                    $remainingExcess = $excess - $hGradeB;
+                    $hGradeB = 0.0;
+                    $hGradeA = max(0.0, $hGradeA - $remainingExcess);
+                }
+            }
+
+            $totalGradeA += $hGradeA;
+            $totalGradeB += $hGradeB;
+            $totalReject += $hReject;
         }
 
         // Produce value formula: V_total = (Q_A * P_A) + (Q_B * P_B)
@@ -85,6 +104,7 @@ class HarvestSettlementService
             $totalGradeA,
             $totalGradeB,
             $totalReject,
+            $totalHeldExcessKg,
             $grossProduceValue,
             $gradeAPrice,
             $gradeBPrice,
@@ -133,6 +153,7 @@ class HarvestSettlementService
                 'grade_a_price' => $gradeAPrice,
                 'grade_b_price' => $gradeBPrice,
                 'gross_produce_value' => round($grossProduceValue, 2),
+                'withheld_excess_kg' => round($totalHeldExcessKg, 2),
                 'service_fee' => $settlementResult['service_fee'],
                 'total_debt_offset' => $settlementResult['total_debt_offset'],
                 'net_payout' => $settlementResult['net_payout'],

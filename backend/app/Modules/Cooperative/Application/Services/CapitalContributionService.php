@@ -221,8 +221,40 @@ class CapitalContributionService
                 'land_use_type' => $dto->landUseType ?: 'Đất lúa',
                 'appraised_unit_price' => $dto->appraisedUnitPrice ?: 0,
                 'total_land_value' => $dto->amount,
-                'cadastral_status' => 'REGISTERED_CHANGE',
+                'cadastral_status' => $dto->cadastralStatus ?: 'REGISTERED_CHANGE',
             ]);
+        }
+
+        // Synchronize with HTX Cashbook if contribution is cash or bank transfer
+        if (in_array($domainEntity->contributionType, ['INITIAL', 'ADDITIONAL', 'TIEN_MAT', 'CHUYEN_KHOAN'])) {
+            \Modules\Finance\Infrastructure\Persistence\Models\CashTransactionModel::create([
+                'id' => (string) Str::uuid(),
+                'cooperative_id' => $member->cooperative_id,
+                'voucher_number' => 'PT-' . date('Ymd') . '-' . strtoupper(Str::random(4)),
+                'transaction_type' => 'INCOME',
+                'amount' => $domainEntity->amount,
+                'transaction_date' => $domainEntity->transactionDate,
+                'category' => 'CAPITAL_CONTRIBUTION',
+                'description' => "Thu tiền góp vốn điều lệ từ xã viên [{$member->member_code}]",
+                'payer_payee' => $member->identity_information['full_name'] ?? $member->member_code,
+                'member_id' => $member->id,
+                'status' => 'POSTED',
+                'evidence_reference' => ['contribution_id' => $contribution->id, 'certificate_code' => $certificateCode],
+                'created_by' => auth()->id() ?? $member->user_id,
+            ]);
+        }
+
+        // Auto-assign / adjust member credit limit if not yet set
+        if (($member->credit_limit === null || (float)$member->credit_limit <= 0) && $newMemberCapital > 0) {
+            $suggestedCredit = min($newMemberCapital * 0.5, 50000000.0);
+            $member->update(['credit_limit' => $suggestedCredit]);
+        }
+        if (($dto->contributionType === 'LAND' || $dto->contributionType === 'QUYEN_SU_DUNG_DAT') && $dto->landAreaSqm > 0) {
+            $landHa = (float) $dto->landAreaSqm / 10000.0;
+            $suggestedLandCredit = $landHa * 15000000.0;
+            if ($suggestedLandCredit > (float) ($member->credit_limit ?? 0)) {
+                $member->update(['credit_limit' => $suggestedLandCredit]);
+            }
         }
 
         $this->auditService->log(

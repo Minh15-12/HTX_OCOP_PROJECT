@@ -154,6 +154,7 @@ class OcopEdgeCasesTest extends TestCase
 
         $eval1 = $this->createAuthUser($authAdmin['cooperative'], 'EVALUATOR');
         $eval2 = $this->createAuthUser($authAdmin['cooperative'], 'EVALUATOR');
+        $eval3 = $this->createAuthUser($authAdmin['cooperative'], 'EVALUATOR');
 
         $app = OcopApplicationModel::create([
             'id' => (string) Str::uuid(),
@@ -201,6 +202,15 @@ class OcopEdgeCasesTest extends TestCase
             'status' => 'LOCKED',
         ]);
 
+        $assign3 = EvaluatorAssignmentModel::create([
+            'id' => (string) Str::uuid(),
+            'evaluation_session_id' => $session->id,
+            'application_id' => $app->id,
+            'evaluator_id' => $eval3['user']->id,
+            'role' => 'MEMBER',
+            'status' => 'LOCKED',
+        ]);
+
         EvaluatorScoreModel::create([
             'id' => (string) Str::uuid(),
             'assignment_id' => $assign1->id,
@@ -215,6 +225,13 @@ class OcopEdgeCasesTest extends TestCase
             'score' => 25.0,
             'is_locked' => true,
         ]);
+        EvaluatorScoreModel::create([
+            'id' => (string) Str::uuid(),
+            'assignment_id' => $assign3->id,
+            'indicator_id' => $ctx['indicator1']->id,
+            'score' => 35.0,
+            'is_locked' => true,
+        ]);
 
         EvaluatorScoreModel::create([
             'id' => (string) Str::uuid(),
@@ -226,6 +243,13 @@ class OcopEdgeCasesTest extends TestCase
         EvaluatorScoreModel::create([
             'id' => (string) Str::uuid(),
             'assignment_id' => $assign2->id,
+            'indicator_id' => $ctx['indicator2']->id,
+            'score' => 40.0,
+            'is_locked' => true,
+        ]);
+        EvaluatorScoreModel::create([
+            'id' => (string) Str::uuid(),
+            'assignment_id' => $assign3->id,
             'indicator_id' => $ctx['indicator2']->id,
             'score' => 40.0,
             'is_locked' => true,

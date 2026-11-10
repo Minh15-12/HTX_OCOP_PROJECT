@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import path from 'path';
 
 const ARTIFACT_DIR = 'C:\\Users\\Maxsys\\.gemini\\antigravity\\brain\\b767d259-2ec1-4f08-9a2d-33a518d88c2c';
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://localhost:3001';
 
 const pagesToCheck = [
   { url: '/dashboard', name: '52_real_data_dashboard.png', label: 'Bàn làm việc tổng quan' },

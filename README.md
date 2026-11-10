@@ -115,116 +115,123 @@ src/
 
 ---
 
-## 🚀 Hướng dẫn Cài đặt & Chạy
+## 🚀 Hướng dẫn Cài đặt & Khởi chạy Hệ thống
 
-### Yêu cầu Hệ thống
+Dự án hỗ trợ **2 phương thức khởi chạy linh hoạt**:
+1. **Phương thức 1: Triển khai trọn gói bằng Docker & MinIO** *(Khuyến nghị cho kiểm thử tích hợp & môi trường chuẩn hóa)*.
+2. **Phương thức 2: Khởi chạy Native Local Dev** *(Phù hợp cho lập trình viên phát triển tính năng trực tiếp, kết hợp MinIO & Redis từ Docker)*.
 
-| Phần mềm | Phiên bản tối thiểu |
-| :--- | :--- |
-| PHP | 8.2+ |
-| Composer | 2.x |
-| Node.js | 18+ |
-| npm | 9+ |
-| PostgreSQL | 15+ |
-| Redis | 7+ (tùy chọn cho queue/cache) |
-| Git | 2.x |
+---
 
-### Cài đặt
+### 🐳 Phương thức 1: Triển khai Trọn gói bằng Docker & MinIO (Khuyến nghị)
 
-#### 1. Clone Repository
+Toàn bộ ngăn xếp công nghệ (Frontend, Backend Laravel 11, PostgreSQL 16, Redis 7, MinIO S3 Object Storage và Queue Worker) được định nghĩa sẵn trong [`docker-compose.yml`](file:///f:/HTX_OCOP_PROJECT/docker-compose.yml).
+
+#### Bước 1: Khởi động toàn bộ các dịch vụ Container
+Tại thư mục gốc dự án:
 
 ```bash
-git clone <repository-url>
-cd HTX_OCOP_PROJECT
+# Khởi chạy toàn bộ 6 dịch vụ ngầm trong nền
+docker compose up -d
 ```
 
-#### 2. Cài đặt Backend
+Kiểm tra trạng thái hoạt động của các container:
+```bash
+docker compose ps
+```
+
+#### Bước 2: Nạp CSDL Migration & Dữ liệu Mẫu (Seed Data)
+Sau khi các container khởi động thành công:
+
+```bash
+# Tạo bảng và nạp 31 xã viên thật, hồ sơ Sweet Palermo, tiêu chí QĐ 148
+docker compose exec backend php artisan migrate:fresh --seed
+```
+
+#### Bước 3: Kiểm tra Kết nối MinIO & Tự động Khởi tạo Bucket
+Hệ thống tích hợp sẵn lệnh Artisan chuyên dụng để tự động phát hiện và khởi tạo Bucket `htx-ocop-evidence`:
+
+```bash
+docker compose exec backend php artisan storage:minio-check
+```
+
+*Lệnh trên sẽ tự động xác thực quyền đọc/ghi tệp, băm SHA-256 và thông báo trạng thái Online của kho lưu trữ.*
+
+---
+
+### 💻 Phương thức 2: Khởi chạy Kết hợp Native Local Dev (Kèm MinIO/Redis từ Docker)
+
+Phương thức này tận dụng Docker cho các dịch vụ hạ tầng nền (MinIO, Redis) trong khi chạy mã nguồn PHP và React trực tiếp trên máy chủ cục bộ.
+
+#### Bước 1: Khởi động MinIO S3 & Redis qua Docker
+Tại thư mục gốc:
+
+```bash
+docker compose up -d minio redis
+```
+
+#### Bước 2: Khởi chạy Backend Laravel 11
+Mở **Terminal 1**:
 
 ```bash
 cd backend
 
-# Cài đặt PHP dependencies
+# 1. Cài đặt các thư viện PHP
 composer install
 
-# Tạo file cấu hình
+# 2. Tạo file cấu hình môi trường nếu chưa có
 cp .env.example .env
 
-# Sinh application key
+# 3. Tạo Application Key
 php artisan key:generate
-```
 
-#### 3. Cấu hình Database
+# 4. Chạy migration và nạp dữ liệu mẫu
+php artisan migrate --seed
 
-Chỉnh sửa file `backend/.env`:
+# 5. Kiểm tra kết nối MinIO và tạo bucket lưu trữ minh chứng
+php artisan storage:minio-check
 
-```env
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=htx_ocop
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
-```
-
-Tạo database PostgreSQL:
-
-```sql
-CREATE DATABASE htx_ocop;
-```
-
-#### 4. Chạy Migration & Seed Data
-
-```bash
-cd backend
-
-# Tạo bảng (66 migration files)
-php artisan migrate
-
-# Nạp dữ liệu mẫu (Roles, Permissions, Users, Council Levels)
-php artisan db:seed
-```
-
-#### 5. Cài đặt Frontend
-
-```bash
-cd frontend
-
-# Cài đặt Node dependencies
-npm install
-```
-
-### Khởi chạy
-
-Mở **2 terminal** riêng biệt:
-
-**Terminal 1 — Backend:**
-```bash
-cd backend
+# 6. Khởi chạy máy chủ Backend API
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-**Terminal 2 — Frontend:**
+#### Bước 3: Khởi chạy Frontend React (Vite + TailwindCSS)
+Mở **Terminal 2**:
+
 ```bash
 cd frontend
+
+# 1. Cài đặt các thư viện Node.js
+npm install
+
+# 2. Khởi chạy máy chủ phát triển
 npm run dev
+# (Mặc định chạy tại http://localhost:3000; nếu cổng 3000 đang được ứng dụng khác sử dụng, Vite sẽ tự động mở http://localhost:3001)
 ```
 
-### Truy cập Ứng dụng
+---
 
-| Dịch vụ | URL |
-| :--- | :--- |
-| 🌐 **Giao diện Web** | [http://localhost:3000](http://localhost:3000) |
-| ⚙️ **API Backend** | [http://localhost:8000/api/v1](http://localhost:8000/api/v1) |
-| 💚 **Health Check** | [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health) |
+### 🌐 Bảng Tra cứu Cổng & URL Dịch vụ
 
-### Khởi chạy bằng Docker (Tùy chọn)
+| Dịch vụ | Địa chỉ URL | Cổng Host | Tài khoản / Ghi chú |
+| :--- | :--- | :--- | :--- |
+| 💻 **Frontend Web App** | [http://localhost:3000](http://localhost:3000) *(hoặc :3001)* | `3000` / `3001` | Giao diện React 18 SPA |
+| ⚙️ **Backend REST API** | [http://localhost:8000/api/v1](http://localhost:8000/api/v1) | `8000` | Laravel 11 Modular Monolith |
+| 💚 **API Health Check** | [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health) | `8000` | Trả về JSON trạng thái hệ thống |
+| 🗄️ **MinIO Web Console** | [http://localhost:9001](http://localhost:9001) | `9001` | User: `minioadmin` / Pass: `minioadmin` |
+| 🪣 **MinIO S3 API Endpoint**| `http://127.0.0.1:9000` | `9000` | Bucket: `htx-ocop-evidence` |
+| 🐘 **PostgreSQL 16** | `localhost:5432` | `5432` | Database: `htx_ocop`, User: `postgres` |
+| ⚡ **Redis Cache & Queue**| `localhost:6379` | `6379` | Xử lý hàng đợi & bộ nhớ đệm |
 
-```bash
-cd backend
-docker-compose up -d
-```
+---
 
-Sẽ khởi chạy: Nginx (port 8000), PHP-FPM, PostgreSQL (port 5432), Redis (port 6379), MinIO (port 9000/9001).
+### 🪣 Quản lý Kho Minh chứng Số OCOP với MinIO S3
+
+Dự án số hóa hồ sơ OCOP yêu cầu lưu trữ và bảo quản các tài liệu pháp lý, kết quả thử nghiệm chỉ tiêu vi sinh (QUATEST 3), giấy chứng nhận VietGAP/HACCP và ảnh chụp thực địa.
+- **Cơ chế lưu trữ:** Laravel kết nối tới MinIO thông qua driver `league/flysystem-aws-s3-v3`.
+- **Toàn vẹn dữ liệu:** Tệp tải lên được tự động tính toán mã băm SHA-256 để chống giả mạo theo quy chuẩn kiểm toán.
+- **Kiểm tra trạng thái:** Chạy lệnh `php artisan storage:minio-check` bất kỳ lúc nào để đánh giá tính khả dụng của MinIO.
+- **Cơ chế Fallback:** Trong trường hợp chưa khởi động MinIO, hệ thống tự động kích hoạt `LOCAL FALLBACK` lưu trữ an toàn tại `backend/storage/app/evidences/` mà không làm gián đoạn trải nghiệm người dùng.
 
 ---
 

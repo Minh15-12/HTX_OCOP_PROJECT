@@ -96,6 +96,7 @@ export const Sidebar: React.FC = () => {
   );
 
   const isItemVisible = (item: NavItem) => {
+    if (item.hidden) return false;
     if (!item.roles || item.roles.length === 0) return true;
     if (isAdmin) return true;
     return item.roles.some((role) => {

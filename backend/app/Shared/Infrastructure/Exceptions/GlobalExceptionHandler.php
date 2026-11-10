@@ -8,6 +8,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -17,6 +18,9 @@ class GlobalExceptionHandler
 {
     public static function register(Exceptions $exceptions): void
     {
+        $exceptions->renderable(function (HttpResponseException $e, $request) {
+            return $e->getResponse();
+        });
         $exceptions->renderable(function (ValidationException $e, $request) {
             if ($request->is('api/*') || $request->wantsJson()) {
                 return ApiResponse::error(

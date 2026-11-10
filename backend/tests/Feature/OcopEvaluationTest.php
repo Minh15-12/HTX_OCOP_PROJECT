@@ -257,6 +257,7 @@ class OcopEvaluationTest extends TestCase
 
         $eval1 = $this->createAuthUser($authAdmin['cooperative'], 'EVALUATOR');
         $eval2 = $this->createAuthUser($authAdmin['cooperative'], 'EVALUATOR');
+        $eval3 = $this->createAuthUser($authAdmin['cooperative'], 'EVALUATOR');
 
         $session = EvaluationSessionModel::create([
             'id' => (string) Str::uuid(),
@@ -283,7 +284,16 @@ class OcopEvaluationTest extends TestCase
             'completed_at' => now(),
         ]);
 
-        // Score Indicator 1: Eval1 = 45.0, Eval2 = 25.0 (Diff = 20.0 > 10.0 -> Discrepancy Flag)
+        $assign3 = EvaluatorAssignmentModel::create([
+            'id' => (string) Str::uuid(),
+            'evaluation_session_id' => $session->id,
+            'evaluator_id' => $eval3['user']->id,
+            'role' => 'MEMBER',
+            'status' => 'LOCKED',
+            'completed_at' => now(),
+        ]);
+
+        // Score Indicator 1: Eval1 = 45.0, Eval2 = 25.0, Eval3 = 35.0 (Diff = 20.0 > 10.0 -> Discrepancy Flag, Avg = 35.0)
         EvaluatorScoreModel::create([
             'id' => (string) Str::uuid(),
             'assignment_id' => $assign1->id,
@@ -298,8 +308,15 @@ class OcopEvaluationTest extends TestCase
             'score' => 25.0,
             'locked_at' => now(),
         ]);
+        EvaluatorScoreModel::create([
+            'id' => (string) Str::uuid(),
+            'assignment_id' => $assign3->id,
+            'indicator_id' => $ctx['indicator1']->id,
+            'score' => 35.0,
+            'locked_at' => now(),
+        ]);
 
-        // Score Indicator 2: Eval1 = 40.0, Eval2 = 40.0 (Avg = 40.0)
+        // Score Indicator 2: Eval1 = 40.0, Eval2 = 40.0, Eval3 = 40.0 (Avg = 40.0)
         EvaluatorScoreModel::create([
             'id' => (string) Str::uuid(),
             'assignment_id' => $assign1->id,
@@ -310,6 +327,13 @@ class OcopEvaluationTest extends TestCase
         EvaluatorScoreModel::create([
             'id' => (string) Str::uuid(),
             'assignment_id' => $assign2->id,
+            'indicator_id' => $ctx['indicator2']->id,
+            'score' => 40.0,
+            'locked_at' => now(),
+        ]);
+        EvaluatorScoreModel::create([
+            'id' => (string) Str::uuid(),
+            'assignment_id' => $assign3->id,
             'indicator_id' => $ctx['indicator2']->id,
             'score' => 40.0,
             'locked_at' => now(),
@@ -340,6 +364,8 @@ class OcopEvaluationTest extends TestCase
         $ctx = $this->setupEvaluationContext($authAdmin['cooperative']->id);
 
         $eval1 = $this->createAuthUser($authAdmin['cooperative'], 'EVALUATOR');
+        $eval2 = $this->createAuthUser($authAdmin['cooperative'], 'EVALUATOR');
+        $eval3 = $this->createAuthUser($authAdmin['cooperative'], 'EVALUATOR');
 
         $session = EvaluationSessionModel::create([
             'id' => (string) Str::uuid(),
@@ -357,23 +383,43 @@ class OcopEvaluationTest extends TestCase
             'completed_at' => now(),
         ]);
 
-        // High score on non-mandatory indicator 1 (50.0) -> Total qualifies for 85+ (4_STAR / 5_STAR)
-        EvaluatorScoreModel::create([
+        $assign2 = EvaluatorAssignmentModel::create([
             'id' => (string) Str::uuid(),
-            'assignment_id' => $assign1->id,
-            'indicator_id' => $ctx['indicator1']->id,
-            'score' => 85.0,
-            'locked_at' => now(),
+            'evaluation_session_id' => $session->id,
+            'evaluator_id' => $eval2['user']->id,
+            'role' => 'MEMBER',
+            'status' => 'LOCKED',
+            'completed_at' => now(),
         ]);
 
-        // Mandatory indicator 2 scored 0.0!
-        EvaluatorScoreModel::create([
+        $assign3 = EvaluatorAssignmentModel::create([
             'id' => (string) Str::uuid(),
-            'assignment_id' => $assign1->id,
-            'indicator_id' => $ctx['indicator2']->id,
-            'score' => 0.0,
-            'locked_at' => now(),
+            'evaluation_session_id' => $session->id,
+            'evaluator_id' => $eval3['user']->id,
+            'role' => 'MEMBER',
+            'status' => 'LOCKED',
+            'completed_at' => now(),
         ]);
+
+        // High score on non-mandatory indicator 1 (85.0) -> Total qualifies for 85+ (4_STAR / 5_STAR)
+        foreach ([$assign1, $assign2, $assign3] as $assign) {
+            EvaluatorScoreModel::create([
+                'id' => (string) Str::uuid(),
+                'assignment_id' => $assign->id,
+                'indicator_id' => $ctx['indicator1']->id,
+                'score' => 85.0,
+                'locked_at' => now(),
+            ]);
+
+            // Mandatory indicator 2 scored 0.0!
+            EvaluatorScoreModel::create([
+                'id' => (string) Str::uuid(),
+                'assignment_id' => $assign->id,
+                'indicator_id' => $ctx['indicator2']->id,
+                'score' => 0.0,
+                'locked_at' => now(),
+            ]);
+        }
 
         // Consolidate
         $consolidateResp = $this->withHeaders($authAdmin['headers'])

@@ -1,0 +1,676 @@
+Hệ Thống Tổ Chức, Ghi Nhận Và Số Hóa Nhật Ký Canh Tác Trong Hợp Tác Xã Nông Nghiệp: Khung Quản Trị, Phân Tích Tình Huống Và Thực Hành Điển Hình Trên Cây Ớt Chuông
+Trong mô hình hợp tác xã (HTX) nông nghiệp hiện đại, nhật ký canh tác (NKCT) không đơn thuần là cuốn sổ ghi chép công việc đồng ruộng của từng nông hộ, mà là hạ tầng dữ liệu cốt lõi vận hành Hệ thống Kiểm soát Nội bộ (Internal Control System – ICS), bảo vệ tài sản tập thể là Mã số vùng trồng (Production Unit Code – PUC) và duy trì chuỗi truy xuất nguồn gốc nông sản1. Khác với trang trại độc lập của một chủ thể duy nhất, HTX tập hợp nhiều nông hộ canh tác trên nhiều thửa đất phân tán nhưng cùng đứng tên chung dưới một chứng nhận VietGAP (TCVN 11892-1:2017) hoặc một Mã số vùng trồng4. Do đó, nhật ký canh tác trong HTX được tổ chức theo cấu trúc phân tầng 2 lớp — lớp ghi nhận hoạt động thực địa tại nông hộ và lớp chứng từ kiểm chứng nguồn gốc vật tư, sản lượng tại ban quản lý HTX — nhằm ngăn chặn "rủi ro tập thể": chỉ cần một hộ thành viên dùng thuốc bảo vệ thực vật (BVTV) ngoài danh mục, vi phạm thời gian cách ly (PHI) hoặc bỏ trống nhật ký, toàn bộ mã số vùng trồng của cả HTX có nguy cơ bị tạm dừng hoặc thu hồi khi cơ quan chức năng hậu kiểm2.
+Tính đến cuối năm 2026, khung pháp lý quản lý vùng trồng và truy xuất nguồn gốc tại Việt Nam đã chuyển dịch từ cơ chế "tiền kiểm hồ sơ" sang "tự kê khai trên môi trường mạng và hậu kiểm thực địa" theo Nghị định 38/2026/NĐ-CP (ban hành ngày 24/01/2026) và Nghị quyết 36/2026/NQ-CP (có hiệu lực từ ngày 31/07/2026), kết hợp với chuẩn dữ liệu truy xuất tại Thông tư 02/2024/TT-BKHCN và danh mục thuốc BVTV theo Thông tư 75/2025/TT-BNNMT4. Dù thủ tục đăng ký mã số vùng trồng tại UBND cấp xã đã rút gọn chỉ còn 01 Đơn đề nghị (không thu phí, lệ phí theo Quyết định 3072/QĐ-BNNMT ngày 04/08/2026), nghĩa vụ duy trì nhật ký canh tác, lưu giữ chứng từ vật tư và tự giám sát trước mỗi vụ thu hoạch tại Điều 6 và Điều 10 Nghị định 38/2026/NĐ-CP vẫn là yêu cầu bắt buộc để đối chiếu khi đoàn hậu kiểm làm việc tại vườn4.
+Báo cáo dưới đây phân tích toàn diện cơ chế tổ chức nhật ký canh tác trong HTX, đánh giá 5 tình huống vận hành thực tế, giải phẫu cấu trúc thông tin và kỹ thuật ghi chép chuẩn, cung cấp một bộ nhật ký canh tác ớt chuông hoàn chỉnh theo quy trình công nghệ cao tại Lâm Đồng, đồng thời làm rõ kiến trúc chức năng và giao diện hiển thị (UI/UX) khi chuyển đổi lên hệ thống phần mềm nhật ký điện tử6.
+1. Cấu Trúc Tổ Chức Nhật Ký Canh Tác Trong Hợp Tác Xã Nông Nghiệp
+1.1. Mô hình Hệ thống Kiểm soát Nội bộ (ICS) và Phân cấp Trách nhiệm
+Để một HTX quản lý đồng bộ hàng chục đến hàng trăm hộ thành viên, việc tổ chức nhật ký canh tác không thể giao phó tự phát cho từng nông dân mà phải đặt trong Hệ thống Kiểm soát Nội bộ (ICS) với sự phân nhiệm rõ ràng giữa 4 tuyến nhân sự3:
+Ban Giám đốc Hợp tác xã (Tuyến Quản trị & Pháp lý): Chịu trách nhiệm pháp lý cao nhất trước cơ quan quản lý nhà nước (UBND cấp xã, Chi cục Trồng trọt và BVTV) và đối tác bao tiêu1. Giám đốc HTX ban hành Quy trình sản xuất nội bộ thống nhất, phê duyệt Danh mục vật tư đầu vào dùng chung (phân bón, thuốc BVTV được phép sử dụng), thiết lập quy tắc đặt mã lô sản xuất, bố trí nhân sự đánh giá nội bộ, tổ chức tập huấn đầu vụ và phê duyệt báo cáo tự giám sát trước thu hoạch2.
+Tổ trưởng Tổ sản xuất / Cán bộ Kỹ thuật & Kiểm soát viên nội bộ (Tuyến Giám sát & Chuyên môn): Đóng vai trò cầu nối trực tiếp giữa HTX và nông hộ4. Nhiệm vụ bao gồm điều tra sinh vật gây hại định kỳ, ban hành khuyến cáo kỹ thuật (tỷ lệ pha phân, hoạt chất thuốc cần phun), kiểm tra chéo (cross-check) sổ nhật ký giữa các hộ định kỳ, và đặc biệt là rà soát dòng phun thuốc BVTV cuối cùng để xác nhận thời gian cách ly trước khi cấp phép thu hoạch cho từng thửa đất2.
+Thủ kho Vật tư & Tổ Thu mua tại Sân cân (Tuyến Đối chứng Đầu vào – Đầu ra): Trong HTX tổ chức bài bản, nhật ký của nông hộ luôn phải khớp với sổ sách của hai bộ phận này2. Thủ kho quản lý Phiếu nhập kho và Sổ chia vật tư / Phiếu xuất kho cho hộ (ghi rõ số lô sản xuất trên bao bì theo nguyên tắc hết hạn trước xuất trước – FEFO)2. Tổ thu mua tại sân cân lập Phiếu cân / Phiếu giao nhận nguyên liệu tách dòng theo từng mã hộ và mã thửa, tạo mối nối vật lý giữa trang nhật ký đồng ruộng và lô hàng thương phẩm2.
+Nông hộ Thành viên / Công nhân trực tiếp (Tuyến Ghi nhận Thực địa): Là người trực tiếp thực hiện các tác động lên cây trồng (làm đất, tưới phân, tỉa nhánh, thả thiên địch, phun thuốc, thu hoạch) và có nghĩa vụ ghi nhận trung thực, đúng thực tế ngay sau mỗi lần tác động, đồng thời lưu giữ vỏ bao bì, nhãn mác và hóa đơn vật tư tại hộ để đối chiếu3.
+1.2. Khung Pháp lý và Tiêu chuẩn Kỹ thuật Chi phối (Cập nhật năm 2026)
+Cách thiết kế biểu mẫu và tổ chức lưu trữ nhật ký canh tác của HTX phải đáp ứng đồng thời các quy định pháp luật và tiêu chuẩn chất lượng đang có hiệu lực. Đối với tiêu chuẩn trồng trọt hữu cơ (TCVN 11041-2:2017) hoặc GlobalG.A.P., dù cũng yêu cầu hệ thống kiểm soát nội bộ và ghi chép nhật ký từ khâu chọn giống đến thu hoạch, các tài liệu hướng dẫn kỹ thuật chi tiết tại Việt Nam hiện tập trung chủ yếu vào khung VietGAP (TCVN 11892-1:2017) và quy định quản lý Mã số vùng trồng5.
+Văn bản / Tiêu chuẩn | Cơ quan ban hành & Hiệu lực | Yêu cầu trọng tâm đối với Nhật ký canh tác của HTX
+Văn bản / Tiêu chuẩn
+Cơ quan ban hành & Hiệu lực
+Yêu cầu trọng tâm đối với Nhật ký canh tác của HTX
+Nghị định 38/2026/NĐ-CP  &  Nghị quyết 36/2026/NQ-CP | Chính phủ (24/01/2026 & 31/07/2026) | Chuyển sang cơ chế tự kê khai đơn đề nghị cấp mã số vùng trồng qua Cổng Dịch vụ công Quốc gia gửi UBND cấp xã và  hậu kiểm trong tối đa 3 tháng  (đối với nhánh nội địa) 4 . Điều 6 khoản 3 và Điều 10 bắt buộc vùng trồng phải có hồ sơ ghi chép quy trình sản xuất, thu hoạch và tự giám sát trước mỗi vụ thu hoạch 4 . Vi phạm sẽ bị tạm dừng hoặc thu hồi mã theo Điều 11, 12 4 .
+Nghị định 38/2026/NĐ-CP & Nghị quyết 36/2026/NQ-CP
+Chính phủ (24/01/2026 & 31/07/2026)
+Chuyển sang cơ chế tự kê khai đơn đề nghị cấp mã số vùng trồng qua Cổng Dịch vụ công Quốc gia gửi UBND cấp xã và hậu kiểm trong tối đa 3 tháng (đối với nhánh nội địa)4. Điều 6 khoản 3 và Điều 10 bắt buộc vùng trồng phải có hồ sơ ghi chép quy trình sản xuất, thu hoạch và tự giám sát trước mỗi vụ thu hoạch4. Vi phạm sẽ bị tạm dừng hoặc thu hồi mã theo Điều 11, 124.
+TCVN 11892-1:2017 (VietGAP Trồng trọt) | Bộ KH&CN (Quyết định 2802/QĐ-BKHCN, 17/10/2017) | Yêu cầu kiểm soát 4 trụ cột: An toàn thực phẩm, An toàn môi trường, Sức khỏe lao động và Truy xuất nguồn gốc 23 . Bắt buộc tách biệt kho vật tư, ghi chép đầy đủ nguồn gốc giống, đất, nước, phân bón, thuốc BVTV (theo nguyên tắc 4 đúng), đánh giá nội bộ và  lưu trữ hồ sơ tối thiểu 12 tháng  kể từ ngày thu hoạch 4 .
+TCVN 11892-1:2017 (VietGAP Trồng trọt)
+Bộ KH&CN (Quyết định 2802/QĐ-BKHCN, 17/10/2017)
+Yêu cầu kiểm soát 4 trụ cột: An toàn thực phẩm, An toàn môi trường, Sức khỏe lao động và Truy xuất nguồn gốc23. Bắt buộc tách biệt kho vật tư, ghi chép đầy đủ nguồn gốc giống, đất, nước, phân bón, thuốc BVTV (theo nguyên tắc 4 đúng), đánh giá nội bộ và lưu trữ hồ sơ tối thiểu 12 tháng kể từ ngày thu hoạch4.
+TCCS 774:2020/BVTV | Cục Bảo vệ thực vật (Quyết định 2481/QĐ-BVTV-KH, 30/11/2020) | Hiện đóng vai trò là  tài liệu tham khảo thực hành kỹ thuật tốt  (Phụ lục F và Mục 4.5) quy định 6 nhóm thông tin bắt buộc trong nhật ký và khuyến nghị lưu giữ hồ sơ tối thiểu  24 tháng (2 năm) 4 .
+TCCS 774:2020/BVTV
+Cục Bảo vệ thực vật (Quyết định 2481/QĐ-BVTV-KH, 30/11/2020)
+Hiện đóng vai trò là tài liệu tham khảo thực hành kỹ thuật tốt (Phụ lục F và Mục 4.5) quy định 6 nhóm thông tin bắt buộc trong nhật ký và khuyến nghị lưu giữ hồ sơ tối thiểu 24 tháng (2 năm)4.
+Thông tư 02/2024/TT-BKHCN | Bộ KH&CN (Ban hành 28/03/2024, hiệu lực 01/06/2024) | Quy định hệ thống truy xuất nguồn gốc theo nguyên tắc  "Một bước trước – Một bước sau" 7 . Yêu cầu định danh Mã truy vết địa điểm (vùng trồng/thửa), Mã truy vết sản phẩm (mã lô) và thời gian sự kiện ở từng công đoạn để kết nối Cổng thông tin truy xuất nguồn gốc quốc gia 2 .
+Thông tư 02/2024/TT-BKHCN
+Bộ KH&CN (Ban hành 28/03/2024, hiệu lực 01/06/2024)
+Quy định hệ thống truy xuất nguồn gốc theo nguyên tắc "Một bước trước – Một bước sau"7. Yêu cầu định danh Mã truy vết địa điểm (vùng trồng/thửa), Mã truy vết sản phẩm (mã lô) và thời gian sự kiện ở từng công đoạn để kết nối Cổng thông tin truy xuất nguồn gốc quốc gia2.
+Thông tư 75/2025/TT-BNNMT | Bộ Nông nghiệp & Môi trường (Hiệu lực từ 10/02/2026) | Thay thế Thông tư 25/2024/TT-BNNPTNT và Thông tư 03/2025/TT-BNNMT 4 . Quy định Danh mục thuốc BVTV được phép và cấm sử dụng (31 hoạt chất cấm; loại bỏ  Carbosulfan  và  Benfuracarb ; bổ sung 17 hoạt chất mới, gồm 6 hoạt chất sinh học) làm căn cứ pháp lý để rà soát cột "Hoạt chất" trong nhật ký 4 .
+Thông tư 75/2025/TT-BNNMT
+Bộ Nông nghiệp & Môi trường (Hiệu lực từ 10/02/2026)
+Thay thế Thông tư 25/2024/TT-BNNPTNT và Thông tư 03/2025/TT-BNNMT4. Quy định Danh mục thuốc BVTV được phép và cấm sử dụng (31 hoạt chất cấm; loại bỏ Carbosulfan và Benfuracarb; bổ sung 17 hoạt chất mới, gồm 6 hoạt chất sinh học) làm căn cứ pháp lý để rà soát cột "Hoạt chất" trong nhật ký4.
+2. Đánh Giá Đa Chiều Các Trường Hợp Tổ Chức Nhật Ký Canh Tác Trong Thực Tiễn
+Trong thực tế vận hành, các HTX nông nghiệp có quy mô, cơ cấu cây trồng, trình độ kỹ thuật và thị trường đầu ra rất khác nhau. Việc lựa chọn sai mô hình tổ chức nhật ký sẽ dẫn đến đứt gãy dữ liệu truy xuất hoặc làm ảnh hưởng đến toàn bộ mã số vùng trồng khi kiểm tra2. Dưới đây là phân tích và đánh giá 5 trường hợp điển hình:
+Trường hợp 1: Tổ chức sổ ghi chép cho vùng trồng nhiều hộ (Sổ dùng chung toàn vùng vs. Sổ tách riêng từng hộ)
+Pháp luật và tiêu chuẩn kỹ thuật tham chiếu (như mục 4.5, 4.6 TCCS 774:2020/BVTV) cho phép vùng trồng nhiều hộ lựa chọn lập 01 sổ nhật ký chung cho cả vùng hoặc lập sổ riêng cho từng nông hộ4. Mô hình "Sổ dùng chung" chỉ thực sự phù hợp nếu HTX vận hành theo kiểu nông trại tập trung — tức xã viên góp đất, còn toàn bộ việc mua vật tư, pha phân, phun thuốc và thu hoạch do một Đội kỹ thuật chuyên trách của HTX thực hiện đồng loạt theo cùng một lịch trình. Ngược lại, nếu các hộ tự canh tác trên mảnh đất của mình mà ghi chung vào một cuốn sổ theo mẫu Phụ lục F gốc (vốn chỉ có 1 dòng "Tên hộ sản xuất" ở đầu sổ và không có cột ghi tên hộ ở bảng chi tiết), dữ liệu sẽ bị trộn lẫn4. Khi đoàn hậu kiểm phát hiện một dòng ghi thiếu hoạt chất hoặc vi phạm thời gian cách ly, cơ quan chức năng không thể bóc tách trách nhiệm cá nhân và sẽ áp dụng chế tài tạm dừng hoặc thu hồi mã số vùng trồng lên toàn bộ HTX theo Điều 11, 12 Nghị định 38/2026/NĐ-CP4.
+Do đó, phương án tối ưu được khuyến nghị cho HTX nhiều hộ là "Sổ riêng từng hộ + Kiểm soát tập trung"4. Mỗi hộ giữ 01 cuốn sổ riêng (hoặc tài khoản phần mềm riêng) cho từng vụ/thửa đất của mình, nhưng bắt buộc sử dụng cùng một bản mẫu thống nhất (cùng cột, cùng thứ tự, cùng cách ghi đơn vị kg/lít) do HTX phát hành4. Định kỳ hàng tuần và trước các đợt giám sát/thu hoạch, Tổ trưởng thu gom hoặc kiểm tra chéo để đối chiếu4. Nếu HTX vẫn quyết định dùng sổ chung tại tổ sản xuất, bảng ghi chép bắt buộc phải chèn thêm cột "Hộ thực hiện" ngay sau cột Ngày tháng năm để phân định trách nhiệm rõ ràng cho từng dòng công việc4.
+Trường hợp 2: Vùng trồng đa canh, trồng xen hoặc nhiều giống có lịch chăm sóc khác nhau
+Trong một HTX, hoặc ngay trong vườn của một hộ xã viên, thường xảy ra tình trạng canh tác từ hai loại cây trở lên trong cùng một vùng (ví dụ: vừa trồng ớt chuông vừa trồng cà chua), hoặc trồng hai giống khác nhau có lịch chăm sóc riêng, hoặc trồng gối vụ nhiều lứa4. Trong trường hợp này, nguyên tắc bắt buộc là mỗi loại cây trồng (hoặc mỗi giống có lịch chăm sóc riêng) phải mở một sổ nhật ký riêng biệt, không dùng chung một cuốn sổ4. Mỗi loại cây có giai đoạn sinh trưởng, đối tượng sinh vật gây hại và đặc biệt là phạm vi đăng ký thuốc BVTV hợp pháp hoàn toàn khác nhau4. Việc gộp chung nhiều loại cây vào một sổ khiến các cột ghi chép bị mơ hồ, đoàn kiểm tra không thể đối chiếu thực địa và dễ dẫn đến lỗi sử dụng thuốc ngoài phạm vi đăng ký (hành vi bị xử phạt theo Nghị định 31/2016/NĐ-CP sửa đổi bởi Nghị định 04/2020/NĐ-CP)4. Đối với cây ngắn ngày trồng gối nhau theo luống, mỗi luống cần được ghi nhận dòng mốc chuyển giai đoạn và theo dõi thời gian cách ly độc lập32.
+Trường hợp 3: Canh tác Công nghệ cao trong Nhà màng (Giá thể, Tưới nhỏ giọt, IPM) vs. Canh tác Truyền thống trên Đất
+Cùng là cây ớt chuông, nhưng cách thức tổ chức thông tin nhật ký giữa mô hình canh tác ngoài trời/trên đất truyền thống và mô hình nhà màng công nghệ cao có sự khác biệt lớn về mặt thông số kỹ thuật11. Ở mô hình truyền thống trên đất, nhật ký làm đất và bón phân ghi nhận theo các đợt rời rạc: cày xới phơi ải, điều chỉnh pH đất 5.5–7.0 (tốt nhất 6.0–6.8), lên luống rộng 1.0–1.4 m, cao 20–30 cm; bón lót toàn bộ phân chuồng ủ hoai mục (20–25 tấn/ha, tuyệt đối không dùng phân tươi) cùng lân và một phần đạm/kali; sau đó chia làm 3–4 đợt bón thúc kết hợp làm cỏ, xới xáo, vun gốc (khi cây hồi xanh 10–12 ngày sau trồng, khi ra nụ, khi ra quả rộ và sau thu hoạch đợt 1)34.
+Ngược lại, ở mô hình nhà màng công nghệ cao trên giá thể xơ dừa (phổ biến tại Đà Lạt, Lâm Đồng với quy mô 350–400 ha toàn tỉnh), cây được cách ly côn trùng bằng lưới chắn 50 mesh (50 lỗ/inch) và nhận dinh dưỡng hòa tan hàng ngày (4–8 lần/ngày) qua hệ thống que ghim tưới nhỏ giọt bù áp11. Nếu dùng mẫu sổ truyền thống sẽ không phản ánh được quy trình kỹ thuật. Do đó, nhật ký công nghệ cao phải ghi nhận thêm các chỉ số kiểm soát dung dịch dinh dưỡng gồm độ dẫn điện (EC dung dịch và EC vùng rễ/nước thoát), độ pH dung dịch (duy trì 5.7–6.2 trên giá thể xơ dừa hoặc 6.0–6.5 trên đất tưới nhỏ giọt), lượng phân pha trong Thùng A (chứa Canxi nitrat) và Thùng B (chứa NPK, Magie, Kali, vi lượng EDTA) cùng tỷ lệ pha loãng (thường pha loãng 100 lần)13. Đồng thời, phần bảo vệ thực vật trong nhà màng ưu tiên ghi nhận các biện pháp Quản lý dịch hại tổng hợp (IPM) như treo bẫy dính màu vàng/xanh và phóng thả thiên địch bắt mồi (nhện Amblyseius sp., Phytoseiulus sp., bọ xít Orius laevigatus), kèm quy tắc ngưng phun thuốc hóa học phổ rộng (đặc biệt là thuốc nhóm cúc tổng hợp) trong tối thiểu 2–3 tuần sau khi thả thiên địch để bảo tồn quần thể côn trùng có ích11.
+Trường hợp 4: Nguồn cung vật tư đầu vào (HTX cung ứng tập trung vs. Nông hộ tự mua lẻ)
+Vật tư đầu vào là điểm nhạy cảm nhất trong quản trị rủi ro của HTX4. Nếu để nông hộ tự mua vật tư theo thói quen riêng tại các đại lý nhỏ lẻ, các hộ rất dễ mua nhầm thuốc ngoài danh mục hoặc hoạt chất vừa bị loại bỏ (như Carbosulfan và Benfuracarb theo Thông tư 75/2025/TT-BNNMT), đồng thời thiếu hóa đơn và vứt bỏ bao bì sau khi dùng, khiến HTX không có tài liệu "Lớp 2" để chứng minh nguồn gốc vật tư hợp pháp khi hậu kiểm4.
+Để khắc phục, HTX cần xây dựng Danh mục vật tư dùng chung cho toàn bộ thành viên và ưu tiên mô hình HTX mua vật tư tập trung rồi cấp phát lại4. Khi HTX đứng ra mua tập trung và chia cho xã viên, Thủ kho bắt buộc phải lập Sổ chia vật tư / Phiếu xuất vật tư cho hộ ghi rõ từng hộ nhận loại gì, số lượng bao nhiêu, ngày xuất và đặc biệt là Số lô sản xuất (Lot/LSX) in trên bao phân, chai thuốc2. Số lô này được nối liền mạch qua 3 chứng từ (Phiếu nhập kho HTX → Phiếu xuất vật tư cho hộ → Nhật ký canh tác của hộ), cho phép HTX thực hiện "Truy xuôi" (Forward Traceability) theo nguyên tắc "một bước trước – một bước sau": nếu một lô phân bón hoặc thuốc BVTV bị phát hiện lỗi chất lượng hoặc nhiễm kim loại nặng (như Cadimi), HTX có thể tra cứu tức thì những thửa đất nào và những lô nông sản nào đã sử dụng lô vật tư đó để khoanh vùng xử lý2.
+Trường hợp 5: Định hướng thị trường (Tiêu thụ Nội địa Nhánh A vs. Xuất khẩu chính ngạch Nhánh B)
+Theo Nghị quyết 36/2026/NQ-CP, quy trình quản lý mã số vùng trồng được phân luồng thành Nhánh A (Nội địa) với thời gian cấp mã tại UBND cấp xã không quá 3 ngày làm việc và Nhánh B (Xuất khẩu tới thị trường yêu cầu mã số) với thời gian xử lý trong nước không quá 10 ngày làm việc trước khi chờ nước nhập khẩu phê duyệt4. Sự phân nhánh này đòi hỏi mức độ kiểm soát nhật ký BVTV khác nhau4:
+Đối với Nhánh A (Tiêu thụ nội địa, chuỗi siêu thị trong nước): Nhật ký cần chứng minh mọi loại thuốc sử dụng đều nằm trong Danh mục được phép tại Việt Nam (Thông tư 75/2025/TT-BNNMT), phun đúng đối tượng dịch hại đăng ký trên nhãn và tuân thủ đúng Thời gian cách ly (PHI) để dư lượng không vượt mức tối đa cho phép (MRL) theo Thông tư 50/2016/TT-BYT4.
+Đối với Nhánh B (Xuất khẩu chính ngạch): Việc dùng thuốc "được phép lưu hành tại Việt Nam" và tuân thủ đúng PHI trên nhãn tiếng Việt chỉ là điều kiện nền tảng, chưa phải điều kiện đủ để xuất khẩu4. Mỗi thị trường nhập khẩu (như Trung Quốc, EU, Nhật Bản, Hoa Kỳ, Úc) tự thiết lập bảng MRL riêng cho từng hoạt chất trên từng loại cây trồng; nếu một hoạt chất hợp pháp tại Việt Nam nhưng chưa được nước nhập khẩu thiết lập MRL riêng cho cây ớt, hải quan nước nhập khẩu sẽ áp ngưỡng mặc định rất thấp (mức tham khảo 0.01 mg/kg, gần như tương đương không được phép có dư lượng) và trả về lô hàng4. Do đó, nhật ký của HTX xuất khẩu phải lập bảng theo dõi thuốc BVTV tách biệt, kiểm soát chặt theo Tên hoạt chất, đối chiếu bảng MRL của thị trường đích và lưu kèm kết quả phân tích dư lượng mẫu trước khi thu hoạch4.
+3. Cấu Trúc Thông Tin Và Quy Trình Ghi Nhận Nhật Ký Canh Tác Chuẩn
+3.1. Nhật ký canh tác sẽ chứa các thông tin gì?
+Theo hướng dẫn kiểm soát vùng trồng, tài liệu đầu vào và nhật ký sản xuất bao gồm hai lớp thông tin: Lớp 1 (Ghi chép sử dụng) phản ánh mọi tác động lên cây trồng theo thời gian thực trong sổ nhật ký; và Lớp 2 (Chứng minh nguồn gốc hợp pháp) gồm hóa đơn/phiếu mua hàng, vỏ bao bì/nhãn mác giữ lại hết vụ và hồ sơ quyền sử dụng đất để chứng minh thông tin ghi ở Lớp 1 là có thật4.
+Về mặt cấu trúc bảng biểu, nếu HTX chỉ in nguyên bản mẫu Phụ lục F của TCCS 774:2020/BVTV (vốn chỉ gồm phần thông tin đầu sổ và bảng 7 cột: Ngày tháng năm | Giai đoạn sinh trưởng | Công việc | Sinh vật gây hại phát hiện | Tên phân/thuốc BVTV | Lượng sử dụng | Ghi chú), cuốn sổ vẫn thiếu các trường dữ liệu trọng yếu để chứng minh tuân thủ khi hậu kiểm6. Do đó, một mẫu nhật ký canh tác hoàn chỉnh dùng cho HTX (kết hợp chuẩn VietGAP TCVN 11892-1:2017, Nghị định 38/2026/NĐ-CP và hướng dẫn kỹ thuật chuyên sâu từ Ecolar) phải được cấu trúc thành 4 phần với các cột bổ sung bắt buộc như sau2:
+Phần 1 – Thông tin chung và Định danh Lô sản xuất (Ghi 01 lần vào đầu vụ):
+Chủ thể & Vùng trồng: Tên cơ sở sản xuất (HTX), Địa chỉ hành chính, Mã số vùng trồng (PUC – nếu đang chờ cấp thì ghi "đang đề nghị cấp"), Tên hộ sản xuất / Người phụ trách ghi sổ, Mã hộ nội bộ, Số CCCD và Số điện thoại6.
+Lô sản xuất / Thửa đất: Tên/Mã lô thửa nội bộ, Mã số định danh thửa đất trên Cơ sở dữ liệu quốc gia về đất đai (hoặc Số thứ tự thửa đất, Số tờ bản đồ theo Sổ đỏ; nếu đất chưa có sổ đỏ thì căn cứ giấy tờ trước 15/10/1993 theo Điều 137 Luật Đất đai 2024; nếu đất thuê/mượn cần chuẩn bị văn bản đồng ý của chủ đất), Diện tích canh tác (ha/m²) và Số lượng cây trồng4.
+Giống & Sản lượng: Loại cây trồng, Tên giống cụ thể, Nguồn gốc giống (nhà cung cấp, lô giống), Ngày bắt đầu sản xuất (xuống giống), Thời điểm bắt đầu và kết thúc thu hoạch dự kiến, Sản lượng dự kiến (ước tính sát thực tế, không làm tròn số liệu), Sản lượng thực tế (tổng kết cuối vụ) và Tên người/đơn vị thu mua4.
+Phần 2 – Bảng Nhật ký Chăm sóc và Sử dụng Phân bón:
+Bao gồm 4 thông tin bắt buộc theo quy chuẩn cộng thêm các cột đối chứng kho: (1) Ngày bón (ngày, tháng, năm dương lịch cụ thể); (2) Giai đoạn sinh trưởng của cây; (3) Công việc & Loại phân bón (ghi chính xác tên thương phẩm như in trên nhãn bao bì, nhà sản xuất và loại phân/tỷ lệ dinh dưỡng); (4) Phương pháp bón (Cột bổ sung quan trọng số 1: ghi rõ rải gốc vùi đất, hòa nước tưới gốc, châm qua hệ thống tưới nhỏ giọt kèm EC/pH, hay phun qua lá để đánh giá tính hợp lý của liều lượng); (5) Tổng lượng sử dụng (quy đổi chuẩn ra tổng số kg hoặc lít nguyên chất cho cả lô/vị trí bón); (6) Số lô trên bao bì & Số hóa đơn/Phiếu xuất kho; (7) Người thực hiện và Ghi chú4.
+Phần 3 – Bảng Nhật ký Điều tra Sinh vật gây hại và Sử dụng Thuốc BVTV:
+Mỗi dòng xử lý thuốc bắt buộc phải có đủ 5 thông tin cốt lõi (nếu thiếu 1 trong 5 thông tin này, dòng ghi chép mất giá trị đối chiếu khi giám sát) cùng các cột quản lý cách ly và chứng từ: (1) Ngày xử lý / Điều tra; (2) Giai đoạn sinh trưởng; (3) Sinh vật gây hại phát hiện (mật độ, tỷ lệ hại thực tế trên đồng ruộng); (4) Tên thương mại của thuốc (kể cả thuốc sinh học, thảo mộc hay thiên địch); (5) Tên hoạt chất (Cột bổ sung quan trọng số 2: chép chính xác tên hoạt chất trên nhãn, ghi đủ cả 2 hoạt chất nếu là thuốc hỗn hợp, vì MRL và danh mục cấm tra cứu theo hoạt chất); (6) Lý do sử dụng / Mục đích (Cột bổ sung quan trọng số 3: phải khớp với dòng điều tra sâu bệnh trước đó, ghi rõ đối tượng và mật độ); (7) Liều lượng thực tế (tách rõ 3 thành phần: lượng thuốc pha mỗi bình + dung tích bình, tổng số bình đã phun, và diện tích lô đã phun); (8) Số lô thuốc & Số chứng từ; (9) Thời gian cách ly (PHI) & Ô tự kiểm "Không thu trước ngày..." (Lấy Ngày xử lý + Số ngày PHI in trên nhãn); và (10) Người thực hiện2.
+Phần 4 – Bảng Theo dõi Thu hoạch và Tiêu thụ sản phẩm:
+Ghi nhận chi tiết từng đợt hái: Ngày thu hoạch, Khu vực / Thửa thu hoạch, Mã lô thu hoạch, Sản lượng thực tế (kg), Người thực hiện, Đơn vị thu mua / Cơ sở đóng gói (kèm số Phiếu cân) và Ghi chú2.
+3.2. Cách người ta ghi nhận nhật ký canh tác: Quy trình 4 Chặng và Các Nguyên tắc Thực hành
+Theo hướng dẫn thực hành quản lý vùng trồng, cách ghi nhật ký sản xuất bền vững nhất là đi theo 4 chặng của vụ canh tác nhằm tránh đứt gãy dữ liệu ở các thời điểm giao thời32:
+Chặng 1 – Mở sổ ngay từ ngày đầu vụ: Sổ phải được mở ngay khi bắt đầu làm đất hoặc xử lý giá thể đầu vụ, kể cả khi HTX chưa nhận được thông báo cấp Mã số vùng trồng (ô mã số có thể điền bổ sung sau, nhưng các lần bón phân lót và xử lý giống đầu vụ nếu qua rồi sẽ không thể ghi bù chính xác)32.
+Chặng 2 – Ghi trong vụ theo từng giai đoạn sinh trưởng: Mỗi khi cây chuyển giai đoạn sinh lý (Xuống giống → Hồi xanh → Phân cành → Ra hoa, đậu trái → Nuôi trái → Trước thu hoạch), người ghi cần lập một dòng mốc riêng32. Cần đặc biệt chú ý giai đoạn Nuôi trái — đây là khúc sổ dễ bị bỏ thưa dòng nhất nhưng lại có tần suất bón phân và phun thuốc dày nhất32. Dòng phun thuốc BVTV cuối cùng trước khi thu hoạch phải được đánh dấu rõ ràng để làm căn cứ tính thời gian cách ly32.
+Chặng 3 – Ghi thu hoạch tách biệt theo từng đợt: Mỗi đợt hái phải ghi thành một dòng riêng biệt kèm ngày thu, mã lô, khối lượng và người mua; tuyệt đối không gộp chung cả vụ thành một dòng tổng2. Cuối vụ, cộng tổng sản lượng các đợt để điền vào ô "Sản lượng thực tế" ở đầu sổ; nếu sản lượng thực tế thấp hơn nhiều so với dự kiến (do thời tiết bất lợi, rụng hoa, dịch bệnh), cần ghi rõ một dòng giải thích lý do trong sổ để đoàn kiểm tra hiểu rõ nguyên nhân32.
+Chặng 4 – Khóa sổ và "Cộng sổ" đối chiếu trước khi sang vụ mới: Trước khi đóng sổ lưu trữ, hộ dân và cán bộ HTX dành một buổi đối chiếu 3 nội dung: (a) Cộng tổng lượng từng loại phân bón đã ghi trong sổ so với lượng đã mua và lượng còn tồn trong kho theo công thức cân bằng kho; (b) Đối chiếu tên thuốc và tổng lượng thuốc BVTV đã phun với hóa đơn mua hàng và vỏ chai lưu giữ; (c) Rà soát những tuần bị trống hoàn toàn — nếu thực tế có làm mà quên ghi thì ghi chú giải thích rõ ở cuối sổ, tuyệt đối không viết bù chen ngang vào giữa sổ vì viết bù sau vài tháng rất dễ lệch ngày17.
+Trong suốt 4 chặng trên, người ghi nhận phải tuân thủ nghiêm ngặt 6 quy tắc nghiệp vụ để tránh làm cuốn sổ mất giá trị chứng minh2:
+Ghi theo thời gian thực, chống lỗi "một màu mực": Phải ghi ngay sau mỗi lần chăm sóc hoặc tác động lên cây trồng1. Việc đợi cuối vụ mới chép dồn một lúc bằng một cây bút (một nét chữ, một màu mực đồng nhất cho cả 3–4 tháng) sẽ bị đoàn kiểm tra nhận diện ngay là hồ sơ ghi hồi tố đối phó, làm mất khả năng chứng minh thời gian cách ly thuốc4.
+Ghi chữ "Không" thay vì để ô trống: Quy định tại mẫu tham khảo nêu rõ "nội dung nào không có hoạt động thì ghi là không"4. Mọi ô để trống trong bảng đều bị đoàn kiểm tra coi là ghi chép thiếu sót4. Các dòng đi thăm vườn điều tra mà không phát hiện sâu bệnh ("điều tra, không phát hiện") bắt buộc phải ghi vào sổ để chứng minh nhà vườn có theo dõi đồng ruộng thường xuyên và chỉ phun thuốc khi có lý do chính đáng2.
+Quy đổi đơn vị định lượng chuẩn (Không ghi theo "bao", "nắm", "chai"): Khối lượng bao phân của các hãng khác nhau (25 kg, 40 kg, 50 kg), nên ghi "bón 2 bao NPK" hay "1 nắm mỗi gốc" khiến HTX không thể cộng sổ cuối vụ17. Quy tắc bắt buộc là lấy số bao nhân với khối lượng trên vỏ bao để ghi tổng số kg (ví dụ: 2 bao × 25 kg = 50 kg); nếu bón theo gốc thì cân thử 1 lon/nắm xem nặng bao nhiêu gram rồi nhân với tổng số gốc; với phân lỏng thì ghi số lít phân nguyên chất đã dùng (tỷ lệ pha nước ghi ở cột ghi chú)17.
+Quy tắc tách dòng khi pha phối trộn (Tank-mix): Nếu pha chung 2 loại thuốc BVTV vào cùng 1 bình phun, bắt buộc phải tách mỗi loại thuốc thành một dòng riêng (cùng ngày, cùng lý do, nhưng riêng tên thương mại, riêng tên hoạt chất và riêng liều lượng), không ghi gộp "Thuốc A + Thuốc B" trong một ô2. Nếu pha chung phân bón lá với thuốc BVTV, phần phân bón lá phải tách riêng thành một dòng thuộc bảng bón phân2.
+Quy tắc sửa sai bằng bút mực: Sổ giấy phải ghi bằng bút mực, không tẩy xóa hay xé trang18. Nếu ghi sai, dùng thước gạch một đường đơn lên nội dung cũ (sao cho vẫn đọc được chữ cũ) rồi ghi nội dung đúng bên cạnh kèm ngày sửa và chữ ký xác nhận2.
+Hỗ trợ nông dân lớn tuổi: Người lớn tuổi, mắt kém hoặc khó viết vẫn duy trì được nhật ký chuẩn bằng cách chụp ảnh bao phân, nhãn chai thuốc ngay lần mở đầu tiên tại vườn hoặc đọc số liệu ngay trong ngày cho người nhà / Tổ trưởng ghi hộ, miễn là người trực tiếp làm việc cung cấp và ký xác nhận thông tin ngay trong ngày hôm đó32.
+4. Ví Dụ Cụ Thể Hoàn Chỉnh: Bộ Nhật Ký Canh Tác Cây Ớt Chuông Tại Hợp Tác Xã
+4.1. Hệ Quy chiếu Thông số Kỹ thuật và Danh mục Vật tư Chuẩn cho Cây Ớt Chuông
+Trước khi lập sổ nhật ký cho hộ xã viên, bộ phận Kỹ thuật của HTX phải ban hành bảng thông số định lượng chuẩn về dinh dưỡng (EC, pH, lượng nước tưới) và danh mục thuốc BVTV hợp pháp trên cây ớt để làm thước đo kiểm soát4.
+Về chế độ dinh dưỡng và tưới nhỏ giọt, tùy theo canh tác trên nền đất hay trên giá thể xơ dừa trong nhà màng, cán bộ kỹ thuật HTX áp dụng hai hệ quy chiếu định lượng sau:
+Hệ quy chiếu 1 – Trồng trên giá thể xơ dừa tưới nhỏ giọt (Theo quy trình kỹ thuật Nhà Bè Agri): Giá thể xơ dừa trong túi poly đen (40 × 30 cm, trồng 2 cây/túi, mật độ 25.000 cây/ha) phải được xả rửa kết hợp bổ sung Ca(NO3)2 (0.75 kg/m³ giá thể) cho đến khi EC nước thoát < 0.5 dS/m, sau đó tưới đệm trước trồng 24 giờ ở mức EC 1.0–1.2 dS/m để đạt độ ẩm giá thể 70–75%35. Trong vụ, độ pH dung dịch luôn duy trì ở mức 5.7–6.2 với định mức phân hòa tan (kèm MgSO4 lượng tương đương) và lượng nước tưới cho mỗi 1.000 m²/ngày tăng dần theo 4 giai đoạn: (1) Giai đoạn 0–14 ngày sau trồng (NST): dùng NPK 20-20-20 (tỷ lệ 1:1:1) mức 150 g/1.000 m²/ngày, hòa 1.500–2.000 lít nước, tưới 4–5 lần/ngày, EC = 1.5; (2) Giai đoạn 15–25 NST: chuyển sang NPK 17-9-27 (tỷ lệ 2:1:3) mức 200 g/1.000 m²/ngày, hòa 2.500–3.000 lít nước, tưới 6–7 lần/ngày, EC = 1.8–2.3; (3) Giai đoạn 35–45 NST (Ra hoa & nuôi trái lớn): tăng NPK 17-9-27 lên 250 g/1.000 m²/ngày, hòa 3.500–4.500 lít nước, tưới 7–8 lần/ngày, EC = 2.3–2.5 (nhu cầu nguyên chất đạt 200–220 ppm N, 85–100 ppm P2O5, 300–310 ppm K2O, 150–170 ppm Ca, 40–45 ppm Mg và 30 ppm S); và (4) Giai đoạn từ 90 NST đến cuối vụ: giảm NPK 17-9-27 xuống 180 g/1.000 m²/ngày, giữ 3.500–4.500 lít nước (7–8 lần/ngày), EC = 2.0–2.335.
+Hệ quy chiếu 2 – Quy trình tưới phân Yara cho ớt chuông (Tần suất tưới phân 3 lần/tuần, pha loãng Thùng A & B 100 lần, duy trì độ ẩm 80%): (1) Tưới nền (trước trồng 5 ngày): EC dung dịch 2.7–3.0, pH 6.3–6.5, EC vùng rễ 0.8–1.2 (dùng 5 kg YaraRega 18-4-19+TE, 4.0 kg YaraTera Kristalon Yellow, 1.5 kg Krista MAP); (2) Giai đoạn 0–20 NST: EC dung dịch 1.8–2.0, pH 6.0–6.2, EC vùng rễ 1.2 (Thùng A: 4.4 kg YaraTera Calcinit; Thùng B: 1.0 kg Krista K Plus, 1.2 kg Krista MAG, 2.0 kg Magie sunphate, 55 g Solubor, 123 g EDTA 13%, 85 g Manganese EDTA 13%, 13 g Copper EDTA 15%); (3) Giai đoạn 21 NST đến thu hoạch: EC dung dịch 2.5–2.8, pH 6.0–6.2, EC vùng rễ 1.2 (từ 21–45 NST) và tăng lên 1.8–2.0 (từ >45 NST), với Thùng A pha 6.2 kg (hoặc 5.7 kg) Calcinit và Thùng B pha 0.8 kg Krista K Plus, 2.2 kg (hoặc 2.0 kg) Krista MAG, 2.0 kg Krista MKP, 5.0 kg YaraRega 13-4-25+TE, 3.5–4.0 kg Magie sunphate, 25–45 g Solubor và vi lượng EDTA; kết hợp phun qua lá các dòng YaraVita (Hydrophos Zn dưỡng rễ, Botrac tăng đậu trái, Seniphos và Multipholate lớn trái, Bud Booster dưỡng cành bông)13.
+Về danh mục thuốc BVTV hợp pháp trên cây ớt, bảng dưới đây tổng hợp các thuốc thương phẩm tiêu biểu đã được đăng ký chính thức trong Danh mục thuốc BVTV tại Việt Nam (theo cơ sở dữ liệu pháp luật cập nhật Thông tư 25/2024/TT-BNNPTNT, Thông tư 03/2025/TT-BNNMT và Thông tư 75/2025/TT-BNNMT) cùng mã nhóm cơ chế tác động (IRAC/FRAC) để kỹ thuật viên HTX chỉ định luân phiên chống kháng thuốc và kiểm soát Thời gian cách ly (PHI)4:
+Tên thương phẩm & Số đăng ký (SĐK) | Hoạt chất & Hàm lượng | Nhóm kháng thuốc (IRAC / FRAC) | Đối tượng dịch hại đăng ký trên Ớt | Liều lượng & Lượng nước phun đăng ký | Thời gian cách ly (PHI) | Độ độc & MRL tham chiếu (TT 50/2016/TT-BYT)
+Tên thương phẩm & Số đăng ký (SĐK)
+Hoạt chất & Hàm lượng
+Nhóm kháng thuốc (IRAC / FRAC)
+Đối tượng dịch hại đăng ký trên Ớt
+Liều lượng & Lượng nước phun đăng ký
+Thời gian cách ly (PHI)
+Độ độc & MRL tham chiếu (TT 50/2016/TT-BYT)
+Benevia® 100OD  (SĐK: 4855/CNĐKT-BVTV – FMC) | Cyantraniliprole  100 g/l | IRAC 28  (Diamides – Điều tiết thụ thể Ryanodine) | Bọ trĩ  (Phun khi mật độ 3–5 con/ngọn) | 1.0 lít/ha  (Lượng nước: 400–600 lít/ha) | 3 ngày | GHS Nhóm 5; MRL rau ăn quả: 0.5 mg/kg (ớt khô: 5 mg/kg) 14 .
+Benevia® 100OD (SĐK: 4855/CNĐKT-BVTV – FMC)
+Cyantraniliprole 100 g/l
+IRAC 28 (Diamides – Điều tiết thụ thể Ryanodine)
+Bọ trĩ (Phun khi mật độ 3–5 con/ngọn)
+1.0 lít/ha (Lượng nước: 400–600 lít/ha)
+3 ngày
+GHS Nhóm 5; MRL rau ăn quả: 0.5 mg/kg (ớt khô: 5 mg/kg)14.
+Radiant® 60SC  (SĐK: 02/CNĐKT-BVTV – Corteva) | Spinetoram  60 g/l (min 86.4%) | IRAC 5  (Spinosyns – Cảm ứng thụ thể nAChR Site I) | Bọ trĩ  (0.3–0.4 lít/ha),  Dòi đục lá  (0.4 lít/ha) | 0.3 – 0.4 lít/ha  (Lượng nước: 320–400 lít/ha) | 3 ngày | GHS Nhóm 5 (Rất ít độc); ADI: 0–0.05 mg/kg thể trọng/ngày 14 .
+Radiant® 60SC (SĐK: 02/CNĐKT-BVTV – Corteva)
+Spinetoram 60 g/l (min 86.4%)
+IRAC 5 (Spinosyns – Cảm ứng thụ thể nAChR Site I)
+Bọ trĩ (0.3–0.4 lít/ha), Dòi đục lá (0.4 lít/ha)
+0.3 – 0.4 lít/ha (Lượng nước: 320–400 lít/ha)
+3 ngày
+GHS Nhóm 5 (Rất ít độc); ADI: 0–0.05 mg/kg thể trọng/ngày14.
+Mallot 50DC  (SĐK: 7297/CNĐKT-BVTV – BASF) | Afidopyropen  50 g/l | IRAC 9D  (Pyropenes – Điều tiết kênh TRPV) | Bọ trĩ  (Phun khi mật độ khoảng 5 con/ngọn) | 0.9 lít/ha  (Lượng nước: 500–600 lít/ha) | 7 ngày | GHS Nhóm 5 14 .
+Mallot 50DC (SĐK: 7297/CNĐKT-BVTV – BASF)
+Afidopyropen 50 g/l
+IRAC 9D (Pyropenes – Điều tiết kênh TRPV)
+Bọ trĩ (Phun khi mật độ khoảng 5 con/ngọn)
+0.9 lít/ha (Lượng nước: 500–600 lít/ha)
+7 ngày
+GHS Nhóm 514.
+Minecto Star 60WG  (SĐK: 149/CNĐKT-BVTV – Syngenta) | Cyantraniliprole  100g/kg +  Pymetrozine  500g/kg | IRAC 28 + IRAC 9B  (Phối trộn 2 cơ chế tác động) | Bọ trĩ  (Phun khi mật độ 3–5 con/ngọn) | 0.5 kg/ha | 7 ngày | GHS Nhóm 5; MRL Cyantraniliprole rau ăn quả: 0.5 mg/kg 14 .
+Minecto Star 60WG (SĐK: 149/CNĐKT-BVTV – Syngenta)
+Cyantraniliprole 100g/kg + Pymetrozine 500g/kg
+IRAC 28 + IRAC 9B (Phối trộn 2 cơ chế tác động)
+Bọ trĩ (Phun khi mật độ 3–5 con/ngọn)
+0.5 kg/ha
+7 ngày
+GHS Nhóm 5; MRL Cyantraniliprole rau ăn quả: 0.5 mg/kg14.
+Map Winner 5WG  (SĐK: 4419/CNĐKT-BVTV – Map Pacific) | Emamectin benzoate  5% w/w (Avermectin B1a + B1b) | IRAC 6  (Điều tiết kênh clorua glutamate – GluCl) | Bọ trĩ, Rệp  (Phun khi sâu tuổi 1–2) | 80 – 100 g/ha  (Lượng nước: 400–500 lít/ha) | 7 ngày | WHO Nhóm 3 (Độc trung bình) 14 .
+Map Winner 5WG (SĐK: 4419/CNĐKT-BVTV – Map Pacific)
+Emamectin benzoate 5% w/w (Avermectin B1a + B1b)
+IRAC 6 (Điều tiết kênh clorua glutamate – GluCl)
+Bọ trĩ, Rệp (Phun khi sâu tuổi 1–2)
+80 – 100 g/ha (Lượng nước: 400–500 lít/ha)
+7 ngày
+WHO Nhóm 3 (Độc trung bình)14.
+Silsau 10WP  (SĐK: 2364/CNĐKT-BVTV – ADC) | Abamectin  10% w/w | IRAC 6  (Avermectins – Điều tiết kênh GluCl) | Bọ trĩ, Nhện đỏ, Sâu vẽ bùa | 80 – 100 g/ha  (Lượng nước: 600 lít/ha) | 7 ngày | GHS Nhóm 4; MRL Abamectin trên ớt ngọt:  0.02 mg/kg  (ớt ta: 0.01 mg/kg) 14 .
+Silsau 10WP (SĐK: 2364/CNĐKT-BVTV – ADC)
+Abamectin 10% w/w
+IRAC 6 (Avermectins – Điều tiết kênh GluCl)
+Bọ trĩ, Nhện đỏ, Sâu vẽ bùa
+80 – 100 g/ha (Lượng nước: 600 lít/ha)
+7 ngày
+GHS Nhóm 4; MRL Abamectin trên ớt ngọt: 0.02 mg/kg (ớt ta: 0.01 mg/kg)14.
+Forbidmite 22.9SC  (SĐK: 9208/CNĐKT-BVTV – Forward) | Spiromesifen  22.9% w/w | IRAC 23  (Ức chế tổng hợp lipid acetyl CoA carboxylase) | Nhện đỏ  (Phun khi mật độ ≥ 5 con/lá) | 400 ml/ha  (Lượng nước: 400 lít/ha) | 7 ngày | GHS Nhóm 5 47 .
+Forbidmite 22.9SC (SĐK: 9208/CNĐKT-BVTV – Forward)
+Spiromesifen 22.9% w/w
+IRAC 23 (Ức chế tổng hợp lipid acetyl CoA carboxylase)
+Nhện đỏ (Phun khi mật độ ≥ 5 con/lá)
+400 ml/ha (Lượng nước: 400 lít/ha)
+7 ngày
+GHS Nhóm 547.
+Kelme 300SC  (SĐK: 8166/CNĐKT-BVTV) | Boscalid  +  Kresoxim-methyl | FRAC 7 (SDHI) + FRAC 11 (QoI) | Bệnh mốc xám  (Phun khi tỷ lệ bệnh khoảng 5%) | 0.6 lít/ha  (Lượng nước: 500–600 lít/ha) | 5 ngày | Thuốc trừ nấm hỗn hợp 2 nhóm chống kháng 43 .
+Kelme 300SC (SĐK: 8166/CNĐKT-BVTV)
+Boscalid + Kresoxim-methyl
+FRAC 7 (SDHI) + FRAC 11 (QoI)
+Bệnh mốc xám (Phun khi tỷ lệ bệnh khoảng 5%)
+0.6 lít/ha (Lượng nước: 500–600 lít/ha)
+5 ngày
+Thuốc trừ nấm hỗn hợp 2 nhóm chống kháng43.
+Cabrio Top 600WG  /  Metrobin 600WG | Pyraclostrobin  50g/kg +  Metiram  550g/kg | FRAC 11 (QoI) + FRAC M03 (Đa vị trí) | Bệnh thán thư  ( Colletotrichum ) | 1.25 – 1.875 kg/ha  (Cabrio Top) /  1.8 kg/ha  (Metrobin) | 5 ngày | GHS Nhóm 5 (Các thuốc trị thán thư khác trên ớt có PHI từ 1–7 ngày) 43 .
+Cabrio Top 600WG / Metrobin 600WG
+Pyraclostrobin 50g/kg + Metiram 550g/kg
+FRAC 11 (QoI) + FRAC M03 (Đa vị trí)
+Bệnh thán thư (Colletotrichum)
+1.25 – 1.875 kg/ha (Cabrio Top) / 1.8 kg/ha (Metrobin)
+5 ngày
+GHS Nhóm 5 (Các thuốc trị thán thư khác trên ớt có PHI từ 1–7 ngày)43.
+Leti Star 1SL  (SĐK: 7064/CNĐKT-BVTV) | Fungous proteoglycans  1% w/w | Chế phẩm sinh học trừ vi khuẩn | Héo xanh vi khuẩn  (Tỷ lệ bệnh 3–5%) | 2.7 lít/ha  (Lượng nước: 400–600 lít/ha; phun ngay sau trồng hoặc 2 lần cách 5 ngày) | Sinh học | Đăng ký phòng trừ héo xanh vi khuẩn trên ớt và cà chua 51 .
+Leti Star 1SL (SĐK: 7064/CNĐKT-BVTV)
+Fungous proteoglycans 1% w/w
+Chế phẩm sinh học trừ vi khuẩn
+Héo xanh vi khuẩn (Tỷ lệ bệnh 3–5%)
+2.7 lít/ha (Lượng nước: 400–600 lít/ha; phun ngay sau trồng hoặc 2 lần cách 5 ngày)
+Sinh học
+Đăng ký phòng trừ héo xanh vi khuẩn trên ớt và cà chua51.
+4.2. Bộ Hồ sơ Nhật Ký Canh Tác Ớt Chuông Hoàn Chỉnh (Mẫu Thực Hành Chuẩn Cho Hộ Thành Viên HTX)
+Dưới đây là ví dụ cụ thể, đầy đủ từ lúc mở sổ đầu vụ đến khi khóa sổ cuối vụ của một nông hộ thành viên thuộc HTX Nông nghiệp Công nghệ cao tại Đà Lạt, tỉnh Lâm Đồng canh tác giống Ớt chuông đỏ lai F1 Bokken trong nhà màng trên giá thể xơ dừa kết hợp tưới nhỏ giọt và thả thiên địch IPM11.
+PHẦN I: THÔNG TIN ĐỊNH DANH ĐẦU SỔ (KHAI 01 LẦN KHI MỞ SỔ ĐẦU VỤ)
+Trường thông tin quản lý | Nội dung ghi nhận thực tế trong sổ của Hộ thành viên | Căn cứ đối chiếu khi Hậu kiểm / Đánh giá VietGAP
+Trường thông tin quản lý
+Nội dung ghi nhận thực tế trong sổ của Hộ thành viên
+Căn cứ đối chiếu khi Hậu kiểm / Đánh giá VietGAP
+Tên tổ chức chủ sở hữu mã | Hợp tác xã Nông nghiệp Công nghệ cao Lâm Viên | Giấy chứng nhận ĐKKD HTX; Danh sách hộ thành viên có chữ ký xác nhận 4 .
+Tên tổ chức chủ sở hữu mã
+Hợp tác xã Nông nghiệp Công nghệ cao Lâm Viên
+Giấy chứng nhận ĐKKD HTX; Danh sách hộ thành viên có chữ ký xác nhận4.
+Mã số vùng trồng (PUC) | VN-68-350-22201-01-26  (Mã định danh vùng trồng giả định của HTX) | Thông báo cấp mã số vùng trồng của UBND cấp xã; Cổng thông tin quốc gia 9 .
+Mã số vùng trồng (PUC)
+VN-68-350-22201-01-26 (Mã định danh vùng trồng giả định của HTX)
+Thông báo cấp mã số vùng trồng của UBND cấp xã; Cổng thông tin quốc gia9.
+Thông tin Hộ thành viên | Họ tên:  Nguyễn Văn An  – Mã hộ nội bộ:  H03  – SĐT: 0918.xxx.xxx | Căn cước công dân (CCCD); Hợp đồng liên kết sản xuất và bao tiêu với HTX 2 .
+Thông tin Hộ thành viên
+Họ tên: Nguyễn Văn An – Mã hộ nội bộ: H03 – SĐT: 0918.xxx.xxx
+Căn cước công dân (CCCD); Hợp đồng liên kết sản xuất và bao tiêu với HTX2.
+Định danh Thửa đất & Lô SX | Mã lô/thửa nội bộ:  T01  (Khu nhà màng số 1) – Tờ bản đồ: 14, Thửa đất số: 208 | Sổ đỏ (GCN QSDĐ) hoặc Mã định danh thửa đất trên CSDL đất đai quốc gia 4 .
+Định danh Thửa đất & Lô SX
+Mã lô/thửa nội bộ: T01 (Khu nhà màng số 1) – Tờ bản đồ: 14, Thửa đất số: 208
+Sổ đỏ (GCN QSDĐ) hoặc Mã định danh thửa đất trên CSDL đất đai quốc gia4.
+Diện tích & Quy mô canh tác | 0.20 ha (2.000 m²)  – Số lượng túi giá thể:  2.500 túi  (Mật độ:  5.000 cây/2.000 m² , tương đương 25.000 cây/ha; hàng cách hàng 1.2 m, cây cách cây 30 cm) | Bản đồ số hóa lô thửa GIS của HTX; Biên bản kiểm tra thực địa đầu vụ 12 .
+Diện tích & Quy mô canh tác
+0.20 ha (2.000 m²) – Số lượng túi giá thể: 2.500 túi (Mật độ: 5.000 cây/2.000 m², tương đương 25.000 cây/ha; hàng cách hàng 1.2 m, cây cách cây 30 cm)
+Bản đồ số hóa lô thửa GIS của HTX; Biên bản kiểm tra thực địa đầu vụ12.
+Cây trồng & Giống sử dụng | Ớt chuông đỏ lai F1 Bokken  (Tập đoàn Syngenta) – Kháng tốt bệnh phấn trắng và virus 38 . | Hóa đơn mua cây giống từ Vườn ươm đạt chuẩn; Nhãn bao bì hạt giống (Lô giống: SYG-BK-2508) 4 .
+Cây trồng & Giống sử dụng
+Ớt chuông đỏ lai F1 Bokken (Tập đoàn Syngenta) – Kháng tốt bệnh phấn trắng và virus38.
+Hóa đơn mua cây giống từ Vườn ươm đạt chuẩn; Nhãn bao bì hạt giống (Lô giống: SYG-BK-2508)4.
+Tiêu chuẩn cây giống xuất vườn | Cây 35 ngày tuổi (chuẩn 30–45 ngày), cao 14 cm (chuẩn 12–15 cm), đường kính cổ rễ 3.0 mm (chuẩn 2.5–3.5 mm), có 5 lá thật (chuẩn 4–6 lá), rễ trắng chớm đáy bầu, khỏe mạnh, không dị hình hay sâu bệnh 35 . | Sổ theo dõi tiếp nhận giống đầu vụ của HTX 35 .
+Tiêu chuẩn cây giống xuất vườn
+Cây 35 ngày tuổi (chuẩn 30–45 ngày), cao 14 cm (chuẩn 12–15 cm), đường kính cổ rễ 3.0 mm (chuẩn 2.5–3.5 mm), có 5 lá thật (chuẩn 4–6 lá), rễ trắng chớm đáy bầu, khỏe mạnh, không dị hình hay sâu bệnh35.
+Sổ theo dõi tiếp nhận giống đầu vụ của HTX35.
+Thời gian canh tác & Thu hoạch | Ngày trồng:  15/10/2025  – Thu hoạch bắt đầu:  05/01/2026  – Kết thúc:  25/02/2026 | Khớp với chu kỳ sinh trưởng thực tế của ớt chuông vụ Đông – Xuân 6 .
+Thời gian canh tác & Thu hoạch
+Ngày trồng: 15/10/2025 – Thu hoạch bắt đầu: 05/01/2026 – Kết thúc: 25/02/2026
+Khớp với chu kỳ sinh trưởng thực tế của ớt chuông vụ Đông – Xuân6.
+Sản lượng Dự kiến vs. Thực tế | Sản lượng dự kiến đầu vụ:  18.500 kg  (18.5 tấn/2.000 m²) – Sản lượng thương phẩm thực tế cuối vụ:  18.120 kg | Đối chiếu với tổng khối lượng cộng dồn từ các Phiếu cân tại sân kho HTX 2 .
+Sản lượng Dự kiến vs. Thực tế
+Sản lượng dự kiến đầu vụ: 18.500 kg (18.5 tấn/2.000 m²) – Sản lượng thương phẩm thực tế cuối vụ: 18.120 kg
+Đối chiếu với tổng khối lượng cộng dồn từ các Phiếu cân tại sân kho HTX2.
+Đơn vị thu mua & Đóng gói | Trạm Sơ chế & Đóng gói HTX Lâm Viên (Mã cơ sở đóng gói: VN-68-PHC-009) | Phiếu giao nhận nguyên liệu; Sổ tiếp nhận kho đóng gói 2 .
+Đơn vị thu mua & Đóng gói
+Trạm Sơ chế & Đóng gói HTX Lâm Viên (Mã cơ sở đóng gói: VN-68-PHC-009)
+Phiếu giao nhận nguyên liệu; Sổ tiếp nhận kho đóng gói2.
+PHẦN II: NHẬT KÝ XỬ LÝ GIÁ THỂ, CHĂM SÓC VÀ BÓN PHÂN QUA HỆ THỐNG TƯỚI (FERTIGATION)
+Ngày tháng năm | Giai đoạn sinh trưởng | Công việc thực hiện & Tên phân bón (Ghi đúng tên thương phẩm trên bao bì) | Phương pháp bón / Kỹ thuật tác động & Thông số kiểm soát (EC, pH) | Tổng lượng dùng thực tế (Cho 2.000 m²) | Số lô vật tư (Lot/LSX) & Số phiếu xuất kho HTX | Người thực hiện
+Ngày tháng năm
+Giai đoạn sinh trưởng
+Công việc thực hiện & Tên phân bón (Ghi đúng tên thương phẩm trên bao bì)
+Phương pháp bón / Kỹ thuật tác động & Thông số kiểm soát (EC, pH)
+Tổng lượng dùng thực tế (Cho 2.000 m²)
+Số lô vật tư (Lot/LSX) & Số phiếu xuất kho HTX
+Người thực hiện
+10/10/2025 | Chuẩn bị trước trồng | Vệ sinh nhà màng, kiểm tra lưới chắn côn trùng 50 mesh; Xếp 2.500 túi giá thể xơ dừa (40 × 30 cm) và xả rửa kết hợp bổ sung  YaraTera CALCINIT  (Ca(NO3)2). | Tưới xả qua hệ thống que ghim nhỏ giọt (nồng độ 0.75 kg/m³ giá thể) đến khi đo  EC nước thoát = 0.42 dS/m  (đạt chuẩn < 0.5 dS/m) 11 . | 18.75 kg  YaraTera CALCINIT (trên 25 m³ giá thể xơ dừa) | Lô: YRC-250411 – Phiếu xuất kho HTX: PXK-25-101 | Nguyễn Văn An
+10/10/2025
+Chuẩn bị trước trồng
+Vệ sinh nhà màng, kiểm tra lưới chắn côn trùng 50 mesh; Xếp 2.500 túi giá thể xơ dừa (40 × 30 cm) và xả rửa kết hợp bổ sung YaraTera CALCINIT (Ca(NO3)2).
+Tưới xả qua hệ thống que ghim nhỏ giọt (nồng độ 0.75 kg/m³ giá thể) đến khi đo EC nước thoát = 0.42 dS/m (đạt chuẩn < 0.5 dS/m)11.
+18.75 kg YaraTera CALCINIT (trên 25 m³ giá thể xơ dừa)
+Lô: YRC-250411 – Phiếu xuất kho HTX: PXK-25-101
+Nguyễn Văn An
+14/10/2025 | Tưới đệm (Trước trồng 24h) | Tưới đệm tạo ẩm và nạp dinh dưỡng nền vào bầu xơ dừa bằng phân hòa tan  NPK 20-20-20+TE  kết hợp  Magie Sunphate (MgSO4) . | Hòa vào bồn châm phân tự động, tưới nhỏ giọt đạt  EC dung dịch = 1.15 dS/m  (chuẩn 1.0–1.2),  pH = 6.0 , độ ẩm giá thể đạt  72%  (chuẩn 70–75%) 35 . | 0.60 kg  NPK 20-20-20+TE;  0.60 kg  Magie Sunphate (hòa 3.000 lít nước) | Lô NPK: NPK-250602; Lô Mg: MGS-250319 – PXK-25-104 | Nguyễn Văn An
+14/10/2025
+Tưới đệm (Trước trồng 24h)
+Tưới đệm tạo ẩm và nạp dinh dưỡng nền vào bầu xơ dừa bằng phân hòa tan NPK 20-20-20+TE kết hợp Magie Sunphate (MgSO4).
+Hòa vào bồn châm phân tự động, tưới nhỏ giọt đạt EC dung dịch = 1.15 dS/m (chuẩn 1.0–1.2), pH = 6.0, độ ẩm giá thể đạt 72% (chuẩn 70–75%)35.
+0.60 kg NPK 20-20-20+TE; 0.60 kg Magie Sunphate (hòa 3.000 lít nước)
+Lô NPK: NPK-250602; Lô Mg: MGS-250319 – PXK-25-104
+Nguyễn Văn An
+15/10/2025 | Xuống giống (0 NST) | Trồng 5.000 cây giống  Ớt chuông đỏ F1 Bokken  vào 2.500 túi bầu xơ dừa (2 cây/túi), đặt bầu sao cho xơ dừa phủ kín bầu cây giống và cổ rễ ngang mặt giá thể, tưới giữ ẩm ngay 34 . | Trồng thủ công triệt để trong 1 ngày; cài đặt hẹn giờ tưới nhỏ giọt giữ ẩm sáng sớm và chiều muộn 35 . | 5.000 cây giống  (100% cây khỏe đạt chuẩn xuất vườn) | Lô giống: SYG-BK-2508 – Biên bản giao giống BBG-03 | Nguyễn Văn An + 2 nhân công
+15/10/2025
+Xuống giống (0 NST)
+Trồng 5.000 cây giống Ớt chuông đỏ F1 Bokken vào 2.500 túi bầu xơ dừa (2 cây/túi), đặt bầu sao cho xơ dừa phủ kín bầu cây giống và cổ rễ ngang mặt giá thể, tưới giữ ẩm ngay34.
+Trồng thủ công triệt để trong 1 ngày; cài đặt hẹn giờ tưới nhỏ giọt giữ ẩm sáng sớm và chiều muộn35.
+5.000 cây giống (100% cây khỏe đạt chuẩn xuất vườn)
+Lô giống: SYG-BK-2508 – Biên bản giao giống BBG-03
+Nguyễn Văn An + 2 nhân công
+16/10/2025 – 29/10/2025 | Cây con – Hồi xanh (1–14 NST) | Châm phân định kỳ giai đoạn bén rễ (14 ngày): sử dụng  NPK 20-20-20+TE  (150 g/1.000 m²/ngày) kết hợp  Magie Sunphate (MgSO4) ; ngày 22/10 kiểm tra và trồng dặm 35 cây yếu 35 . | Hòa nước châm phân qua que ghim nhỏ giọt  5 lần/ngày  (lượng nước 3.500 lít/2.000 m²/ngày). Kiểm soát  EC = 1.50 dS/m ,  pH = 5.9–6.1 35 . | Tổng 14 ngày:  4.20 kg  NPK 20-20-20+TE (300 g/ngày) +  4.20 kg  MgSO4 (300 g/ngày) 35 | Lô NPK: NPK-250602; Lô Mg: MGS-250319 – PXK-25-104 | Nguyễn Văn An
+16/10/2025 – 29/10/2025
+Cây con – Hồi xanh (1–14 NST)
+Châm phân định kỳ giai đoạn bén rễ (14 ngày): sử dụng NPK 20-20-20+TE (150 g/1.000 m²/ngày) kết hợp Magie Sunphate (MgSO4); ngày 22/10 kiểm tra và trồng dặm 35 cây yếu35.
+Hòa nước châm phân qua que ghim nhỏ giọt 5 lần/ngày (lượng nước 3.500 lít/2.000 m²/ngày). Kiểm soát EC = 1.50 dS/m, pH = 5.9–6.135.
+Tổng 14 ngày: 4.20 kg NPK 20-20-20+TE (300 g/ngày) + 4.20 kg MgSO4 (300 g/ngày)35
+Lô NPK: NPK-250602; Lô Mg: MGS-250319 – PXK-25-104
+Nguyễn Văn An
+30/10/2025 – 14/11/2025 | Phân cành – Tạo tán (15–30 NST) | Chuyển công thức dinh dưỡng phát triển thân lá (16 ngày): Pha  Thùng A (YaraTera CALCINIT)  và  Thùng B (NPK 17-9-27 + YaraTera KRISTA MAG + Vi lượng EDTA) . | Châm phân tự động pha loãng 100 lần, tưới  6 lần/ngày  (5.500 lít nước/2.000 m²/ngày). Đo  EC dung dịch = 2.0 dS/m ,  pH = 6.0 ,  EC vùng rễ = 1.2 dS/m 13 . | Tổng 16 ngày:  6.40 kg  NPK 17-9-27 (400 g/ngày);  8.80 kg  CALCINIT;  3.20 kg  KRISTA MAG;  0.25 kg  EDTA 13% 13 | Lô Calcinit: YRC-250411; Lô 17-9-27: NPK-250815 – PXK-25-118 | Nguyễn Văn An
+30/10/2025 – 14/11/2025
+Phân cành – Tạo tán (15–30 NST)
+Chuyển công thức dinh dưỡng phát triển thân lá (16 ngày): Pha Thùng A (YaraTera CALCINIT) và Thùng B (NPK 17-9-27 + YaraTera KRISTA MAG + Vi lượng EDTA).
+Châm phân tự động pha loãng 100 lần, tưới 6 lần/ngày (5.500 lít nước/2.000 m²/ngày). Đo EC dung dịch = 2.0 dS/m, pH = 6.0, EC vùng rễ = 1.2 dS/m13.
+Tổng 16 ngày: 6.40 kg NPK 17-9-27 (400 g/ngày); 8.80 kg CALCINIT; 3.20 kg KRISTA MAG; 0.25 kg EDTA 13%13
+Lô Calcinit: YRC-250411; Lô 17-9-27: NPK-250815 – PXK-25-118
+Nguyễn Văn An
+08/11/2025 | Phân cành (24 NST) | Căng hệ thống dây kẽm đỡ cây dọc 2 bên luống và cáp trên cao (2.2 m), quấn dây treo cotton dày vào thân cây;  Tỉa chồi nách lần 1 , chọn nuôi  3 thân chính  cứng cáp mỗi cây, tỉa bỏ chồi nhánh phía dưới (cách gốc 15–20 cm) 11 . | Thao tác thủ công, vệ sinh khử trùng dụng cụ cắt tỉa trước và sau khi sử dụng để ngừa lây nhiễm bệnh 11 . | Không  (Không sử dụng phân bón) 6 | Không | Nguyễn Văn An + 2 nhân công
+08/11/2025
+Phân cành (24 NST)
+Căng hệ thống dây kẽm đỡ cây dọc 2 bên luống và cáp trên cao (2.2 m), quấn dây treo cotton dày vào thân cây; Tỉa chồi nách lần 1, chọn nuôi 3 thân chính cứng cáp mỗi cây, tỉa bỏ chồi nhánh phía dưới (cách gốc 15–20 cm)11.
+Thao tác thủ công, vệ sinh khử trùng dụng cụ cắt tỉa trước và sau khi sử dụng để ngừa lây nhiễm bệnh11.
+Không (Không sử dụng phân bón)6
+Không
+Nguyễn Văn An + 2 nhân công
+15/11/2025 – 05/12/2025 | Ra hoa – Đậu quả non (31–51 NST) | Châm phân giai đoạn ra hoa rộ và đậu quả (21 ngày): Tăng liều  NPK 17-9-27  (250 g/1.000 m²/ngày),  YaraTera CALCINIT ,  YaraTera KRISTA MKP ,  Magie Sunphate  và  Solubor 13 . | Tưới nhỏ giọt  7 lần/ngày  (7.500 lít nước/2.000 m²/ngày). Kiểm soát  EC dung dịch = 2.4–2.5 dS/m ,  pH = 6.0 ,  EC vùng rễ = 1.4 dS/m 13 . | Tổng 21 ngày:  10.50 kg  NPK 17-9-27 (500 g/ngày);  12.40 kg  CALCINIT;  4.00 kg  KRISTA MKP;  7.00 kg  MgSO4;  0.09 kg  Solubor 13 | Lô MKP: YRM-250520; Lô Solubor: SLB-250210 – PXK-25-132 | Nguyễn Văn An
+15/11/2025 – 05/12/2025
+Ra hoa – Đậu quả non (31–51 NST)
+Châm phân giai đoạn ra hoa rộ và đậu quả (21 ngày): Tăng liều NPK 17-9-27 (250 g/1.000 m²/ngày), YaraTera CALCINIT, YaraTera KRISTA MKP, Magie Sunphate và Solubor13.
+Tưới nhỏ giọt 7 lần/ngày (7.500 lít nước/2.000 m²/ngày). Kiểm soát EC dung dịch = 2.4–2.5 dS/m, pH = 6.0, EC vùng rễ = 1.4 dS/m13.
+Tổng 21 ngày: 10.50 kg NPK 17-9-27 (500 g/ngày); 12.40 kg CALCINIT; 4.00 kg KRISTA MKP; 7.00 kg MgSO4; 0.09 kg Solubor13
+Lô MKP: YRM-250520; Lô Solubor: SLB-250210 – PXK-25-132
+Nguyễn Văn An
+25/11/2025 | Đậu quả non (41 NST) | Phun bổ sung phân bón lá  YaraVita BOTRAC  giúp tăng đậu trái; kết hợp tỉa bỏ quả dị hình (khi kích thước bằng hạt đậu) và  loại bỏ ngay xác hoa khô dính ở đáy quả non  (nơi trú ngụ của bọ trĩ) 13 . | Phun qua lá vào sáng sớm (pha 25 ml/bình 20 lít × 4 bình = 80 lít nước cho 2.000 m²).  (Tách dòng độc lập, không pha chung thuốc BVTV) 13 . | 0.10 lít  (100 ml) YaraVita BOTRAC nguyên chất 17 | Lô: YVB-250701 – Phiếu xuất kho: PXK-25-139 | Nguyễn Văn An
+25/11/2025
+Đậu quả non (41 NST)
+Phun bổ sung phân bón lá YaraVita BOTRAC giúp tăng đậu trái; kết hợp tỉa bỏ quả dị hình (khi kích thước bằng hạt đậu) và loại bỏ ngay xác hoa khô dính ở đáy quả non (nơi trú ngụ của bọ trĩ)13.
+Phun qua lá vào sáng sớm (pha 25 ml/bình 20 lít × 4 bình = 80 lít nước cho 2.000 m²). (Tách dòng độc lập, không pha chung thuốc BVTV)13.
+0.10 lít (100 ml) YaraVita BOTRAC nguyên chất17
+Lô: YVB-250701 – Phiếu xuất kho: PXK-25-139
+Nguyễn Văn An
+06/12/2025 – 15/01/2026 | Nuôi trái lớn – Chuyển màu đỏ (52–92 NST) | Châm phân cao điểm nuôi trái trưởng thành (41 ngày): Dùng  NPK 17-9-27  (250 g/1.000 m²/ngày),  YaraRega 13-4-25+TE ,  YaraTera CALCINIT  và  Magie Sunphate ; kiểm soát lượng đạm để tránh tích lũy NO3 trong quả 13 . | Tưới nhỏ giọt  8 lần/ngày  (8.000 lít nước/2.000 m²/ngày). Đo  EC dung dịch = 2.6–2.7 dS/m ,  pH = 6.1 ,  EC vùng rễ = 1.8–1.9 dS/m 13 . | Tổng 41 ngày:  20.50 kg  NPK 17-9-27;  15.00 kg  YaraRega 13-4-25+TE;  18.00 kg  CALCINIT;  12.00 kg  MgSO4 13 | Lô YaraRega: YRR-250904 – Phiếu xuất kho: PXK-25-150 | Nguyễn Văn An
+06/12/2025 – 15/01/2026
+Nuôi trái lớn – Chuyển màu đỏ (52–92 NST)
+Châm phân cao điểm nuôi trái trưởng thành (41 ngày): Dùng NPK 17-9-27 (250 g/1.000 m²/ngày), YaraRega 13-4-25+TE, YaraTera CALCINIT và Magie Sunphate; kiểm soát lượng đạm để tránh tích lũy NO3 trong quả13.
+Tưới nhỏ giọt 8 lần/ngày (8.000 lít nước/2.000 m²/ngày). Đo EC dung dịch = 2.6–2.7 dS/m, pH = 6.1, EC vùng rễ = 1.8–1.9 dS/m13.
+Tổng 41 ngày: 20.50 kg NPK 17-9-27; 15.00 kg YaraRega 13-4-25+TE; 18.00 kg CALCINIT; 12.00 kg MgSO413
+Lô YaraRega: YRR-250904 – Phiếu xuất kho: PXK-25-150
+Nguyễn Văn An
+16/01/2026 – 22/02/2026 | Thu hoạch rộ đến cuối vụ (93–130 NST) | Châm phân duy trì nuôi các lứa quả tầng trên trong thời gian thu hoạch (38 ngày): Giảm định mức phân  NPK 17-9-27  (180 g/1.000 m²/ngày) và  Magie Sunphate ; định kỳ 5–7 ngày/lần tỉa chồi nách (dài 2–5 cm) và lá già phía dưới 35 . | Tưới nhỏ giọt  7 lần/ngày  (7.000 lít nước/2.000 m²/ngày). Giảm  EC dung dịch = 2.1–2.2 dS/m ,  pH = 6.0 , độ ẩm giá thể duy trì  75% 35 . | Tổng 38 ngày:  13.68 kg  NPK 17-9-27 (360 g/ngày cho 2.000 m²) +  13.68 kg  MgSO4 35 | Lô 17-9-27: NPK-250815 – Phiếu xuất kho: PXK-26-012 | Nguyễn Văn An
+16/01/2026 – 22/02/2026
+Thu hoạch rộ đến cuối vụ (93–130 NST)
+Châm phân duy trì nuôi các lứa quả tầng trên trong thời gian thu hoạch (38 ngày): Giảm định mức phân NPK 17-9-27 (180 g/1.000 m²/ngày) và Magie Sunphate; định kỳ 5–7 ngày/lần tỉa chồi nách (dài 2–5 cm) và lá già phía dưới35.
+Tưới nhỏ giọt 7 lần/ngày (7.000 lít nước/2.000 m²/ngày). Giảm EC dung dịch = 2.1–2.2 dS/m, pH = 6.0, độ ẩm giá thể duy trì 75%35.
+Tổng 38 ngày: 13.68 kg NPK 17-9-27 (360 g/ngày cho 2.000 m²) + 13.68 kg MgSO435
+Lô 17-9-27: NPK-250815 – Phiếu xuất kho: PXK-26-012
+Nguyễn Văn An
+PHẦN III: NHẬT KÝ ĐIỀU TRA SINH VẬT GÂY HẠI (IPM), THẢ THIÊN ĐỊCH VÀ SỬ DỤNG THUỐC BVTV
+Ngày tháng năm | Giai đoạn sinh trưởng | Sinh vật gây hại phát hiện & Mật độ điều tra | Tên thương mại Thuốc BVTV / Tác nhân sinh học | Tên hoạt chất & Hàm lượng (Nhóm IRAC / FRAC) | Lý do sử dụng / Biện pháp xử lý | Liều lượng & Cách pha thực tế (Cho 2.000 m²) | Số lô thuốc & Chứng từ | Thời gian cách ly (PHI) & Ngày được phép thu | Người thực hiện & Kiểm tra
+Ngày tháng năm
+Giai đoạn sinh trưởng
+Sinh vật gây hại phát hiện & Mật độ điều tra
+Tên thương mại Thuốc BVTV / Tác nhân sinh học
+Tên hoạt chất & Hàm lượng (Nhóm IRAC / FRAC)
+Lý do sử dụng / Biện pháp xử lý
+Liều lượng & Cách pha thực tế (Cho 2.000 m²)
+Số lô thuốc & Chứng từ
+Thời gian cách ly (PHI) & Ngày được phép thu
+Người thực hiện & Kiểm tra
+14/10/2025 | Trước trồng 1 ngày | Chưa xuất hiện trên vườn; kiểm tra cây con trong khay ươm sạch bệnh. | Ridomil Gold 68WG | Metalaxyl-M  40g/kg +  Mancozeb  640g/kg (FRAC 4 + M03) | Phun xử lý cây con trong khay trước khi đem trồng 1 ngày để ngừa nấm bệnh theo quy trình 35 . | 100 g  (Pha 25 g/bình 16 lít × 4 bình = 64 lít nước phun đều khay giống) | Lô: SYG-RG-2503 – PXK-25-103 | PHI: 7 ngày  (Giai đoạn cây giống chưa có quả) | Thực hiện: N.V.An; KTV: Lê Minh
+14/10/2025
+Trước trồng 1 ngày
+Chưa xuất hiện trên vườn; kiểm tra cây con trong khay ươm sạch bệnh.
+Ridomil Gold 68WG
+Metalaxyl-M 40g/kg + Mancozeb 640g/kg (FRAC 4 + M03)
+Phun xử lý cây con trong khay trước khi đem trồng 1 ngày để ngừa nấm bệnh theo quy trình35.
+100 g (Pha 25 g/bình 16 lít × 4 bình = 64 lít nước phun đều khay giống)
+Lô: SYG-RG-2503 – PXK-25-103
+PHI: 7 ngày (Giai đoạn cây giống chưa có quả)
+Thực hiện: N.V.An; KTV: Lê Minh
+25/10/2025 | Cây con (10 NST) | Điều tra 5 điểm chéo góc:  Không  phát hiện bọ trĩ, nhện đỏ hay nấm bệnh 6 . | Không  (Treo 40 tấm bẫy dính màu xanh và màu vàng) 2 | Không 2 | Đặt bẫy dính sinh học để phát hiện sớm sự xuất hiện của côn trùng (bọ trĩ, bọ phấn) 11 . | 40 tấm  bẫy dính (20 vàng, 20 xanh) treo cao trên ngọn | Lô bẫy: BD-2509 – PXK-25-110 | Không | Thực hiện: N.V.An
+25/10/2025
+Cây con (10 NST)
+Điều tra 5 điểm chéo góc: Không phát hiện bọ trĩ, nhện đỏ hay nấm bệnh6.
+Không (Treo 40 tấm bẫy dính màu xanh và màu vàng)2
+Không2
+Đặt bẫy dính sinh học để phát hiện sớm sự xuất hiện của côn trùng (bọ trĩ, bọ phấn)11.
+40 tấm bẫy dính (20 vàng, 20 xanh) treo cao trên ngọn
+Lô bẫy: BD-2509 – PXK-25-110
+Không
+Thực hiện: N.V.An
+05/11/2025 | Phân cành (21 NST) | Phát hiện lác đác  Bọ trĩ  trên lá non (mật độ thấp: 0.5–1 con/ngọn) và vài ổ  Nhện đỏ 2 chấm  mặt dưới lá (1–2 con/lá) 40 . | Nhện bắt mồi Thiên địch  ( Amblyseius sp.  &  Phytoseiulus sp. ) 39 | Tác nhân sinh học ( Amblyseius sp.  khống chế bọ trĩ, bọ phấn &  Phytoseiulus sp.  kiểm soát nhện đỏ 2 chấm) 39 | Phóng thả thiên địch thiết lập quần thể tự nhiên kiểm soát bọ trĩ và nhện đỏ ngay từ đầu;  ngưng hoàn toàn thuốc BVTV hóa học trong ít nhất 3 tuần sau thả 39 . | Thả định lượng theo hướng dẫn nhà cung cấp trên 5.000 cây ớt 41 | Lô: BIO-AM-2511 – Hóa đơn đơn vị cung ứng HD-882 | 0 ngày  (Giải pháp thiên địch an toàn sinh học) 57 | Thực hiện: N.V.An; Giám sát: Kỹ sư Lê Minh
+05/11/2025
+Phân cành (21 NST)
+Phát hiện lác đác Bọ trĩ trên lá non (mật độ thấp: 0.5–1 con/ngọn) và vài ổ Nhện đỏ 2 chấm mặt dưới lá (1–2 con/lá)40.
+Nhện bắt mồi Thiên địch (Amblyseius sp. & Phytoseiulus sp.)39
+Tác nhân sinh học (Amblyseius sp. khống chế bọ trĩ, bọ phấn & Phytoseiulus sp. kiểm soát nhện đỏ 2 chấm)39
+Phóng thả thiên địch thiết lập quần thể tự nhiên kiểm soát bọ trĩ và nhện đỏ ngay từ đầu; ngưng hoàn toàn thuốc BVTV hóa học trong ít nhất 3 tuần sau thả39.
+Thả định lượng theo hướng dẫn nhà cung cấp trên 5.000 cây ớt41
+Lô: BIO-AM-2511 – Hóa đơn đơn vị cung ứng HD-882
+0 ngày (Giải pháp thiên địch an toàn sinh học)57
+Thực hiện: N.V.An; Giám sát: Kỹ sư Lê Minh
+20/11/2025 | Ra hoa (36 NST) | Điều tra định kỳ: Quần thể nhện  Amblyseius  sinh trưởng tốt (chu kỳ sống 10–12 ngày ở 20–25°C, ăn phấn hoa và bọ trĩ); mật độ sâu hại dưới ngưỡng 55 . | Không 2 | Không 2 | Duy trì hệ sinh thái thiên địch tự nhiên trong nhà màng, giúp hoa đậu trái bóng đẹp 41 . | Không 2 | Không | Không | Thực hiện: N.V.An
+20/11/2025
+Ra hoa (36 NST)
+Điều tra định kỳ: Quần thể nhện Amblyseius sinh trưởng tốt (chu kỳ sống 10–12 ngày ở 20–25°C, ăn phấn hoa và bọ trĩ); mật độ sâu hại dưới ngưỡng55.
+Không2
+Không2
+Duy trì hệ sinh thái thiên địch tự nhiên trong nhà màng, giúp hoa đậu trái bóng đẹp41.
+Không2
+Không
+Không
+Thực hiện: N.V.An
+02/12/2025 | Đậu quả – Nuôi trái (48 NST) | Thời tiết bên ngoài mưa ẩm kéo dài, độ ẩm nhà màng tăng >85%; phát hiện  Bệnh mốc xám  xuất hiện trên lá và quả non với tỷ lệ bệnh khoảng  5% số cây 11 . | Kelme 300SC  (SĐK: 8166/CNĐKT-BVTV) 48 | Boscalid  +  Kresoxim-methyl  (Nhóm  FRAC 7 + FRAC 11 ) 43 | Phòng trừ bệnh mốc xám khi tỷ lệ bệnh đạt ngưỡng 5% theo danh mục đăng ký trên ớt 48 . | 120 ml  cho 2.000 m² (Đúng định mức 0.6 lít/ha; pha 20 ml/bình 20 lít × 6 bình = 120 lít nước, tương đương 600 lít/ha) 48 | Lô: KLM-250618 – PXK-25-145 | PHI: 5 ngày  → Không thu trước ngày  08/12/2025   (Chưa đến kỳ thu hoạch) 2 | Thực hiện: N.V.An; KTV duyệt: Lê Minh
+02/12/2025
+Đậu quả – Nuôi trái (48 NST)
+Thời tiết bên ngoài mưa ẩm kéo dài, độ ẩm nhà màng tăng >85%; phát hiện Bệnh mốc xám xuất hiện trên lá và quả non với tỷ lệ bệnh khoảng 5% số cây11.
+Kelme 300SC (SĐK: 8166/CNĐKT-BVTV)48
+Boscalid + Kresoxim-methyl (Nhóm FRAC 7 + FRAC 11)43
+Phòng trừ bệnh mốc xám khi tỷ lệ bệnh đạt ngưỡng 5% theo danh mục đăng ký trên ớt48.
+120 ml cho 2.000 m² (Đúng định mức 0.6 lít/ha; pha 20 ml/bình 20 lít × 6 bình = 120 lít nước, tương đương 600 lít/ha)48
+Lô: KLM-250618 – PXK-25-145
+PHI: 5 ngày → Không thu trước ngày 08/12/2025 (Chưa đến kỳ thu hoạch)2
+Thực hiện: N.V.An; KTV duyệt: Lê Minh
+18/12/2025 | Nuôi trái lớn (64 NST) | Khu vực cuối hướng gió (Hàng 18–25)  Bọ trĩ  bùng phát cục bộ vượt ngưỡng kiểm soát của thiên địch, mật độ  4–5 con/ngọn  (ngưỡng xử lý 3–5 con/ngọn) làm mép lá non cong lên 14 . | Benevia® 100OD  (SĐK: 4855/CNĐKT-BVTV – FMC Việt Nam) 14 | Cyantraniliprole  100 g/l (Nhóm  IRAC 28  – Diamides; Độ độc GHS 5) 14 | Trị điểm nóng bọ trĩ mật độ 4–5 con/ngọn để ngăn truyền virus TSWV và bảo vệ quả non 14 . | 200 ml  cho 2.000 m² (Đúng định mức 1.0 lít/ha; pha 40 ml/bình 20 lít × 5 bình = 100 lít nước/2.000 m², tương đương 500 lít/ha) 14 | Lô: FMC-BNV-2507 – PXK-25-158 | PHI: 3 ngày  → Không thu trước ngày  22/12/2025 2 | Thực hiện: N.V.An; KTV duyệt: Lê Minh
+18/12/2025
+Nuôi trái lớn (64 NST)
+Khu vực cuối hướng gió (Hàng 18–25) Bọ trĩ bùng phát cục bộ vượt ngưỡng kiểm soát của thiên địch, mật độ 4–5 con/ngọn (ngưỡng xử lý 3–5 con/ngọn) làm mép lá non cong lên14.
+Benevia® 100OD (SĐK: 4855/CNĐKT-BVTV – FMC Việt Nam)14
+Cyantraniliprole 100 g/l (Nhóm IRAC 28 – Diamides; Độ độc GHS 5)14
+Trị điểm nóng bọ trĩ mật độ 4–5 con/ngọn để ngăn truyền virus TSWV và bảo vệ quả non14.
+200 ml cho 2.000 m² (Đúng định mức 1.0 lít/ha; pha 40 ml/bình 20 lít × 5 bình = 100 lít nước/2.000 m², tương đương 500 lít/ha)14
+Lô: FMC-BNV-2507 – PXK-25-158
+PHI: 3 ngày → Không thu trước ngày 22/12/20252
+Thực hiện: N.V.An; KTV duyệt: Lê Minh
+26/12/2025 | Quả bắt đầu chín đỏ (72 NST) | Kiểm tra sau phun 8 ngày: Tại khu vực cửa gió vẫn còn ấu trùng  Bọ trĩ  tuổi 1–2 mật độ  3–4 con/ngọn ; cần xử lý lần 2 cách lần đầu 8 ngày và  luân phiên nhóm cơ chế tác động  chống kháng thuốc trước khi thu hoạch 14 . | Radiant® 60SC  (SĐK: 02/CNĐKT-BVTV – Corteva Agriscience) 14 | Spinetoram  60 g/l (min 86.4% – Nhóm  IRAC 5  – Spinosyns; Độ độc GHS 5)  (Đã đổi từ nhóm IRAC 28 sang IRAC 5) 14 | Diệt lứa bọ trĩ tuổi 1–2 bằng hoạt chất nhóm Spinosyns có PHI ngắn (3 ngày) trước đợt thu hoạch đầu tiên 14 . | 80 ml  cho 2.000 m² (Đúng định mức 0.4 lít/ha; pha 20 ml/bình 20 lít × 4 bình = 80 lít nước/2.000 m², tương đương 400 lít/ha) 14 | Lô: CTV-RAD-2509 – PXK-25-164 | PHI: 3 ngày  →  DÒNG THUỐC CUỐI TRƯỚC THU ĐỢT 1:  Không thu trước ngày  30/12/2025 2 | Thực hiện: N.V.An; KTV kiểm tra & Khóa PHI: Lê Minh
+26/12/2025
+Quả bắt đầu chín đỏ (72 NST)
+Kiểm tra sau phun 8 ngày: Tại khu vực cửa gió vẫn còn ấu trùng Bọ trĩ tuổi 1–2 mật độ 3–4 con/ngọn; cần xử lý lần 2 cách lần đầu 8 ngày và luân phiên nhóm cơ chế tác động chống kháng thuốc trước khi thu hoạch14.
+Radiant® 60SC (SĐK: 02/CNĐKT-BVTV – Corteva Agriscience)14
+Spinetoram 60 g/l (min 86.4% – Nhóm IRAC 5 – Spinosyns; Độ độc GHS 5) (Đã đổi từ nhóm IRAC 28 sang IRAC 5)14
+Diệt lứa bọ trĩ tuổi 1–2 bằng hoạt chất nhóm Spinosyns có PHI ngắn (3 ngày) trước đợt thu hoạch đầu tiên14.
+80 ml cho 2.000 m² (Đúng định mức 0.4 lít/ha; pha 20 ml/bình 20 lít × 4 bình = 80 lít nước/2.000 m², tương đương 400 lít/ha)14
+Lô: CTV-RAD-2509 – PXK-25-164
+PHI: 3 ngày → DÒNG THUỐC CUỐI TRƯỚC THU ĐỢT 1: Không thu trước ngày 30/12/20252
+Thực hiện: N.V.An; KTV kiểm tra & Khóa PHI: Lê Minh
+02/01/2026 | Trước thu hoạch Đợt 1 (79 NST) | Điều tra toàn vườn trước thu hoạch:  Không  phát hiện bọ trĩ sống trên hoa/đọt; quả chín đỏ đồng đều, không có vết bệnh thán thư 6 . | Không 2 | Không 2 | Kiểm tra điều kiện an toàn cách ly (đã qua 7 ngày kể từ ngày phun Radiant 60SC 26/12/2025, vượt chuẩn PHI 3 ngày).  KTV mở chốt lô thu hoạch 2 . | Không 2 | Biên bản rà soát trước thu hoạch BB-RS-01 | Đã hết hạn cách ly (Đủ điều kiện thu hoạch từ 30/12/2025) 2 | KTV xác nhận: Lê Minh
+02/01/2026
+Trước thu hoạch Đợt 1 (79 NST)
+Điều tra toàn vườn trước thu hoạch: Không phát hiện bọ trĩ sống trên hoa/đọt; quả chín đỏ đồng đều, không có vết bệnh thán thư6.
+Không2
+Không2
+Kiểm tra điều kiện an toàn cách ly (đã qua 7 ngày kể từ ngày phun Radiant 60SC 26/12/2025, vượt chuẩn PHI 3 ngày). KTV mở chốt lô thu hoạch2.
+Không2
+Biên bản rà soát trước thu hoạch BB-RS-01
+Đã hết hạn cách ly (Đủ điều kiện thu hoạch từ 30/12/2025)2
+KTV xác nhận: Lê Minh
+26/01/2026 | Giữa vụ thu hoạch – Sau thu Đợt 3 (103 NST) | Thời tiết khô hạn, phát hiện  Nhện đỏ  ( Tetranychus spp. ) bùng phát ở tầng lá giữa với mật độ  6–8 con/lá  (vượt ngưỡng đăng ký tối thiểu 5 con/lá) ngay sau khi vừa hái xong lứa quả chín Đợt 3 buổi sáng 26/01 47 . | Forbidmite 22.9SC  (SĐK: 9208/CNĐKT-BVTV – Forward Int.) 47 | Spiromesifen  22.9% w/w (Nhóm  IRAC 23  – Ức chế acetyl CoA carboxylase; Độ độc GHS 5) 47 | Đặc trị nhện đỏ mật độ ≥ 5 con/lá ngay sau khi thu Đợt 3 để bảo vệ bộ lá nuôi quả Đợt 4–6; tạm khóa thu hoạch toàn bộ Lô T01 trong ít nhất 7 ngày 47 . | 80 ml  cho 2.000 m² (Đúng định mức 400 ml/ha; pha 20 ml/bình 20 lít × 4 bình = 80 lít nước/2.000 m², tương đương 400 lít/ha phun kỹ mặt dưới lá) 47 | Lô: FWD-FBM-2601 – PXK-26-008 | PHI: 7 ngày  →  KHÓA LÔ T01:  Tuyệt đối không thu hoạch trước ngày  03/02/2026 2 | Thực hiện: N.V.An; KTV niêm phong PHI: Lê Minh
+26/01/2026
+Giữa vụ thu hoạch – Sau thu Đợt 3 (103 NST)
+Thời tiết khô hạn, phát hiện Nhện đỏ (Tetranychus spp.) bùng phát ở tầng lá giữa với mật độ 6–8 con/lá (vượt ngưỡng đăng ký tối thiểu 5 con/lá) ngay sau khi vừa hái xong lứa quả chín Đợt 3 buổi sáng 26/0147.
+Forbidmite 22.9SC (SĐK: 9208/CNĐKT-BVTV – Forward Int.)47
+Spiromesifen 22.9% w/w (Nhóm IRAC 23 – Ức chế acetyl CoA carboxylase; Độ độc GHS 5)47
+Đặc trị nhện đỏ mật độ ≥ 5 con/lá ngay sau khi thu Đợt 3 để bảo vệ bộ lá nuôi quả Đợt 4–6; tạm khóa thu hoạch toàn bộ Lô T01 trong ít nhất 7 ngày47.
+80 ml cho 2.000 m² (Đúng định mức 400 ml/ha; pha 20 ml/bình 20 lít × 4 bình = 80 lít nước/2.000 m², tương đương 400 lít/ha phun kỹ mặt dưới lá)47
+Lô: FWD-FBM-2601 – PXK-26-008
+PHI: 7 ngày → KHÓA LÔ T01: Tuyệt đối không thu hoạch trước ngày 03/02/20262
+Thực hiện: N.V.An; KTV niêm phong PHI: Lê Minh
+04/02/2026 – 25/02/2026 | Thu hoạch Đợt 4 đến Cuối vụ (112–133 NST) | Điều tra hàng tuần: Nhện đỏ đã giảm về dưới ngưỡng, nhện bắt mồi phục hồi ở tầng ngọn;  Không  phát hiện sâu bệnh vượt ngưỡng 6 . | Không 2 | Không 2 | Ngưng hoàn toàn thuốc BVTV hóa học cho đến khi kết thúc vụ thu hoạch 32 . | Không 2 | Không | Đã qua mốc 03/02/2026 → Thu hoạch an toàn các đợt cuối 2 | Thực hiện: N.V.An; KTV: Lê Minh
+04/02/2026 – 25/02/2026
+Thu hoạch Đợt 4 đến Cuối vụ (112–133 NST)
+Điều tra hàng tuần: Nhện đỏ đã giảm về dưới ngưỡng, nhện bắt mồi phục hồi ở tầng ngọn; Không phát hiện sâu bệnh vượt ngưỡng6.
+Không2
+Không2
+Ngưng hoàn toàn thuốc BVTV hóa học cho đến khi kết thúc vụ thu hoạch32.
+Không2
+Không
+Đã qua mốc 03/02/2026 → Thu hoạch an toàn các đợt cuối2
+Thực hiện: N.V.An; KTV: Lê Minh
+PHẦN IV: NHẬT KÝ THU HOẠCH THEO ĐỢT, PHIẾU CÂN SÂN KHO VÀ MÃ LÔ TRUY XUẤT
+Ớt chuông Bokken trong nhà màng cho thu hoạch rải vụ nhiều đợt khi quả chín đỏ tươi, thịt dày và giòn (trọng lượng quả ớt chuông công nghệ cao đạt trung bình 200–300 g/quả, năng suất trung bình khoảng 4–5 kg/cây/vụ)38. Theo nguyên tắc quản lý lô sản xuất, mỗi đợt hái trên thửa T01 của hộ H03 được cấp một Mã lô thu hoạch riêng biệt theo cấu trúc [Tiền tố vùng]-[Mã hộ]-[Thửa]-[Ngày hái YYMMDD]-[Đợt trong ngày] và phải được KTV đối chiếu ngày phun thuốc gần nhất trước khi cân hàng2:
+Đợt thu | Ngày thu hoạch | Ngày phun thuốc cuối & Hoạt chất gần nhất | Số ngày đã cách ly thực tế (So với PHI nhãn) | Sản lượng thương phẩm Loại 1 & 2 (kg) | Sản lượng loại bỏ / Quả lỗi (kg) | Mã lô thu hoạch (Ghi trên Phiếu cân & Thùng sọt) | Số Phiếu cân tại Sân kho HTX | Mã lô Thành phẩm tại Nhà đóng gói (Truy xuôi) | Chữ ký Hộ giao & Thủ kho nhận
+Đợt thu
+Ngày thu hoạch
+Ngày phun thuốc cuối & Hoạt chất gần nhất
+Số ngày đã cách ly thực tế (So với PHI nhãn)
+Sản lượng thương phẩm Loại 1 & 2 (kg)
+Sản lượng loại bỏ / Quả lỗi (kg)
+Mã lô thu hoạch (Ghi trên Phiếu cân & Thùng sọt)
+Số Phiếu cân tại Sân kho HTX
+Mã lô Thành phẩm tại Nhà đóng gói (Truy xuôi)
+Chữ ký Hộ giao & Thủ kho nhận
+Đợt 1 | 05/01/2026 | 26/12/2025 ( Spinetoram  – Radiant 60SC) | 10 ngày  (Đạt chuẩn > PHI 3 ngày) 14 | 2.450 kg | 45 kg (Tiêu hủy tại hố ủ) | LV-H03-T01-260105-1 | PC-260105-03 | PHC009-OTD-260105-A | Giao: N.V.An / Nhận: Trần Thị B
+Đợt 1
+05/01/2026
+26/12/2025 (Spinetoram – Radiant 60SC)
+10 ngày (Đạt chuẩn > PHI 3 ngày)14
+2.450 kg
+45 kg (Tiêu hủy tại hố ủ)
+LV-H03-T01-260105-1
+PC-260105-03
+PHC009-OTD-260105-A
+Giao: N.V.An / Nhận: Trần Thị B
+Đợt 2 | 15/01/2026 | 26/12/2025 ( Spinetoram  – Radiant 60SC) | 20 ngày  (Đạt chuẩn > PHI 3 ngày) | 3.620 kg | 60 kg | LV-H03-T01-260115-1 | PC-260115-07 | PHC009-OTD-260115-B | Giao: N.V.An / Nhận: Trần Thị B
+Đợt 2
+15/01/2026
+26/12/2025 (Spinetoram – Radiant 60SC)
+20 ngày (Đạt chuẩn > PHI 3 ngày)
+3.620 kg
+60 kg
+LV-H03-T01-260115-1
+PC-260115-07
+PHC009-OTD-260115-B
+Giao: N.V.An / Nhận: Trần Thị B
+Đợt 3 | 26/01/2026   (Buổi sáng) | 26/12/2025 ( Spinetoram  – Radiant 60SC) | 31 ngày  (Đạt chuẩn > PHI 3 ngày;  Hái xong buổi sáng, buổi chiều mới phun Forbidmite ) | 3.850 kg | 55 kg | LV-H03-T01-260126-1 | PC-260126-02 | PHC009-OTD-260126-A | Giao: N.V.An / Nhận: Trần Thị B
+Đợt 3
+26/01/2026 (Buổi sáng)
+26/12/2025 (Spinetoram – Radiant 60SC)
+31 ngày (Đạt chuẩn > PHI 3 ngày; Hái xong buổi sáng, buổi chiều mới phun Forbidmite)
+3.850 kg
+55 kg
+LV-H03-T01-260126-1
+PC-260126-02
+PHC009-OTD-260126-A
+Giao: N.V.An / Nhận: Trần Thị B
+Đợt 4 | 05/02/2026 | 26/01/2026 ( Spiromesifen  – Forbidmite 22.9SC) | 10 ngày  (Đạt chuẩn > PHI 7 ngày; đã qua mốc khóa 03/02/2026) 47 | 3.200 kg | 50 kg | LV-H03-T01-260205-1 | PC-260205-05 | PHC009-OTD-260205-C | Giao: N.V.An / Nhận: Trần Thị B
+Đợt 4
+05/02/2026
+26/01/2026 (Spiromesifen – Forbidmite 22.9SC)
+10 ngày (Đạt chuẩn > PHI 7 ngày; đã qua mốc khóa 03/02/2026)47
+3.200 kg
+50 kg
+LV-H03-T01-260205-1
+PC-260205-05
+PHC009-OTD-260205-C
+Giao: N.V.An / Nhận: Trần Thị B
+Đợt 5 | 15/02/2026 | 26/01/2026 ( Spiromesifen  – Forbidmite 22.9SC) | 20 ngày  (Đạt chuẩn > PHI 7 ngày) | 2.800 kg | 40 kg | LV-H03-T01-260215-1 | PC-260215-04 | PHC009-OTD-260215-A | Giao: N.V.An / Nhận: Trần Thị B
+Đợt 5
+15/02/2026
+26/01/2026 (Spiromesifen – Forbidmite 22.9SC)
+20 ngày (Đạt chuẩn > PHI 7 ngày)
+2.800 kg
+40 kg
+LV-H03-T01-260215-1
+PC-260215-04
+PHC009-OTD-260215-A
+Giao: N.V.An / Nhận: Trần Thị B
+Đợt 6   (Cuối vụ) | 25/02/2026 | 26/01/2026 ( Spiromesifen  – Forbidmite 22.9SC) | 30 ngày  (Đạt chuẩn > PHI 7 ngày) | 2.200 kg | 70 kg (Thu vét quả nhỏ cuối vụ) | LV-H03-T01-260225-1 | PC-260225-09 | PHC009-OTD-260225-B | Giao: N.V.An / Nhận: Trần Thị B
+Đợt 6 (Cuối vụ)
+25/02/2026
+26/01/2026 (Spiromesifen – Forbidmite 22.9SC)
+30 ngày (Đạt chuẩn > PHI 7 ngày)
+2.200 kg
+70 kg (Thu vét quả nhỏ cuối vụ)
+LV-H03-T01-260225-1
+PC-260225-09
+PHC009-OTD-260225-B
+Giao: N.V.An / Nhận: Trần Thị B
+TỔNG CỘNG | 6 đợt thu | 4 lần xử lý BVTV + 1 lần thả thiên địch | 100% các đợt tuân thủ tuyệt đối PHI | 18.120 kg   (Đạt 3.62 kg thương phẩm/cây) | 320 kg   (1.74% tổng lượng hái 18.440 kg) | 6 Mã lô thu hoạch độc lập | 6 Phiếu cân gốc lưu kèm sổ | 6 Lô thành phẩm xuất siêu thị/xuất khẩu | Đã khóa sổ ngày 26/02/2026
+TỔNG CỘNG
+6 đợt thu
+4 lần xử lý BVTV + 1 lần thả thiên địch
+100% các đợt tuân thủ tuyệt đối PHI
+18.120 kg (Đạt 3.62 kg thương phẩm/cây)
+320 kg (1.74% tổng lượng hái 18.440 kg)
+6 Mã lô thu hoạch độc lập
+6 Phiếu cân gốc lưu kèm sổ
+6 Lô thành phẩm xuất siêu thị/xuất khẩu
+Đã khóa sổ ngày 26/02/2026
+PHẦN V: BIÊN BẢN CỘNG SỔ CÂN BẰNG KHO VẬT TƯ VÀ KHÓA SỔ CUỐI VỤ (CHẶNG 4)
+Ngay khi kết thúc đợt thu hoạch thứ 6 (ngày 26/02/2026), Cán bộ Kiểm soát nội bộ (ICS) của HTX cùng chủ hộ Nguyễn Văn An thực hiện phép thử "Cộng sổ cân bằng kho" (Vật tư tồn đầu vụ + Vật tư nhận trong vụ − Vật tư đã ghi bón/phun = Vật tư còn tồn trong kho) để khóa sổ trước khi đưa vào lưu trữ 2 năm17:
+Tên vật tư nông nghiệp | Tồn đầu vụ tại hộ | Tổng lượng nhận theo Phiếu xuất kho HTX | Tổng lượng đã ghi sử dụng trong Nhật ký (Phần II & III) | Lượng tồn kho thực tế kiểm đếm cuối vụ | Kết luận đối chiếu của Kiểm soát viên nội bộ (ICS)
+Tên vật tư nông nghiệp
+Tồn đầu vụ tại hộ
+Tổng lượng nhận theo Phiếu xuất kho HTX
+Tổng lượng đã ghi sử dụng trong Nhật ký (Phần II & III)
+Lượng tồn kho thực tế kiểm đếm cuối vụ
+Kết luận đối chiếu của Kiểm soát viên nội bộ (ICS)
+YaraTera CALCINIT  (Bao 25 kg) | 0.00 kg | 3 bao × 25 kg =  75.00 kg | 18.75 + 8.80 + 12.40 + 18.00 =  57.95 kg | 17.05 kg  (Cân thực tế tại kệ phân còn 17.05 kg; lưu 3 vỏ bao lô YRC-250411) | Khớp 100%  giữa Sổ xuất kho HTX, Nhật ký hộ và Vỏ bao bì; chuyển tồn 17.05 kg sang đầu sổ vụ kế tiếp 4 .
+YaraTera CALCINIT (Bao 25 kg)
+0.00 kg
+3 bao × 25 kg = 75.00 kg
+18.75 + 8.80 + 12.40 + 18.00 = 57.95 kg
+17.05 kg (Cân thực tế tại kệ phân còn 17.05 kg; lưu 3 vỏ bao lô YRC-250411)
+Khớp 100% giữa Sổ xuất kho HTX, Nhật ký hộ và Vỏ bao bì; chuyển tồn 17.05 kg sang đầu sổ vụ kế tiếp4.
+NPK 17-9-27+TE  (Bao 25 kg) | 0.00 kg | 2.5 bao × 25 kg =  62.50 kg | 6.40 + 10.50 + 20.50 + 13.68 =  51.08 kg | 11.42 kg  (Cân thực tế tại kệ phân của hộ còn 11.42 kg) | Khớp thực tế  (Chuyển tồn 11.42 kg lô NPK-250815 sang đầu sổ vụ Xuân – Hè 2026) 17 .
+NPK 17-9-27+TE (Bao 25 kg)
+0.00 kg
+2.5 bao × 25 kg = 62.50 kg
+6.40 + 10.50 + 20.50 + 13.68 = 51.08 kg
+11.42 kg (Cân thực tế tại kệ phân của hộ còn 11.42 kg)
+Khớp thực tế (Chuyển tồn 11.42 kg lô NPK-250815 sang đầu sổ vụ Xuân – Hè 2026)17.
+Benevia® 100OD  (Chai 240 ml) | 0 ml | 1 chai =  240 ml | Phun ngày 18/12/2025:  200 ml | 40 ml  (Còn trong chai nguyên tem lô FMC-BNV-2507) | Khớp 100%  (Đã niêm phong 40 ml thuốc dư bàn giao về kho tập trung HTX bảo quản) 2 .
+Benevia® 100OD (Chai 240 ml)
+0 ml
+1 chai = 240 ml
+Phun ngày 18/12/2025: 200 ml
+40 ml (Còn trong chai nguyên tem lô FMC-BNV-2507)
+Khớp 100% (Đã niêm phong 40 ml thuốc dư bàn giao về kho tập trung HTX bảo quản)2.
+Radiant® 60SC  (Chai 100 ml) | 0 ml | 1 chai =  100 ml | Phun ngày 26/12/2025:  80 ml | 20 ml  (Còn trong chai nguyên tem lô CTV-RAD-2509) | Khớp 100%  (Bàn giao 20 ml thuốc dư về kho thuốc BVTV của HTX) 2 .
+Radiant® 60SC (Chai 100 ml)
+0 ml
+1 chai = 100 ml
+Phun ngày 26/12/2025: 80 ml
+20 ml (Còn trong chai nguyên tem lô CTV-RAD-2509)
+Khớp 100% (Bàn giao 20 ml thuốc dư về kho thuốc BVTV của HTX)2.
+Forbidmite 22.9SC  (Chai 100 ml) | 0 ml | 1 chai =  100 ml | Phun ngày 26/01/2026:  80 ml | 20 ml  (Còn trong chai nguyên tem lô FWD-FBM-2601) | Khớp 100% 17 .
+Forbidmite 22.9SC (Chai 100 ml)
+0 ml
+1 chai = 100 ml
+Phun ngày 26/01/2026: 80 ml
+20 ml (Còn trong chai nguyên tem lô FWD-FBM-2601)
+Khớp 100%17.
+5. Phương Pháp Quản Lý, Giám Sát Và Truy Xuất Nhật Ký Canh Tác Trong HTX
+Một cuốn nhật ký canh tác được ghi chép hoàn chỉnh ở cấp nông hộ vẫn có thể trở nên vô giá trị nếu HTX làm đứt mối nối dữ liệu ở khâu thu gom và đóng gói2. Theo Thông tư 02/2024/TT-BKHCN và thực hành quản trị chuỗi cung ứng nông sản, dữ liệu nhật ký đồng ruộng phải được kết nối xuyên suốt qua 5 mắt xích truy xuất nguồn gốc (Vùng trồng → Canh tác → Thu hoạch → Sơ chế, đóng gói → Lưu thông), đồng thời mang lại lợi ích vận hành rõ rệt khi được số hóa (theo số liệu công bố từ nhà cung cấp giải pháp NextFarm trên các dự án nông nghiệp số của Viettel và Ajinomoto)2.
+Để biến các cuốn sổ nhật ký của nông hộ thành hệ thống quản trị chuỗi cung ứng hoàn chỉnh, Ban giám đốc và bộ phận ICS của HTX phải thực thi 4 cơ chế quản lý trọng tâm sau đây:
+5.1. Quản lý phân biệt "3 chữ Lô" và Giữ mối nối tại 3 điểm nhạy cảm
+Trong hồ sơ của vùng trồng, HTX phải quy ước tách bạch 3 khái niệm "Lô" để không bị nhầm lẫn: (1) Lô đất (gọi thống nhất là "Thửa") — diện tích có ranh giới cố định qua nhiều vụ (ví dụ: thửa T3 của hộ H07); (2) Lô vật tư (gọi là "Số lô vật tư" – Lot/LSX) — mã số lô sản xuất do hãng in trên bao phân, chai thuốc; và (3) Lô hàng (gọi là "Mã lô") — lượng nông sản hái hoặc đóng gói trong cùng điều kiện (ví dụ: H07-T3-260915-1)2.
+Trong chuỗi 5 mắt xích truy xuất nguồn gốc, mối nối dữ liệu thường không bị đứt ở trên ruộng mà dễ bị đứt nhất tại 3 vị trí giao nhận vật lý: (1) Tại sân cân của kho (khi tổ thu mua chỉ ghi gộp "HTX A, 5 tấn" thay vì ghi từng dòng riêng cho từng hộ, từng thửa); (2) Tại khu chờ đóng gói trong kho (khi hàng của nhiều mã vùng trồng hoặc hàng mua gom ngoài vùng bị xếp lẫn lộn trên cùng một khu vực); và (3) Tại khâu in nhãn thùng (khi nhân viên in theo "mã quen" thay vì mã thực tế của lô hàng đang chạy trên chuyền)2. Để giữ chặt mối nối này, mỗi chuyến hàng từ HTX sang cơ sở đóng gói bắt buộc phải đi kèm Bộ giấy giao nhận 4 chứng từ: Phiếu giao nhận nguyên liệu (tách dòng từng hộ, thửa, số kg và có chữ ký hai bên), Bản xác nhận thời gian cách ly (trích xuất lần phun thuốc cuối từ nhật ký của từng hộ), Sổ tiếp nhận của kho (ghi vị trí pallet) và Phiếu đóng gói theo lô2.
+5.2. Quy tắc "Chốt lô trước khi hái" và Cô lập Lô hàng vi phạm PHI
+Trước mỗi đợt thu hoạch, Tổ trưởng HTX phải kiểm tra sổ nhật ký của từng hộ theo 3 tiêu chí: (1) mọi dòng phun thuốc đã ghi đủ tên hoạt chất chưa; (2) có hoạt chất nào nằm ngoài danh mục được phép của vùng không; và (3) mốc "Không thu trước ngày..." của lần phun cuối đã qua chưa2. Hộ nào chưa đạt cả 3 tiêu chí trên thì tuyệt đối chưa được mở phiếu thu hoạch để gom chung vào lô hàng của HTX2.
+Một quy tắc kỹ thuật sống còn mà HTX phải quán triệt là hàng lỡ hái khi chưa hết thời gian cách ly (PHI) tuyệt đối không được cất trong kho chờ đủ ngày để bán2. Thời gian cách ly được tính từ ngày phun thuốc cuối cùng đến ngày cắt quả rời khỏi cây; số ngày nông sản nằm trong kho sau thu hoạch không được cộng vào thời gian cách ly2. Nếu phát hiện một lô hàng hái sớm hoặc nghi ngờ có vấn đề về dư lượng, HTX phải lập tức chuyển lô hàng đó sang diện "Giữ lại / Cô lập" (xếp tách biệt hoàn toàn, không gộp chung với lô khác, ghi rõ lý do vào sổ lô và lập văn bản xử lý sau khi đối chiếu nhật ký và chứng từ vật tư)2.
+5.3. Quản trị Trần Sản lượng theo Mã số vùng trồng (PUC Quota)
+Nhằm ngăn chặn rủi ro thương lái hoặc hộ thành viên trà trộn nông sản mua từ ngoài vùng vào đóng gói dưới Mã số vùng trồng của HTX, bộ phận quản lý phải duy trì Sổ cộng dồn và trừ lùi sản lượng theo từng mã số vùng trồng ngay trong vụ2. Công thức kiểm soát được tính bằng cách lấy Sản lượng dự kiến đã kê khai trong hồ sơ vùng trồng trừ đi Tổng khối lượng đã giao nhận cộng dồn từ các phiếu cân2. Khi phần sản lượng hạn mức còn lại tiến gần về 0 mà vẫn có lệnh giao hàng tiếp tục dưới mã số đó, HTX và doanh nghiệp liên kết phải lập tức tạm dừng tiếp nhận để kiểm tra thực địa, bảo vệ mã số vùng trồng và mã số cơ sở đóng gói khỏi nguy cơ bị đình chỉ2.
+5.4. Chế độ Hậu kiểm, Tự giám sát và Lưu trữ Hồ sơ
+Theo quy định tại Nghị quyết 36/2026/NQ-CP và Điều 10 Nghị định 38/2026/NĐ-CP, đối với vùng trồng không xuất khẩu (Nhánh A), cơ quan chức năng cấp xã sẽ tiến hành hậu kiểm trong vòng tối đa 3 tháng kể từ khi cấp mã; về sau, chủ mã số vùng trồng có nghĩa vụ tự giám sát định kỳ trước mỗi vụ thu hoạch (tối thiểu 1 lần/vụ) và lưu giữ toàn bộ hồ sơ giám sát tại vùng trồng4. Tại kho vật tư của HTX và từng hộ, phân bón và thuốc BVTV phải được bố trí lưu trữ tách biệt với khu vực sản xuất, sơ chế và chứa rác thải theo Điều 4 TCVN 11892-1:2017 nhằm tránh ô nhiễm chéo và tránh để lẫn các vỏ chai thuốc cũ đã hết hạn hoặc ngoài danh mục4. Toàn bộ nhật ký canh tác, biên bản kiểm tra nội bộ, hóa đơn và vỏ bao/nhãn vật tư được lưu giữ tối thiểu 12 tháng theo chuẩn VietGAP và khuyến nghị lưu đủ 24 tháng (2 năm) theo chuẩn quản lý Mã số vùng trồng4.
+6. Tổ Chức Nhật Ký Canh Tác Trên Hệ Thống Phần Mềm: Chức Năng Và Thiết Kế Hiển Thị (UI/UX)
+Khi đưa quy trình quản lý nhật ký canh tác của HTX lên các hệ thống phần mềm chuyên dụng (điển hình tại Việt Nam như NextFarm, FaceFarm, VNPT Green, AutoAgri, BTrace kết hợp ứng dụng kế toán HTX WACA), toàn bộ cấu trúc sổ sách giấy được chuyển đổi thành cơ sở dữ liệu đám mây thời gian thực12. Theo số liệu thực tế do nhà cung cấp giải pháp NextFarm công bố, việc áp dụng nhật ký điện tử giúp tiết kiệm khoảng 40% thời gian ghi chép so với sổ giấy, giảm 30% chi phí giám sát (như dự án triển khai trên hơn 500 trang trại của Viettel) và rút ngắn thời gian tổng hợp, xuất báo cáo tuân thủ từ 3 ngày (72 giờ) xuống còn 4 giờ (như trường hợp áp dụng tại vùng nguyên liệu của Ajinomoto)12.
+6.1. Hệ thống phần mềm sẽ làm những chức năng gì?
+Trước khi lựa chọn hoặc thiết kế một phần mềm quản lý cho vùng trồng của HTX, nguyên tắc cốt lõi là phần mềm đó phải trả lời được chữ "Có" cho 2 câu hỏi kỹ thuật nền tảng: (1) Phần mềm có nhập được Thửa đất và Mã số vùng trồng làm gốc của lô sản xuất không? và (2) Phần mềm có ghi nhận được Số lô vật tư (Lot/LSX) theo từng lần bón phân, phun thuốc trên từng thửa đất không? (Nếu thiếu 1 trong 2 khả năng này, phần mềm đó chỉ là phần mềm kế toán bán hàng thông thường và HTX vẫn phải duy trì sổ lô song song)2. Một hệ thống phần mềm nhật ký canh tác chuẩn cho HTX thực hiện 8 chức năng nghiệp vụ theo quy trình 5 bước số hóa12:
+Số hóa Bản đồ Lô thửa bằng Công nghệ GIS / Google Maps: Khởi tạo toàn bộ khu vực thửa ruộng, nhà màng của các hộ xã viên thành các đa giác (polygons) trên nền bản đồ số GIS / Google Maps ngay từ đầu vụ12. Mỗi lô thửa được cấp một mã định danh riêng, gắn cố định với các thuộc tính nền (Chủ hộ, Diện tích, Loại đất/giá thể, Giống cây trồng, Mã số vùng trồng)12. Khi nông dân chọn mã lô để ghi nhật ký, toàn bộ dữ liệu tự động liên kết về đúng vị trí địa lý đó mà không cần nhập lại12.
+Phân quyền Truy cập Đa cấp (Role-Based Access Control): Thiết lập tài khoản theo đúng cấu trúc ICS của HTX: Ban Giám đốc (Quản lý) xem báo cáo tổng thể, bản đồ toàn vùng và phê duyệt; Kỹ thuật viên / Tổ trưởng lập kế hoạch mùa vụ, giao việc, giám sát cảnh báo dịch hại; Nông hộ / Công nhân chỉ thực hiện ghi nhận công việc hàng ngày trên thửa đất được phân quyền12.
+Tích hợp Danh mục Vật tư Chuẩn hóa & Tự động Điền Hoạt chất: Hệ thống nạp sẵn cơ sở dữ liệu phân bón và Danh mục thuốc BVTV được phép sử dụng tại Việt Nam65. Khi người dùng gõ tên thương mại của thuốc và chọn từ danh sách gợi ý, phần mềm tự động điền đầy đủ Tên hoạt chất, Mã đăng ký, Nhà sản xuất và Thời gian cách ly (PHI) theo chuẩn VietGAP mà nông dân không cần phải tự nhớ hay tra cứu thủ công, đồng thời liên kết với kho vật tư để chọn đúng Số lô sản xuất đã xuất cho hộ2.
+Nhập liệu Di động bằng Mã QR tại Lô & Hoạt động Ngoại tuyến (Offline Mode): Nông dân mở ứng dụng trên điện thoại thông minh hoặc quét nhanh mã QR dán tại đầu lô/nhà màng để ghi nhận tưới nước, bón phân, phun thuốc kèm chụp ảnh hoặc quay video thực tế tại vườn làm bằng chứng đối chiếu12. Toàn bộ tính năng ghi chép được thiết kế hoạt động Offline hoàn toàn khi vùng trồng mất sóng internet hoặc mất điện, sau đó tự động đồng bộ lên đám mây (Cloud) ngay khi có kết nối trở lại12.
+Tích hợp Thiết bị Cảm biến IoT, Camera AI 24/7 và Time-lapse: Hệ thống kết nối trực tiếp với các cảm biến môi trường tại nhà màng để tự động đo đạc và đẩy các thông số Độ ẩm đất/giá thể, Nhiệt độ, Độ pH, EC vào nhật ký, kết hợp Camera AI 24/7 giám sát bẫy côn trùng tự động và công nghệ chụp ảnh tua nhanh (Time-lapse) hoặc quét 360/3D nông trại (như trên AutoAgri và NextFarm) để lưu vết sinh trưởng khách quan12.
+Tự động Tính toán và Cảnh báo Thời gian Cách ly Thuốc BVTV (PHI Alert & Lockdown): Ngay sau khi ghi nhận ngày phun và loại thuốc BVTV, phần mềm tự động cộng số ngày PHI để xác định ngày hết hạn cách ly, khóa trạng thái thu hoạch của lô thửa đó trên hệ thống và gửi thông báo nhắc nhở trước 1–2 ngày khi sắp hết thời gian cách ly, loại bỏ hoàn toàn rủi ro thu hoạch sớm gây tồn dư hóa chất65.
+AI Hỗ trợ Lập Kế hoạch Canh tác & Nhắc việc qua Zalo: Sử dụng trí tuệ nhân tạo (AI) để gợi ý quy trình canh tác chuẩn cho từng loại cây và điều kiện thổ nhưỡng (giúp tiết kiệm thời gian lập kế hoạch cho kỹ thuật viên), sau đó tự động gửi lịch nhắc các hoạt động chăm sóc hàng ngày tới từng nông hộ qua Zalo để nông dân chỉ cần bấm xác nhận đã thực hiện12.
+Xuất Báo cáo VietGAP 1-Click, Tạo Tem QR Chuẩn GS1 & Liên thông Kế toán HTX: Toàn bộ dữ liệu lưu trữ an toàn trên đám mây từ 3–5 năm; khi có đoàn kiểm tra hoặc gửi hồ sơ cho siêu thị, quản lý HTX chỉ cần 1 cú nhấp chuột (1-click) để kết xuất file báo cáo chuẩn VietGAP/GlobalG.A.P. dưới dạng PDF/Excel có tích hợp sẵn Chữ ký số và mã QR12. Khi thu hoạch, hệ thống tự động sinh mã QR truy xuất nguồn gốc (hỗ trợ chuẩn quốc tế GS1 gồm mã GTIN, GLN, GS1 Digital Link và mã serial chống hàng giả như trên BTrace)64. Dữ liệu chi phí vật tư và thời gian làm việc từ nhật ký sản xuất (như trên FaceFarm) cũng kết nối với phần mềm kế toán HTX (như WACA) để tự động hạch toán thu chi, công nợ thành viên, xuất hóa đơn điện tử và chia lãi cuối vụ60.
+6.2. Hệ thống phần mềm sẽ hiển thị như thế nào? (Thiết kế Giao diện UI/UX theo 3 Góc nhìn)
+Trên thực tế triển khai, phần mềm nhật ký canh tác điện tử của HTX được thiết kế thành 3 giao diện hiển thị (Views) riêng biệt nhằm tối ưu hóa trải nghiệm cho từng đối tượng: (1) Web Dashboard & Bản đồ GIS cho Ban quản lý HTX; (2) Ứng dụng Mobile tối giản cho Nông hộ ngoài đồng ruộng; và (3) Trang Hộ chiếu Truy xuất Nguồn gốc khi Người tiêu dùng hoặc Siêu thị quét mã QR12. Bản mô phỏng giao diện tương tác dưới đây thể hiện trực quan cách sắp xếp bố cục, màu sắc cảnh báo và luồng dữ liệu trên cả 3 màn hình này:
+Cách thức tổ chức hiển thị cụ thể trên từng giao diện như sau:
+1. Giao diện Quản trị HTX trên Máy tính (Web GIS & ICS Command Dashboard)
+Giao diện dành cho Giám đốc HTX và Kỹ thuật viên được bố trí trên màn hình rộng (độ phân giải từ 1024 × 768 trở lên) với trung tâm là Bản đồ số GIS / Google Maps phân màu trực quan12:
+Hiển thị Bản đồ Lô thửa theo Mã màu Trạng thái: Toàn bộ các thửa đất của xã viên được hiển thị dưới dạng các ô đa giác trên nền ảnh vệ tinh và được phân chia thành các màu sắc khác nhau theo công việc, tiến độ, chi phí hoặc trạng thái an toàn60. Quản lý HTX chỉ cần nhìn vào bản đồ là biết ngay lô nào đang ở giai đoạn sinh trưởng nào, lô nào Màu Đỏ (vừa phun thuốc BVTV và đang bị khóa thu hoạch do chưa hết thời gian cách ly PHI), lô nào Màu Xanh lá (sắp đến ngày thu hoạch và đã qua hạn cách ly an toàn), và lô nào Màu Vàng (thành viên chưa ghi nhật ký đúng hạn hoặc có thông số bất thường) mà không cần phải đi hỏi từng hộ60.
+Bảng Chi tiết Lô & Thẻ Cảm biến IoT Thời gian thực: Khi nhấp chuột vào một lô trên bản đồ (ví dụ H03-T01), khung thông tin bên phải lập tức hiển thị thông số cảm biến IoT đang đo trực tiếp tại nhà màng đó (Độ ẩm đất/giá thể, Nhiệt độ, pH, EC), lịch sử các dòng nhật ký vừa cập nhật kèm hình ảnh chụp tại ruộng và biểu đồ thống kê sản lượng, lượng phân bón, nông dược đã dùng12.
+Khung Quản lý Tem và Kết xuất Báo cáo: Hiển thị thống kê số lượng tem truy xuất đã phát hành, trạng thái các lô hàng trong chuỗi cung ứng và các nút chức năng xuất nhanh báo cáo VietGAP (PDF/Excel có chữ ký số) chỉ bằng 1 thao tác click12.
+2. Giao diện Ứng dụng Di động dành cho Nông hộ (Mobile Field App)
+Giao diện trên điện thoại thông minh (Android/iOS) dành cho xã viên được thiết kế bằng tiếng Việt đơn giản, chữ to, ưu tiên các nút bấm chọn thay vì gõ văn bản để nông dân lớn tuổi cũng thao tác dễ dàng12:
+Luồng Nhắc việc Zalo & Quét QR Chọn Lô: Hàng ngày, nông dân nhận thông báo nhắc lịch công việc qua Zalo; khi ra tới nhà màng, nông dân chỉ cần dùng camera điện thoại quét mã QR dán tại đầu lô là màn hình tự động mở đúng trang nhật ký của lô đất đó12.
+Màn hình Nhập liệu Tự động Điền (Auto-fill) & Đính kèm Đa phương tiện: Trong màn hình ghi nhận công việc, khi nông dân chọn mục Phun thuốc và chọn tên thương phẩm từ danh mục gợi ý, giao diện tự động hiển thị ngay các ô Hoạt chất, Số đăng ký, Thời gian cách ly (PHI) và Ngày mở khóa thu hoạch đã được hệ thống điền sẵn65. Phía dưới là khung chụp ảnh/quay video trực tiếp tại vườn để lưu minh chứng và thanh trạng thái báo "Đã lưu Offline – Tự động đồng bộ khi có mạng"12.
+3. Giao diện Cổng Truy xuất Nguồn gốc khi Quét Mã QR (Consumer & Buyer Landing Page)
+Khi người tiêu dùng hoặc đối tác thu mua dùng camera điện thoại quét mã QR trên bao bì (hoặc nhập mã serial in trên tem trong trường hợp tem bị rách, mờ), màn hình điện thoại sẽ hiển thị một trang Hộ chiếu Nông sản Điện tử đáp ứng đầy đủ các chỉ tiêu dữ liệu bắt buộc tại Thông tư 02/2024/TT-BKHCN28:
+Thông tin Định danh & Xác thực Chống giả: Hiển thị tên sản phẩm, hình ảnh thực tế của sản phẩm, thương hiệu/nhãn hiệu, số sê-ri/mã truy xuất nguồn gốc duy nhất xác nhận hàng chính hãng, ngày thu hoạch/sản xuất và thời hạn sử dụng28.
+Thông tin Đơn vị Sản xuất & Chứng nhận: Hiển thị công khai tên và địa chỉ của HTX, hồ sơ nông hộ trực tiếp canh tác (mã hộ, vị trí thửa đất trên bản đồ), Mã số vùng trồng (PUC), cùng hình ảnh các tiêu chuẩn quốc gia/quốc tế áp dụng (VietGAP TCVN 11892-1:2017, GlobalG.A.P.)28.
+Dòng Thời gian Nhật ký Canh tác & Lộ trình Chuỗi cung ứng (Timeline): Hiển thị tuần tự từng công đoạn sản xuất – kinh doanh theo nguyên tắc "một bước trước – một bước sau", bao gồm Mã truy vết địa điểm, Mã truy vết sản phẩm và thời gian diễn ra sự kiện ở từng mắt xích: từ ngày gieo trồng, loại phân bón và biện pháp sinh học (thiên địch) đã sử dụng, lần phun thuốc BVTV cuối cùng (kèm xác nhận đã tuân thủ tuyệt đối thời gian cách ly an toàn trước khi hái), cho đến khâu thu mua, đóng gói, niêm phong và lộ trình vận chuyển tới điểm phân phối7.
+Nguồn trích dẫn
+TCCS 774:2020/BVTV - Cục trồng trọt và bảo vệ thực vật, https://sansangxuatkhau.ppd.gov.vn/FileUpload/Documents/210520__tccs_774_final_0001pdf.pdf
+Truy Xuất Nguồn Gốc Nông Sản: Mã Lô, Nhật Ký, Mã Vùng Trồng, https://ecolar.vn/blogs/ma-so-vung-trong/truy-xuat-nguon-goc-nong-san
+Quyết định ban hành quy trình sản xuất Ba_0001.pdf, https://sontaythuong.quangngai.gov.vn/upload/2007044/20260921/Quy%E1%BA%BFt%20%C4%91%E1%BB%8Bnh%20ban%20h%C3%A0nh%20quy%20tr%C3%ACnh%20s%E1%BA%A3n%20xu%E1%BA%A5t%20Ba_0001.pdf
+Tài Liệu Kiểm Soát Đầu Vào Nông Nghiệp, MSVT 2026 - Ecolar, https://ecolar.vn/blogs/ma-so-vung-trong/tai-lieu-kiem-soat-dau-vao-nong-nghiep
+Hướng dẫn áp dụng Tiêu chuẩn VietGAP trồng trọt | G-GLOBAL, https://chungnhanquocte.com/vietgap-trong-trot/
+Mẫu Nhật Ký Vùng Trồng: Thêm 3 Cột Mẫu Phụ Lục F Còn Thiếu, https://ecolar.vn/blogs/ma-so-vung-trong/mau-nhat-ky-vung-trong
+Thông tư 02/2024/TT-BKHCN quản lý truy xuất nguồn gốc sản phẩm, https://luatvietnam.vn/khoa-hoc/thong-tu-02-2024-tt-bkhcn-quan-ly-truy-xuat-nguon-goc-san-pham-hang-hoa-308660-d1.html
+Chính phủ vừa ban hành Nghị quyết số 36/2026/NQ-CP ngày 31/7, https://cumta.daklak.gov.vn/chinh-phu-vua-ban-hanh-nghi-quyet-so-36-2026-nq-cp-ngay-31-7-2026-quy-dinh-don-gian-hoa-thu-tuc-hanh-chinh-ve-cap-quan-ly-ma-so-vung-trong-ma-so-co-so-dong-goi-gop-phan-giam-thoi-gian-chi-phi-va-tao-t-6999.html
+Hồ Sơ Xin Cấp Mã Số Vùng Trồng: Quy Định Mới Nhất 2026 - Ecolar, https://ecolar.vn/blogs/ma-so-vung-trong/ho-so-xin-cap-ma-so-vung-trong
+Chuẩn Bị Tài Liệu Xin Mã Số Vùng Trồng: 4 Nhóm Lưu Tại Vùng, https://ecolar.vn/blogs/ma-so-vung-trong/chuan-bi-tai-lieu
+Kỹ thuật trồng ớt chuông trong nhà màng toàn diện 2026, https://mangphunhakinh.com/tin-tuc/ky-thuat-trong-ot-chuong-trong-nha-mang/
+Ghi nhật ký điện tử cho doanh nghiệp nông nghiệp chuyển đổi số, https://nextfarm.vn/ghi-nhat-ky-dien-tu-chuyen-doi-so-nn-quy-trinh-chuan
+Quy trình tưới phân Yara cho Ớt Chuông trồng trên đất, https://www.yara.vn/siteassets/vietnam/cay-trong/2025_qui-trinh-dinh-dng/2025_quy-trinh-yara_ot-chuong_updated.pdf?usp=sharing
+https://dulieuphapluat.vn/cong-cu/thuoc-bvtv-cho-cay/ot/bo-tri.html
+Cục trồng trọt và bảo vệ thực vật, https://www.ppd.gov.vn/FileUpload/Documents/P.%20Ke%20hoach/25.05.30_%20Thuyet%20minh%20DT%20TCVN%20VietGAPYeu%20cau%20chung.%206.5.2025.doc
+882379155 Checklist Đánh Giá Nội Bộ VietGAP, https://www.studocu.vn/vn/document/truong-dai-hoc-cong-nghiep-thanh-pho-ho-chi-minh/quan-tri-nguon-nhan-luc/882379155-checklist-danh-gia-noi-bo-vietgap-danh-gia-chat-luong/148680143
+https://ecolar.vn/blogs/ma-so-vung-trong/ghi-chep-su-dung-phan-bon
+Mẫu sổ nhật ký gieo trồng chuẩn VietGAP mới nhất - Q-CERT, https://qcert.vn/mau-so-nhat-ky-gieo-trong-chuan-vietgap/
+Tiêu chuẩn quốc gia TCVN 11041-2:2017 về Trồng trọt hữu cơ, https://thuvienphapluat.vn/TCVN/Nong-nghiep/TCVN-11041-2-2017-Nong-nghiep-huu-co-Phan-2-Trong-trot-huu-co-916993.aspx
+Bài viết - VNPT GREEN, https://vnptgreen.vn/blogs/12
+https://vncheck.com/uploads/static/TCVN-11041-2%202017.pdf
+Dự thảo Nghị định sửa đổi bổ sung Nghị định 38/2026/NĐ-CP về, https://luatvietnam.vn/nong-nghiep/du-thao-nghi-dinh-sua-doi-bo-sung-nghi-dinh-38-2026-nd-cp-ve-nhap-khau-cay-va-ma-so-vung-trong-447075-d10.html
+Phân biệt Tiêu chuẩn VietGap mới và Quy trình VietGap cũ, https://skhcn.laocai.gov.vn/khoa-hoc-va-doi-song/phan-biet-tieu-chuan-vietgap-moi-va-quy-trinh-vietgap-cu-686449
+SỔ TAY - Trung tâm Khuyến nông Lâm Đồng, https://khuyennong.lamdong.gov.vn/UpLoaded/files/2024/S%E1%BB%95%20tay%20VietGAP/S%E1%BB%94%20TAY%20VIETGAP%20A5.pdf
+Nguyên tắc 4 đúng của tiêu chuẩn VietGAP - KNA CERT, https://knacert.com.vn/tin-tuc-tieu-chuan/nguyen-tac-4-dung-cua-tieu-chuan-vietgap/
+Ghi Chép Thuốc BVTV Đúng Chuẩn Nhật Ký Mã Số Vùng Trồng, https://ecolar.vn/blogs/ma-so-vung-trong/ghi-chep-thuoc-bvtv
+Thông tư 02/2024/TT-BKHCN: quy định về quản lý truy xuất nguồn, https://vasep.com.vn/van-ban/cac-bo-khac/thong-tu-02-2024-tt-bkhcn-quy-dinh-ve-quan-ly-truy-xuat-nguon-goc-san-pham-hang-hoa-3120.html
+Thông tư 02/2024/TT-BKHCN của Bộ Khoa học và Công nghệ quy, https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/thong-tu-022024ttbkhcn-cua-bo-khoa-hoc-va-cong-nghe-quy-dinh-ve-truy-xuat-nguon-goc-san-pham-hang-h-147352.html
+ĐĂNG KÝ MÃ SỐ VÙNG TRỒNG NHƯ THẾ NÀO? - AHEAD, https://iso-ahead.vn/dang-ky-ma-so-vung-trong-nhu-the-nao
+TCCS MA SO VUNG TRONG Final 20210422085254209200 PDF, https://www.scribd.com/document/909265904/TCCS-MA-SO-VUNG-TRONG-final-20210422085254209200-pdf
+Trồng Ớt Chuông & Cà Chua Lâm Đồng Trong Nhà màn, https://stnnfulis.com/trong-nha-mang-trong-ot-chuong-ca-chua-lam-dong/
+Cách Ghi Nhật Ký Sản Xuất Theo 4 Chặng Của Vụ (2026) - Ecolar, https://ecolar.vn/blogs/ma-so-vung-trong/cach-ghi-nhat-ky-san-xuat
+Hồ Sơ Nhật Ký Sản Xuất: Lưu Giữ, Hậu Kiểm, Nhiều Hộ - Ecolar, https://ecolar.vn/blogs/ma-so-vung-trong/ho-so-nhat-ky-san-xuat
+Quy trình 1 số kỹ thuật trồng và chăm sóc cây ớt chuông ( ớt ngọt ), https://phvietnam.vn/ky-thuat-trong-va-cham-soc-cay-ot-chuong/
+Kỹ Thuật Trồng ớt Chuông Trên Giá Thể Sử Dụng Hệ Thống Tưới, https://nhabeagri.com/ky-thuat-trong-ot-chuong-tren-gia-the-su-dung-he-thong-tuoi-nho-giot/
+Kỹ thuật trồng ớt ngọt (Capsicum annum L.) theo hướng an toàn, https://www.favri.org.vn/index.php/vi/tin-tuc/thong-tin-khoa-hoc/257-k-thu-t-tr-ng-t-ng-t-capsicum-annum-l-theo-hu-ng-an-toan
+Kỹ thuật trồng và chăm sóc cây ớt ngọt, https://chicucttbvtv.ninhbinh.gov.vn/ky-thuat-trong-trot/ky-thuat-trong-va-cham-so-c-cay-o-t-ngo-t-197.html
+Giải pháp tăng năng suất và chất lượng ớt chuông của nông dân, https://dantri.com.vn/doi-song/giai-phap-tang-nang-suat-va-chat-luong-ot-chuong-cua-nong-dan-lam-dong-20240910134339677.htm
+Ớt chuông sạch sâu hại nhờ thả thiên địch, https://nongnghiepmoitruong.vn/ot-chuong-sach-sau-hai-nho-tha-thien-dich-d329592.html
+Bọ trĩ hại ớt và biện pháp quản lý - Hợp Trí Summit, https://www.hoptrisummit.com/demo-en/quy-trinh-giai-phap/cay-trong-khac/cay-ot/bo-tri-hai-ot-va-bien-phap-quan-ly
+Cách diệt rệp bọ trĩ nhện đỏ trên cây ớt | AI Hay - Hỏi ngay đáp hay, https://ai-hay.vn/cach-diet-rep-bo-tri-nhen-do-tren-cay-ot-pN1UmIcmN4m
+Mã Vùng Trồng Sầu Riêng: Có Mã Rồi, Cadimi Mới Là Cửa Hẹp, https://ecolar.vn/blogs/ma-so-vung-trong/ma-vung-trong-sau-rieng
+Thuốc trị thán thư trên ớt - Dữ Liệu Pháp Luật, https://dulieuphapluat.vn/cong-cu/thuoc-bvtv-cho-cay/ot/than-thu.html
+Áp dụng chuẩn VietGAP: Tuân thủ nguyên tắc 4 đúng, https://chungnhantoancau.vn/ap-dung-chuan-vietgap-tuan-thu-nguyen-tac-4-dung-de-kiem-soat-thuoc-bao-ve-thuc-vat
+Hồ sơ, thủ tục cấp mã số vùng trồng theo Nghị quyết 36/2026/NQ, https://luatvietnam.vn/linh-vuc-khac/ho-so-thu-tuc-cap-ma-so-vung-trong-theo-nghi-quyet-36-2026-nq-cp-duoc-quy-dinh-the-nao-883-113921-article.html
+Thông tư 03/2025/TT-BNNMT sửa đổi Thông tư 25/2024/TT-BNNPTNT, https://thuvienphapluat.vn/van-ban/Tai-nguyen-Moi-truong/Thong-tu-03-2025-TT-BNNMT-sua-doi-Thong-tu-25-2024-TT-BNNPTNT-657315.aspx
+Forbidmite 22.9SC - Thuốc trừ sâu - Dữ Liệu Pháp Luật, https://dulieuphapluat.vn/cong-cu/thuoc-bvtv/forbidmite-22-9sc.html
+Kelme 300SC — Thuốc trừ bệnh Boscalid, Kresoxim-methyl, https://dulieuphapluat.vn/cong-cu/thuoc-bvtv/kelme-300sc.html
+Phụ lục I DANH MỤC THUỐC BẢO VỆ THỰC VẬT ĐƯỢC PHÉP SỬ, https://datafiles.chinhphu.vn/cpp/files/vbpq/2025/12/75-bnnmt-pl1.pdf
+Metrobin 600WG — Thuốc trừ bệnh Pyraclostrobin, Metiram, https://dulieuphapluat.vn/cong-cu/thuoc-bvtv/metrobin-600wg.html
+Leti Star 1SL - Thuốc trừ bệnh - Dữ Liệu Pháp Luật, https://dulieuphapluat.vn/cong-cu/thuoc-bvtv/leti-star-1sl.html
+Nghị quyết 36/2026/NQ-CP đơn giản hóa thủ tục hành chính mã số, https://thuvienphapluat.vn/van-ban/Bo-may-hanh-chinh/Nghi-quyet-36-2026-NQ-CP-don-gian-hoa-thu-tuc-hanh-chinh-ma-so-vung-trong-717568.aspx
+SỔ TAY, https://apictt.tuyenquang.gov.vn/uploads/attachments/4-so-tay-tofcay-nhanvietgap.pdf
+Quy trình trồng ớt chuông theo phương pháp tưới nhỏ giọt, https://hachi.com.vn/quy-trinh-trong-ot-chuong-theo-phuong-phap-tuoi-nho-giot/
+Lâm Đồng: Trồng ớt chuông trong nhà kính, thả thêm con 8 ... - ETime, https://etime.danviet.vn/lam-dong-trong-ot-chuong-trong-nha-kinh-tha-them-con-8-chan-hieu-qua-bat-ngo-20210209210759821-d72638.html
+Sử dụng thiên địch để tiêu diệt sâu bệnh hại trên cây ớt chuông, https://lamdong.gov.vn/sites/snnptnt/tth/SitePages/Su-dung-thien-dich-de-tieu-diet-sau-benh-hai-tren-cay-ot-chuong.aspx
+Nuôi thiên địch, nông dân Lâm Đồng sống khỏe nhờ trồng ớt chuông, https://thanhnien.vn/cung-song-xanh-so-135-nuoi-thien-dich-nong-dan-lam-dong-song-khoe-nho-trong-ot-chuong-1852511281631222.htm
+Quy trình kỹ thuật trồng và chăm sóc cây hoàng anh, https://dulieuphapluat.vn/cong-cu/quy-trinh-canh-tac/quy-trinh-ky-thuat-trong-va-cham-soc-cay-hoang-anh.html
+TCCS 774:2020/BVTV-Quy trình thiết lập và giám sát vùng trồng, https://traceverified.com/tccs-7742020-bvtv-quy-trinh-thiet-lap-va-giam-sat-vung-trong/
+FaceFarm - Nhật ký sản xuất｜Trang chủ, https://facefarm.vn/
+Hướng dẫn sử dụng - VNPT GREEN, https://vnptgreen.vn/instructions
+AutoAgri – Nông nghiệp thông minh, https://autoagri.vn/
+Hệ thống kế toán Hợp tác xã, https://www.waca.vn/
+BTrace - Hệ thống Truy xuất Nguồn gốc Nông sản - Hemera Tech, https://hemeratech.vn/btrace/
+Nhật Ký Canh Tác Điện Tử: Thay Sổ Tay, Xuất VietGAP 1 Click, https://nextfarm.vn/nhat-ky-canh-tac-dien-tu

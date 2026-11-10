@@ -51,6 +51,20 @@ class CheckMinioStorageCommand extends Command
 
         try {
             $testDisk = Storage::disk('minio');
+
+            // Auto-create bucket if missing
+            try {
+                /** @var \Aws\S3\S3Client $client */
+                $client = $testDisk->getClient();
+                if (!$client->doesBucketExist($bucket)) {
+                    $this->line("• Bucket [{$bucket}] chưa tồn tại, đang tự động khởi tạo...");
+                    $client->createBucket(['Bucket' => $bucket]);
+                    $this->line("<fg=green>✓</> Đã tự động tạo bucket [{$bucket}] thành công.");
+                }
+            } catch (Throwable $bucketEx) {
+                // S3Client might throw or already exist, proceed to put test
+            }
+
             $pingFile = "healthcheck/ping_" . uniqid() . ".txt";
             $pingContent = "HTX_OCOP_MINIO_HEALTHCHECK_OK_" . now()->toIso8601String();
 

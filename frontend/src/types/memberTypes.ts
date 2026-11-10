@@ -70,6 +70,7 @@ export interface Member {
   cccd_issue_place: string; // Nơi cấp
   education_level: string; // Chưa xác định / THPT / Đại học...
   occupation: string; // Nông dân / Kỹ sư nông nghiệp...
+  ethnicity?: string; // Dân tộc (Kinh, Tày, Nùng, Dao,...)
 
   // 2. Thông tin liên hệ & Địa chỉ
   province: string;
@@ -117,6 +118,10 @@ export interface Member {
   notary_document_url?: string;
   deleted_at?: string; // For Soft Delete
   deleted_reason?: string; // Lý do chấm dứt tư cách
+  cooperative_name?: string;
+  main_product?: string;
+  farming_method?: string;
+  phi_status?: string;
 }
 
 export interface CapitalTransaction {

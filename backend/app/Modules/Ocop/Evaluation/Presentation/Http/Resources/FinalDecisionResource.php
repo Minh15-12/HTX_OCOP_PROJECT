@@ -33,13 +33,19 @@ class FinalDecisionResource extends JsonResource
             default => 0,
         };
 
+        $issuer = $this->authority_reference['issuer'] ?? '';
+        $level = $this->authority_reference['level'] ?? (
+            str_contains(mb_strtolower($issuer), 'huyện') ? 'DISTRICT' :
+            (str_contains(mb_strtolower($issuer), 'tỉnh') ? 'PROVINCIAL' : 'CENTRAL')
+        );
+
         return [
             'id' => $this->id,
             'application_id' => $this->application_id,
             'application_code' => $application?->application_code ?? 'OCOP-' . substr($this->application_id, 0, 8),
             'product_name' => $product?->product_name ?? 'Ớt chuông Sweet Palermo Đỏ Đà Lạt',
             'cooperative_name' => $cooperative?->legal_name ?? 'HTX Nông Nghiệp Tân Tiến',
-            'council_level' => $this->authority_reference['level'] ?? 'PROVINCIAL',
+            'council_level' => $level,
             'star_rating' => $starRating,
             'decision_number' => $this->decision_number,
             'decision_date' => $this->decision_date?->format('Y-m-d'),

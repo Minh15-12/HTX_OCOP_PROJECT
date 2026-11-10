@@ -1,12 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, HelpCircle, LogOut, ChevronDown, Calendar, Check, ArrowRight, Wallet, FileText, Sprout, Users, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Search, Bell, HelpCircle, LogOut, ChevronDown, Calendar, Check, ArrowRight, Wallet, FileText, Sprout, Users, AlertCircle, KeyRound } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { notificationService } from '@/services/notificationService';
 import { useTaskNotificationStore } from '@/stores/taskNotificationStore';
+import { useCropSeasonContextStore } from '@/stores/cropSeasonContextStore';
+import { CommandPaletteModal } from './CommandPaletteModal';
+import { ChangePasswordModal } from '@/features/auth/components/ChangePasswordModal';
 import { useNavigate } from 'react-router-dom';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { selectedSeasonId, setSelectedSeasonId } = useCropSeasonContextStore();
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const {
     tasks,
     pendingTasks,
@@ -16,28 +23,90 @@ export const Header: React.FC = () => {
     markAllAsRead,
   } = useTaskNotificationStore();
 
+  const queryClient = useQueryClient();
+  const { data: serverNotifs } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationService.getNotifications(20),
+  });
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'tasks' | 'notifs'>('all');
-  const [selectedSeason, setSelectedSeason] = useState('dx2025');
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const notificationRef = useRef<HTMLDivElement>(null);
+  const displayRole = useMemo(() => {
+    const r = user?.roles?.[0];
+    if (!r) return 'Quản trị viên';
+    if (typeof r === 'string') {
+      const roleMap: Record<string, string> = {
+        'SYSTEM_ADMIN': 'Quản trị hệ thống',
+        'HTX_OWNER': 'Chủ tịch HTX',
+        'HTX_STAFF': 'Nhân viên HTX',
+        'HTX_MEMBER': 'Xã viên HTX',
+        'AGRICULTURE_OFFICER': 'Cán bộ kỹ thuật',
+        'STOREKEEPER': 'Thủ kho HTX',
+        'ACCOUNTANT': 'Kế toán HTX',
+      };
+      return roleMap[r] || r;
+    }
+    return (r as any).display_name || (r as any).name || 'Quản trị viên';
+  }, [user]);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
-        setNotificationOpen(false);
-      }
+  const serverNotificationItems = (serverNotifs?.data || []).map((sn) => {
+    let icon = <Bell className="w-4 h-4 text-blue-500" />;
+    let iconBg = 'bg-blue-50';
+    let badge = 'Hệ thống';
+    let badgeClass = 'bg-blue-100 text-blue-800';
+    let link = '/dashboard';
+
+    const typeStr = (sn.type || '').toLowerCase();
+    if (typeStr.includes('stock') || typeStr.includes('inventory')) {
+      icon = <AlertCircle className="w-4 h-4 text-amber-600" />;
+      iconBg = 'bg-amber-50';
+      badge = 'Kho vật tư';
+      badgeClass = 'bg-amber-100 text-amber-800';
+      link = '/inventory/materials';
+    } else if (typeStr.includes('ocop') || typeStr.includes('certificate')) {
+      icon = <FileText className="w-4 h-4 text-purple-600" />;
+      iconBg = 'bg-purple-50';
+      badge = 'Hạn OCOP';
+      badgeClass = 'bg-purple-100 text-purple-800';
+      link = '/ocop/dossiers';
+    } else if (typeStr.includes('capital') || typeStr.includes('finance')) {
+      icon = <Wallet className="w-4 h-4 text-rose-600" />;
+      iconBg = 'bg-rose-50';
+      badge = 'Vốn góp';
+      badgeClass = 'bg-rose-100 text-rose-800';
+      link = '/members';
+    } else if (typeStr.includes('security') || typeStr.includes('audit')) {
+      icon = <AlertCircle className="w-4 h-4 text-rose-600" />;
+      iconBg = 'bg-rose-50';
+      badge = 'Cảnh báo';
+      badgeClass = 'bg-rose-100 text-rose-800';
+      link = '/audit';
+    }
+
+    const timeAgo = sn.created_at
+      ? new Date(sn.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date(sn.created_at).toLocaleDateString('vi-VN')
+      : 'Vừa xong';
+
+    return {
+      id: sn.id,
+      title: sn.title,
+      desc: sn.message,
+      time: timeAgo,
+      type: 'notifs' as const,
+      badge,
+      badgeClass,
+      icon,
+      iconBg,
+      link,
+      status: (sn.read ? 'COMPLETED' : 'PENDING') as 'PENDING' | 'COMPLETED',
+      isServer: true,
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  });
 
-  const notifications = tasks.map((t) => {
+  const localNotifications = tasks.map((t) => {
     let icon = <FileText className="w-4 h-4 text-blue-500" />;
     let iconBg = 'bg-blue-50';
     if (t.category === 'FINANCE') {
@@ -59,7 +128,7 @@ export const Header: React.FC = () => {
       title: t.title,
       desc: t.description,
       time: t.timeAgo,
-      type: t.priority === 'INFO' ? 'notifs' : 'tasks',
+      type: (t.priority === 'INFO' ? 'notifs' : 'tasks') as 'tasks' | 'notifs',
       badge: t.priorityLabel,
       badgeClass:
         t.priority === 'CRITICAL'
@@ -70,27 +139,97 @@ export const Header: React.FC = () => {
       icon,
       iconBg,
       link: t.link,
-      status: t.status,
+      status: (t.status === 'COMPLETED' ? 'COMPLETED' : 'PENDING') as 'PENDING' | 'COMPLETED',
+      isServer: false,
     };
   });
 
-  const filteredNotifs = notifications.filter((n) => {
+  const allNotifications = [...serverNotificationItems, ...localNotifications];
+  const totalPending = allNotifications.filter((n) => n.status === 'PENDING').length;
+  const totalTasks = allNotifications.filter((n) => n.type === 'tasks' && n.status === 'PENDING').length;
+  const totalCompleted = allNotifications.filter((n) => n.status === 'COMPLETED').length;
+
+  const liveUnreadCount = (serverNotifs?.unread_count ?? 0) + pendingCount;
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setNotificationOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredNotifs = allNotifications.filter((n) => {
     if (activeTab === 'tasks') return n.type === 'tasks' && n.status === 'PENDING';
-    if (activeTab === 'notifs') return n.type === 'notifs';
+    if (activeTab === 'notifs') return n.status === 'COMPLETED';
     return n.status === 'PENDING';
   });
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    } catch {
+      // Ignore
+    }
+    markAllAsRead();
+  };
+
+  const handleItemClick = async (item: (typeof allNotifications)[0]) => {
+    if (item.isServer) {
+      try {
+        await notificationService.markAsRead(item.id);
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      } catch (e) {
+        console.error('Error marking server notification as read:', e);
+      }
+    } else {
+      completeTask(item.id, 'Đã mở xem từ thông báo nhanh Header.');
+    }
+    setNotificationOpen(false);
+    navigate(item.link);
+  };
+
+  const handleCompleteItem = async (e: React.MouseEvent, item: (typeof allNotifications)[0]) => {
+    e.stopPropagation();
+    if (item.isServer) {
+      try {
+        await notificationService.markAsRead(item.id);
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      } catch (e) {
+        console.error('Error marking server notification as read:', e);
+      }
+    } else {
+      completeTask(item.id, 'Đã hoàn thành từ thông báo nhanh Header.');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 h-14 w-full bg-white border-b border-[#e7e9ec] px-4 sm:px-6 flex items-center justify-between">
       {/* Search Bar */}
       <div className="flex items-center gap-3 flex-1 max-w-md">
-        <div className="relative w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div
+          onClick={() => setIsSearchModalOpen(true)}
+          className="relative w-full cursor-pointer group"
+        >
+          <Search className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Tìm kiếm xã viên, vùng trồng, sản phẩm, hồ sơ OCOP..."
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[12.8px] text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white transition-all"
+            readOnly
+            placeholder="Tìm kiếm nhanh xã viên, vùng trồng, OCOP... (Ctrl + K)"
+            className="w-full pl-9 pr-14 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[12.8px] text-slate-700 placeholder-slate-400 group-hover:border-emerald-400 group-hover:bg-white focus:outline-none cursor-pointer transition-all"
           />
+          <kbd className="hidden sm:inline-block absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-2xs">
+            Ctrl K
+          </kbd>
         </div>
       </div>
 
@@ -100,8 +239,8 @@ export const Header: React.FC = () => {
         <div className="hidden lg:flex items-center gap-2 bg-emerald-50/60 border border-emerald-200/80 rounded-lg px-2.5 py-1">
           <Calendar className="w-4 h-4 text-emerald-700 shrink-0" />
           <select
-            value={selectedSeason}
-            onChange={(e) => setSelectedSeason(e.target.value)}
+            value={selectedSeasonId}
+            onChange={(e) => setSelectedSeasonId(e.target.value)}
             className="bg-transparent border-none text-[12.5px] font-semibold text-emerald-900 focus:outline-none cursor-pointer p-0"
           >
             <option value="dx2025">Mùa vụ: Đông Xuân 2025–2026 (Đang diễn ra)</option>
@@ -121,9 +260,9 @@ export const Header: React.FC = () => {
             title="Thông báo hệ thống & Nhắc việc"
           >
             <Bell className="w-4.5 h-4.5" />
-            {pendingCount > 0 && (
+            {liveUnreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-rose-600 text-white font-extrabold text-[9.5px] rounded-full px-1.5 py-0.2 min-w-[16px] text-center leading-normal shadow-xs animate-pulse">
-                {pendingCount}
+                {liveUnreadCount}
               </span>
             )}
           </button>
@@ -136,14 +275,14 @@ export const Header: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-slate-700" />
                   <h3 className="font-extrabold text-[13.5px] text-slate-900">Thông báo & Nhắc việc</h3>
-                  {pendingCount > 0 && (
+                  {liveUnreadCount > 0 && (
                     <span className="bg-rose-600 text-white font-extrabold text-[10px] px-1.5 py-0.5 rounded-full">
-                      {pendingCount}
+                      {liveUnreadCount}
                     </span>
                   )}
                 </div>
                 <button
-                  onClick={() => markAllAsRead()}
+                  onClick={handleMarkAllRead}
                   className="text-[11.5px] text-blue-600 hover:underline font-semibold cursor-pointer"
                 >
                   Đánh dấu tất cả đã đọc
@@ -158,7 +297,7 @@ export const Header: React.FC = () => {
                     activeTab === 'all' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Cần xử lý ({pendingCount})
+                  Cần xử lý ({totalPending})
                 </button>
                 <button
                   onClick={() => setActiveTab('tasks')}
@@ -166,7 +305,7 @@ export const Header: React.FC = () => {
                     activeTab === 'tasks' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Tác vụ ({pendingTasks.filter(t => t.priority === 'CRITICAL' || t.priority === 'HIGH').length})
+                  Tác vụ ({totalTasks})
                 </button>
                 <button
                   onClick={() => setActiveTab('notifs')}
@@ -174,7 +313,7 @@ export const Header: React.FC = () => {
                     activeTab === 'notifs' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Đã xong ({completedTasks.length})
+                  Đã xong ({totalCompleted})
                 </button>
               </div>
 
@@ -190,10 +329,7 @@ export const Header: React.FC = () => {
                   filteredNotifs.map((item) => (
                     <div
                       key={item.id}
-                      onClick={() => {
-                        setNotificationOpen(false);
-                        navigate(item.link);
-                      }}
+                      onClick={() => handleItemClick(item)}
                       className="p-3 hover:bg-slate-50 transition-colors flex items-start gap-2.5 cursor-pointer group"
                     >
                       <div className={`w-8 h-8 rounded-full ${item.iconBg} flex items-center justify-center shrink-0 mt-0.5`}>
@@ -215,17 +351,16 @@ export const Header: React.FC = () => {
                           <span className="text-[10px] text-slate-400 font-medium">
                             {item.time}
                           </span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              completeTask(item.id, 'Đã hoàn thành từ thông báo nhanh Header.');
-                            }}
-                            className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[10px] rounded-md transition-colors cursor-pointer"
-                            title="Đánh dấu hoàn thành việc này"
-                          >
-                            Xong ✓
-                          </button>
+                          {item.status !== 'COMPLETED' && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleCompleteItem(e, item)}
+                              className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[10px] rounded-md transition-colors cursor-pointer"
+                              title="Đánh dấu hoàn thành việc này"
+                            >
+                              Xong ✓
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -268,7 +403,7 @@ export const Header: React.FC = () => {
             </div>
             <div className="hidden sm:block leading-tight">
               <p className="text-[12.8px] font-bold text-slate-900">{user?.full_name || 'Nguyễn Văn A'}</p>
-              <p className="text-[11px] text-slate-500">{user?.roles?.[0]?.display_name || 'Quản trị viên'}</p>
+              <p className="text-[11px] text-slate-500">{displayRole}</p>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </button>
@@ -280,6 +415,16 @@ export const Header: React.FC = () => {
                 <p className="text-[13px] font-bold text-slate-900">{user?.full_name || 'Nguyễn Văn A'}</p>
                 <p className="text-[11px] text-slate-500 truncate">{user?.email || 'admin@htx.vn'}</p>
               </div>
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  setChangePasswordOpen(true);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2 text-[12.5px] font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100"
+              >
+                <KeyRound className="w-4 h-4 text-slate-500" />
+                <span>Đổi mật khẩu</span>
+              </button>
               <button
                 onClick={() => {
                   logout();
@@ -294,6 +439,16 @@ export const Header: React.FC = () => {
           )}
         </div>
       </div>
+
+      <CommandPaletteModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+      />
+
+      <ChangePasswordModal
+        isOpen={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </header>
   );
 };

@@ -261,3 +261,165 @@ export const exportMembersToExcel = (
   XLSX.writeFile(wb, fileName);
 };
 
+export const exportCropSeasonsToExcel = (
+  seasons: any[],
+  fileName = 'Ke_Hoach_Mua_Vu_HTX.xlsx'
+) => {
+  const wb = XLSX.utils.book_new();
+
+  const headers = [
+    'STT',
+    'Tên mùa vụ',
+    'Cây trồng',
+    'Mã vùng sản xuất',
+    'Tên vùng sản xuất',
+    'Trần sản lượng PUC (kg)',
+    'Nguồn giống F1',
+    'Ngày bắt đầu',
+    'Ngày dự kiến kết thúc',
+    'Ngày kết thúc thực tế',
+    'Trạng thái mùa vụ',
+    'Trạng thái sổ nhật ký',
+  ];
+
+  const rows = seasons.map((s, idx) => {
+    const statusText =
+      s.status === 'PLANNED'
+        ? 'Chưa bắt đầu'
+        : s.status === 'ACTIVE'
+        ? 'Đang diễn ra'
+        : s.status === 'HARVESTING'
+        ? 'Đang thu hoạch'
+        : s.status === 'COMPLETED'
+        ? 'Đã kết thúc'
+        : s.status || '';
+
+    const logbookStatusText =
+      s.logbook_status === 'FROZEN_ARCHIVED' ? 'Đã khóa sổ (Merkle)' : 'Đang mở ghi chép';
+
+    return [
+      idx + 1,
+      s.name || '',
+      s.crop || '',
+      s.unit_code || '',
+      s.unit_name || '',
+      Number(s.puc_quota_kg || 0),
+      s.seed_supplier || '',
+      s.start_date ? s.start_date.slice(0, 10) : '',
+      s.expected_end_date ? s.expected_end_date.slice(0, 10) : '',
+      s.actual_end_date ? s.actual_end_date.slice(0, 10) : '',
+      statusText,
+      logbookStatusText,
+    ];
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  ws['!cols'] = [
+    { wch: 6 },  // STT
+    { wch: 28 }, // Tên mùa vụ
+    { wch: 18 }, // Cây trồng
+    { wch: 18 }, // Mã vùng
+    { wch: 25 }, // Tên vùng
+    { wch: 22 }, // Trần PUC
+    { wch: 24 }, // Nguồn giống
+    { wch: 14 }, // Ngày bắt đầu
+    { wch: 16 }, // Ngày kết thúc DK
+    { wch: 16 }, // Ngày kết thúc TT
+    { wch: 18 }, // Trạng thái vụ
+    { wch: 22 }, // Trạng thái sổ
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Ke_Hoach_Mua_Vu');
+  XLSX.writeFile(wb, fileName);
+};
+
+export const exportSeasonBomToExcel = (
+  season: any,
+  boms: any[],
+  fileName = `Du_Toan_Vat_Tu_BOM_${season?.name ? season.name.replace(/\s+/g, '_') : 'Mua_Vu'}.xlsx`
+) => {
+  const wb = XLSX.utils.book_new();
+
+  const phaseNames: Record<string, string> = {
+    GENERAL: 'Toàn vụ',
+    SEEDLING: 'Ươm & Bén rễ',
+    VEGETATIVE: 'Sinh dưỡng thân lá',
+    FLOWERING: 'Ra hoa & Đậu quả',
+    FRUITING: 'Nuôi quả & Thu hoạch',
+  };
+
+  const headers = [
+    'STT',
+    'Tên vật tư',
+    'Mã SKU',
+    'Đơn vị tính',
+    'Giai đoạn sinh trưởng',
+    'Định mức / m²',
+    'Số lượng kế hoạch',
+    'Số lượng đã xuất kho',
+    'Đơn giá dự kiến (VNĐ)',
+    'Thành tiền dự toán (VNĐ)',
+    'Ghi chú kỹ thuật',
+  ];
+
+  let totalPlannedCost = 0;
+  const rows = boms.map((b, idx) => {
+    const cost = Number(b.estimated_total_cost || (Number(b.planned_quantity || 0) * Number(b.estimated_unit_price || 0)));
+    totalPlannedCost += cost;
+
+    return [
+      idx + 1,
+      b.material_name || '',
+      b.sku || '',
+      b.unit || '',
+      phaseNames[b.stage_phase] || b.stage_phase || 'Toàn vụ',
+      Number(b.standard_rate_per_sqm || 0),
+      Number(b.planned_quantity || 0),
+      Number(b.issued_quantity || 0),
+      Number(b.estimated_unit_price || 0),
+      cost,
+      b.notes || '',
+    ];
+  });
+
+  // Summary row
+  rows.push([
+    '',
+    'TỔNG CỘNG NGÂN SÁCH DỰ TOÁN',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    totalPlannedCost,
+    '',
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet([
+    [`DỰ TOÁN ĐỊNH MỨC VẬT TƯ ĐẦU VÀO (BOM) - ${season?.name || ''}`],
+    [`Cây trồng: ${season?.crop || '—'} | Vùng sản xuất: ${season?.unit_name || season?.unit_code || '—'}`],
+    [''],
+    headers,
+    ...rows,
+  ]);
+
+  ws['!cols'] = [
+    { wch: 6 },  // STT
+    { wch: 28 }, // Tên vật tư
+    { wch: 16 }, // SKU
+    { wch: 12 }, // ĐVT
+    { wch: 22 }, // Giai đoạn
+    { wch: 15 }, // Định mức/m2
+    { wch: 18 }, // SL kế hoạch
+    { wch: 18 }, // SL đã xuất
+    { wch: 20 }, // Đơn giá
+    { wch: 22 }, // Thành tiền
+    { wch: 30 }, // Ghi chú
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Du_Toan_BOM');
+  XLSX.writeFile(wb, fileName);
+};
+

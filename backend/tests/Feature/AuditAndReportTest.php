@@ -280,4 +280,68 @@ class AuditAndReportTest extends TestCase
             'action' => 'CERTIFICATE_GENERATED',
         ]);
     }
+
+    public function test_export_receivables_payables_xlsx(): void
+    {
+        $auth = $this->createAuthUser();
+
+        $response = $this->withHeaders($auth['headers'])
+            ->get('/api/v1/reports/export/receivables-payables');
+
+        $response->assertStatus(200);
+        $this->assertStringContainsString('attachment;', $response->headers->get('content-disposition'));
+        $this->assertStringContainsString('so_cong_no_', $response->headers->get('content-disposition'));
+        $this->assertStringContainsString('.xlsx', $response->headers->get('content-disposition'));
+    }
+
+    public function test_export_inventory_stock_xlsx(): void
+    {
+        $auth = $this->createAuthUser();
+
+        $response = $this->withHeaders($auth['headers'])
+            ->get('/api/v1/reports/export/inventory-stock');
+
+        $response->assertStatus(200);
+        $this->assertStringContainsString('attachment;', $response->headers->get('content-disposition'));
+        $this->assertStringContainsString('ton_kho_vat_tu_', $response->headers->get('content-disposition'));
+        $this->assertStringContainsString('.xlsx', $response->headers->get('content-disposition'));
+    }
+
+    public function test_export_farming_logs_xlsx(): void
+    {
+        $auth = $this->createAuthUser();
+
+        $response = $this->withHeaders($auth['headers'])
+            ->get('/api/v1/reports/export/farming-logs');
+
+        $response->assertStatus(200);
+        $this->assertStringContainsString('attachment;', $response->headers->get('content-disposition'));
+        $this->assertStringContainsString('nhat_ky_canh_tac_vietgap_', $response->headers->get('content-disposition'));
+        $this->assertStringContainsString('.xlsx', $response->headers->get('content-disposition'));
+    }
+
+    public function test_verify_hash_chain_endpoint(): void
+    {
+        $auth = $this->createAuthUser();
+
+        $response = $this->withHeaders($auth['headers'])
+            ->get('/api/v1/audit-logs/verify/hash-chain');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'success',
+            'data' => [
+                'is_valid',
+                'integrity_score',
+                'total_blocks_checked',
+                'verified_continuous_blocks',
+                'anomaly_count',
+                'latest_block_hash',
+                'algorithm',
+                'verified_at',
+            ],
+            'message',
+        ]);
+        $this->assertEquals('SHA-256 Tamper-Evident Chaining', $response->json('data.algorithm'));
+    }
 }

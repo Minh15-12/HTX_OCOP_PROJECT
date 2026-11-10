@@ -53,4 +53,18 @@ class AuthController extends BaseController
             message: 'Đăng xuất thành công'
         );
     }
+
+    public function changePassword(\Modules\Identity\Presentation\Http\Requests\ChangePasswordRequest $request): JsonResponse
+    {
+        $this->authService->changePassword(
+            user: $request->user(),
+            currentPassword: $request->input('current_password'),
+            newPassword: $request->input('new_password')
+        );
+
+        return ApiResponse::success(
+            data: null,
+            message: 'Đổi mật khẩu thành công'
+        );
+    }
 }

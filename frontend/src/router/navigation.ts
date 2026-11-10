@@ -20,6 +20,8 @@ import {
   Coins,
   Settings,
   CheckSquare,
+  Vote,
+  Smartphone,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -31,7 +33,36 @@ export interface NavItem {
     color: 'green' | 'amber' | 'red' | 'blue';
   };
   roles?: string[];
+  hidden?: boolean;
+  isOutOfScope?: boolean;
 }
+
+/**
+ * ============================================================================
+ * QUY TẮC QUẢN LÝ PHẠM VI HỆ THỐNG HTX-OCOP (SCOPE BOUNDARY RULE)
+ * ============================================================================
+ * Căn cứ Quyết định 148/QĐ-TTg, QĐ 1489/QĐ-TTg và Luật HTX 2023:
+ * 3 tính năng sau NẰM NGOÀI PHẠM VI CỐT LÕI của phần mềm HTX chuẩn bị hồ sơ OCOP:
+ * 1. 'Đại hội & Biểu quyết' (/meetings): Quản trị nội bộ HTX sâu.
+ * 2. 'Hội đồng thẩm định' (/ocop/evaluation): Thuộc thẩm quyền Cơ quan Nhà nước (UBND huyện/tỉnh).
+ * 3. 'Quyết định & Cấp sao' (/ocop/decisions): Thuộc thẩm quyền ban hành của UBND huyện/tỉnh.
+ *
+ * MẶC ĐỊNH: BỊ ẨN KHỎI THANH ĐIỀU HƯỚNG (DEFAULT = HIDDEN).
+ * 
+ * NẾU CẦN HIỂN THỊ LẠI:
+ * - Cách 1: Chạy Console trình duyệt: localStorage.setItem('htx_ocop_enable_out_of_scope_modules', 'true'); window.location.reload();
+ * - Cách 2: Đổi giá trị mặc định của hàm isOutOfScopeModulesEnabled() dưới đây thành true.
+ * ============================================================================
+ */
+export const isOutOfScopeModulesEnabled = (): boolean => {
+  try {
+    const override = localStorage.getItem('htx_ocop_enable_out_of_scope_modules');
+    if (override !== null) {
+      return override === 'true';
+    }
+  } catch {}
+  return false; // Mặc định luôn ẩn theo mục tiêu chuẩn bị hồ sơ OCOP của HTX
+};
 
 export interface NavGroup {
   groupTitle: string;
@@ -65,6 +96,14 @@ export const navigationConfig: NavGroup[] = [
         roles: ['ADMIN', 'SYSTEM_ADMIN', 'HTX_OWNER', 'HTX_DIRECTOR', 'HTX_STAFF', 'ACCOUNTANT'],
       },
       {
+        title: 'Đại hội & Biểu quyết',
+        path: '/meetings',
+        icon: Vote,
+        roles: ['ADMIN', 'SYSTEM_ADMIN', 'HTX_OWNER', 'HTX_DIRECTOR', 'HTX_BOARD_MEMBER'],
+        hidden: !isOutOfScopeModulesEnabled(),
+        isOutOfScope: true,
+      },
+      {
         title: 'Sổ vốn điều lệ',
         path: '/capital',
         icon: Wallet,
@@ -94,7 +133,13 @@ export const navigationConfig: NavGroup[] = [
         roles: ['ADMIN', 'SYSTEM_ADMIN', 'HTX_OWNER', 'HTX_STAFF', 'AGRICULTURE_OFFICER'],
       },
       {
-        title: 'Nhật ký canh tác điện tử',
+        title: 'Tác nghiệp ngoài đồng',
+        path: '/agriculture/field-entry',
+        icon: Smartphone,
+        roles: ['ADMIN', 'SYSTEM_ADMIN', 'HTX_OWNER', 'HTX_STAFF', 'AGRICULTURE_OFFICER'],
+      },
+      {
+        title: 'Hậu kiểm nhật ký & PHI',
         path: '/agriculture/logs',
         icon: BookOpen,
         roles: ['ADMIN', 'SYSTEM_ADMIN', 'HTX_OWNER', 'HTX_STAFF', 'AGRICULTURE_OFFICER'],
@@ -147,12 +192,16 @@ export const navigationConfig: NavGroup[] = [
         path: '/ocop/evaluation',
         icon: ClipboardCheck,
         roles: ['ADMIN', 'SYSTEM_ADMIN', 'HTX_OWNER', 'CHAIRMAN', 'COUNCIL_CHAIR', 'COUNCIL_MEMBER', 'EVALUATOR'],
+        hidden: !isOutOfScopeModulesEnabled(),
+        isOutOfScope: true,
       },
       {
         title: 'Quyết định & Cấp sao',
         path: '/ocop/decisions',
         icon: ShieldCheck,
         roles: ['ADMIN', 'SYSTEM_ADMIN', 'HTX_OWNER', 'CHAIRMAN', 'COUNCIL_CHAIR', 'COUNCIL_MEMBER', 'EVALUATOR'],
+        hidden: !isOutOfScopeModulesEnabled(),
+        isOutOfScope: true,
       },
       {
         title: 'Báo cáo sẵn sàng OCOP',

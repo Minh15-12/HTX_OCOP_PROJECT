@@ -136,7 +136,7 @@ export const productApi = {
     try {
       const res: any = await apiClient.get('/products', { params });
       const rawList = Array.isArray(res.data) ? res.data : (res.data?.data || res || []);
-      if (Array.isArray(rawList) && rawList.length > 0) {
+      if (Array.isArray(rawList)) {
         const mapped = rawList.map((item: any) => ({
           id: item.id,
           product_code: item.product_code || item.code || item.id,
@@ -229,4 +229,29 @@ export const productApi = {
       return [];
     }
   },
+
+  async detachLotFromProduct(productId: string, lotId: string): Promise<any> {
+    try {
+      await apiClient.delete(`/products/${productId}/lots/${lotId}`);
+    } catch (err) {
+      console.warn('API detachLot notice, updating local storage:', err);
+    }
+    const list = getStoredProducts();
+    const updated = list.map((p) => {
+      if (p.id === productId) {
+        const remaining = (p.lots || []).filter(
+          (l: any) => l.lot_id !== lotId && l.id !== lotId && l.harvest_code !== lotId
+        );
+        return {
+          ...p,
+          lots: remaining,
+          lots_count: Math.max(0, remaining.length),
+        };
+      }
+      return p;
+    });
+    saveProductsToStorage(updated);
+    return { success: true };
+  },
 };
+

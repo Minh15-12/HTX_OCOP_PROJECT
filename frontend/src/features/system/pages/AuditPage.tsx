@@ -1,30 +1,68 @@
 import React, { useState } from 'react';
-import { History, Search, Download, Filter } from 'lucide-react';
+import { History, Search, Download, Filter, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useQuery } from '@tanstack/react-query';
 import { auditApi, AuditLogItem } from '@/services/auditApi';
+import { Pagination } from '@/components/ui/Pagination';
+import { exportToExcel } from '@/utils/exportUtils';
+import { useToast } from '@/components/ui/ToastNotification';
 
-const mockLogs: AuditLogItem[] = [
-  { id: '1', createdAt: '2026-09-08 14:32:00', userName: 'Nguyễn Văn An (Quản trị viên)', action: 'Cập nhật điểm', entityType: 'Hồ sơ OCOP: DOS-2026-001', entityId: '1', hashSha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' },
-  { id: '2', createdAt: '2026-09-08 10:15:00', userName: 'Trần Thị Bình (Kế toán)', action: 'Tải minh chứng', entityType: 'Minh chứng: MC-ATVSTP-02', entityId: '2', hashSha256: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4' },
-  { id: '3', createdAt: '2026-09-08 09:05:00', userName: 'Lê Văn Cường (Trưởng nhóm SX)', action: 'Tạo nhật ký', entityType: 'Thửa đất: PLOT-TV001-01', entityId: '3', hashSha256: 'a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e' },
-];
+import { AuditLogDrawer } from '../components/drawer/AuditLogDrawer';
+import { VerifyChainModal } from '../components/VerifyChainModal';
 
 export const AuditPage: React.FC = () => {
+  const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEntity, setSelectedEntity] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [selectedLog, setSelectedLog] = useState<AuditLogItem | null>(null);
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
 
-  const { data: apiLogs } = useQuery({
+  const { data: logs = [], isLoading: loadingLogs } = useQuery({
     queryKey: ['auditLogs'],
-    queryFn: () => auditApi.getAuditLogs().catch(() => mockLogs),
+    queryFn: () => auditApi.getAuditLogs().catch(() => []),
   });
 
-  const logs = apiLogs && apiLogs.length > 0 ? apiLogs : mockLogs;
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch =
+      (log.userName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.action || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.entityType || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.hashSha256 || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesEntity = selectedEntity === 'ALL' || log.entityType === selectedEntity;
+    return matchesSearch && matchesEntity;
+  });
 
-  const filteredLogs = logs.filter(log =>
-    (log.userName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (log.action || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (log.entityType || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedEntity]);
+
+  const handleExportAudit = () => {
+    if (filteredLogs.length === 0) {
+      showToast('Chưa có dữ liệu nhật ký kiểm toán để xuất.', 'info');
+      return;
+    }
+    const exportData = filteredLogs.map((log, idx) => ({
+      STT: idx + 1,
+      'Mã bản ghi': log.id,
+      'Thời gian': log.createdAt,
+      'Người thực hiện': log.userName,
+      'Mã người dùng': log.userId || '',
+      'Hành động': log.action,
+      'Loại thực thể': log.entityType,
+      'Mã thực thể': log.entityId,
+      'Địa chỉ IP': log.ipAddress || '',
+      'Mã băm SHA-256': log.hashSha256 || '',
+    }));
+    exportToExcel(exportData, 'nhat_ky_kiem_toan_sha256', 'AuditLog');
+    showToast('Xuất báo cáo kiểm toán SHA-256 Excel thành công!', 'success');
+  };
+
+  const paginatedLogs = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredLogs.slice(start, start + pageSize);
+  }, [filteredLogs, currentPage, pageSize]);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 font-sans">
@@ -42,8 +80,20 @@ export const AuditPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex gap-4">
-          <button className="flex items-center gap-2 px-6 py-3.5 bg-white/10 text-white hover:bg-white/20 rounded-2xl font-bold shadow-sm transition-all cursor-pointer">
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => setVerifyModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-sm transition-all cursor-pointer"
+          >
+            <ShieldCheck className="w-5 h-5" />
+            <span>Kiểm tra toàn vẹn chuỗi Hash</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleExportAudit}
+            className="flex items-center gap-2 px-6 py-3.5 bg-white/10 text-white hover:bg-white/20 rounded-2xl font-bold shadow-sm transition-all cursor-pointer"
+          >
             <Download className="w-5 h-5" />
             <span>Xuất báo cáo Audit</span>
           </button>
@@ -64,9 +114,27 @@ export const AuditPage: React.FC = () => {
               className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 transition-all text-sm"
             />
           </div>
-          <Button variant="secondary" leftIcon={<Filter className="w-4 h-4" />}>
-            Bộ lọc nhật ký
-          </Button>
+          <div className="flex items-center gap-2 self-stretch md:self-auto">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold shrink-0">
+              <Filter className="w-4 h-4 text-emerald-600" />
+              <span>Phân loại:</span>
+            </div>
+            <select
+              value={selectedEntity}
+              onChange={(e) => setSelectedEntity(e.target.value)}
+              className="h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+            >
+              <option value="ALL">Tất cả thực thể</option>
+              <option value="Member">Xã viên (Member)</option>
+              <option value="OcopApplication">Hồ sơ OCOP (OcopApplication)</option>
+              <option value="FinalDecision">Quyết định OCOP (FinalDecision)</option>
+              <option value="CashTransaction">Sổ quỹ tiền mặt (CashTransaction)</option>
+              <option value="Material">Vật tư kho (Material)</option>
+              <option value="FarmPlot">Thửa đất (FarmPlot)</option>
+              <option value="GeneratedDocument">Tài liệu sinh số (GeneratedDocument)</option>
+              <option value="SystemSetting">Cấu hình hệ thống (SystemSetting)</option>
+            </select>
+          </div>
         </div>
 
         {/* Table */}
@@ -82,38 +150,85 @@ export const AuditPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-4 px-6 font-mono text-xs text-slate-500">
-                    {log.createdAt}
-                  </td>
-                  <td className="py-4 px-6 font-bold text-slate-800">
-                    {log.userName}
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md text-xs border border-emerald-200">
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 font-medium text-slate-700">
-                    {log.entityType}
-                  </td>
-                  <td className="py-4 px-6 font-mono text-[11px] text-slate-500 truncate max-w-[200px]" title={log.hashSha256}>
-                    {log.hashSha256 || 'SHA256-AUTHENTICATED'}
+              {loadingLogs ? (
+                <tr>
+                  <td colSpan={5} className="py-14 text-center text-slate-400">
+                    <div className="inline-block animate-spin rounded-full h-7 w-7 border-2 border-emerald-600 border-t-transparent mb-2" />
+                    <p className="font-semibold text-xs text-slate-600">Đang tải nhật ký kiểm toán hệ thống...</p>
                   </td>
                 </tr>
-              ))}
-              {filteredLogs.length === 0 && (
+              ) : paginatedLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-500">
+                  <td colSpan={5} className="py-12 text-center text-slate-500 text-xs">
                     Không tìm thấy nhật ký hệ thống nào phù hợp.
                   </td>
                 </tr>
+              ) : (
+                paginatedLogs.map((log) => {
+                  const isSelected = selectedLog?.id === log.id;
+                  return (
+                    <tr
+                      key={log.id}
+                      onClick={() => setSelectedLog(log)}
+                      className={`transition-colors cursor-pointer ${
+                        isSelected ? 'bg-emerald-50/80 font-medium' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <td className="py-4 px-6 font-mono text-xs text-slate-500">
+                        {log.createdAt}
+                      </td>
+                      <td className="py-4 px-6 font-bold text-slate-800">
+                        {log.userName}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md text-xs border border-emerald-200">
+                          {log.action}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 font-medium text-slate-700">
+                        {log.entityType}
+                      </td>
+                      <td className="py-4 px-6 font-mono text-[11px] text-slate-500 truncate max-w-[200px]" title={log.hashSha256}>
+                        {log.hashSha256 || 'SHA256-AUTHENTICATED'}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
+        {filteredLogs.length > 0 && (
+          <div className="p-4 border-t border-slate-100 bg-white">
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredLogs.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setCurrentPage(1);
+              }}
+              pageSizeOptions={[5, 10, 20, 50]}
+            />
+          </div>
+        )}
       </div>
+
+      {/* Audit Log Drawer */}
+      <AuditLogDrawer
+        log={selectedLog}
+        isOpen={!!selectedLog}
+        onClose={() => setSelectedLog(null)}
+      />
+
+      {/* Verify Chain Modal */}
+      <VerifyChainModal
+        isOpen={verifyModalOpen}
+        onClose={() => setVerifyModalOpen(false)}
+        logs={logs}
+      />
     </div>
   );
 };
+

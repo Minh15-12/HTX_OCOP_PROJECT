@@ -9,6 +9,13 @@ export interface CropSeason {
   unit_name?: string | null;
   name: string;
   crop: string;
+  seed_supplier?: string | null;
+  seedling_standard_checklist?: any;
+  buyer_contract_info?: any;
+  puc_quota_kg?: number | null;
+  logbook_status?: 'ACTIVE' | 'FROZEN_ARCHIVED';
+  logbook_frozen_at?: string | null;
+  logbook_final_hash?: string | null;
   start_date: string;
   expected_end_date: string;
   actual_end_date?: string | null;
@@ -24,6 +31,10 @@ export interface CropSeasonFormData {
   start_date: string;
   expected_end_date: string;
   plan_information?: any;
+  seed_supplier?: string | null;
+  seedling_standard_checklist?: any;
+  buyer_contract_info?: any;
+  puc_quota_kg?: number | null;
 }
 
 export interface CropSeasonFilters {
@@ -37,64 +48,17 @@ export interface CropSeasonFilters {
 
 const SEASONS_STORAGE_KEY = 'htx_ocop_crop_seasons_db';
 
-const initialSeasons: CropSeason[] = [
-  {
-    id: 'c05e8db9-6fb6-4fe6-8110-b73cc109fab3',
-    production_unit_id: 'ac1b4829-763c-4c48-8d53-1a03a842a3fc',
-    unit_code: 'VT-DALAT-01',
-    unit_name: 'Vùng trồng Ớt Chuông Sweet Palermo Hòn Bồ',
-    name: 'Vụ Đông Xuân 2025 - 2026 (Ớt chuông Sweet Palermo Đỏ)',
-    crop: 'Ớt chuông Sweet Palermo Đỏ & Vàng',
-    start_date: '2025-11-01',
-    expected_end_date: '2026-04-30',
-    status: 'ACTIVE',
-  },
-  {
-    id: '03c586b3-1a08-43ab-b037-66795d2ae59c',
-    production_unit_id: 'ac1b4829-763c-4c48-8d53-1a03a842a3fc',
-    unit_code: 'VT-DALAT-01',
-    unit_name: 'Vùng trồng Ớt Chuông Sweet Palermo Hòn Bồ',
-    name: 'Vụ Thu Đông 2025 (Đã Hoàn Tất Quyết Toán)',
-    crop: 'Ớt chuông Sweet Palermo & Xà lách thủy canh',
-    start_date: '2025-06-01',
-    expected_end_date: '2025-10-31',
-    status: 'COMPLETED',
-  },
-  {
-    id: '1497edec-88be-4b8b-bc4e-241e2a41040b',
-    production_unit_id: 'ac1b4829-763c-4c48-8d53-1a03a842a3fc',
-    unit_code: 'VT-DASAR-02',
-    unit_name: 'Vùng trồng Liên Kết Đạ Sar',
-    name: 'Vụ Hè Thu 2025 (Đã Quyết Toán VietGAP)',
-    crop: 'Dâu tây giống Nhật & Cà chua Cherry',
-    start_date: '2025-01-15',
-    expected_end_date: '2025-05-30',
-    status: 'COMPLETED',
-  },
-  {
-    id: 'e218ce6f-787a-465b-b22c-fb599620970e',
-    production_unit_id: 'ac1b4829-763c-4c48-8d53-1a03a842a3fc',
-    unit_code: 'VT-DANHIM-03',
-    unit_name: 'Vùng Trồng Công Nghệ Cao Đơn Dương',
-    name: 'Vụ Xuân Hè 2026 (Kế Hoạch Mở Rộng OCOP)',
-    crop: 'Dâu tây Hana giống Nhật & Cà chua Cherry',
-    start_date: '2026-02-01',
-    expected_end_date: '2026-07-31',
-    status: 'PLANNED',
-  },
-];
-
 export function getStoredSeasons(): CropSeason[] {
   try {
     const raw = localStorage.getItem(SEASONS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.error('Error reading crop seasons from localStorage', e);
   }
-  return initialSeasons;
+  return [];
 }
 
 export function saveSeasonsToStorage(seasons: CropSeason[]): void {
@@ -105,70 +69,193 @@ export function saveSeasonsToStorage(seasons: CropSeason[]): void {
   }
 }
 
-export async function fetchCropSeasons(filters: CropSeasonFilters = {}) {
-  try {
-    const res: any = await apiClient.get('/crop-seasons', { params: filters });
-    const list = res?.data ?? res ?? [];
-    if (Array.isArray(list) && list.length > 0) {
-      saveSeasonsToStorage(list);
-      return res;
-    }
-  } catch (err) {
-    console.warn('API fetchCropSeasons notice, using local fallback:', err);
-  }
-  return { data: getStoredSeasons() };
+export async function fetchCropSeasons(filters: CropSeasonFilters = {}): Promise<CropSeason[]> {
+  const res: any = await apiClient.get('/crop-seasons', { params: filters });
+  const list = res.data?.data || res.data || [];
+  return Array.isArray(list) ? list : [];
 }
 
-export async function fetchCropSeason(id: string) {
-  try {
-    return await apiClient.get(`/crop-seasons/${id}`);
-  } catch (err) {
-    const list = getStoredSeasons();
-    const found = list.find((s) => s.id === id);
-    return { data: found || null };
-  }
+export async function fetchCropSeason(id: string): Promise<CropSeason | null> {
+  const res: any = await apiClient.get(`/crop-seasons/${id}`);
+  return res.data?.data || res.data || null;
 }
 
-export async function createCropSeason(payload: CropSeasonFormData) {
-  try {
-    return await apiClient.post('/crop-seasons', payload);
-  } catch (err) {
-    console.warn('API createCropSeason notice, using local fallback:', err);
-    const list = getStoredSeasons();
-    const newSeason: CropSeason = {
-      id: `cs-${Date.now()}`,
-      production_unit_id: payload.production_unit_id,
-      name: payload.name,
-      crop: payload.crop,
-      start_date: payload.start_date,
-      expected_end_date: payload.expected_end_date,
-      status: 'ACTIVE',
-    };
-    const updated = [newSeason, ...list];
-    saveSeasonsToStorage(updated);
-    return { data: newSeason };
-  }
+export async function createCropSeason(payload: CropSeasonFormData): Promise<CropSeason> {
+  const res: any = await apiClient.post('/crop-seasons', payload);
+  return res.data?.data || res.data;
 }
 
-export async function updateCropSeason(id: string, payload: Partial<CropSeasonFormData>) {
-  try {
-    return await apiClient.patch(`/crop-seasons/${id}`, payload);
-  } catch (err) {
-    console.warn('API updateCropSeason notice, using local fallback:', err);
-    const list = getStoredSeasons();
-    const updated = list.map((s) => (s.id === id ? { ...s, ...payload } : s));
-    saveSeasonsToStorage(updated);
-    return { data: updated.find((s) => s.id === id) };
-  }
+export async function updateCropSeason(id: string, payload: Partial<CropSeasonFormData>): Promise<CropSeason> {
+  const res: any = await apiClient.patch(`/crop-seasons/${id}`, payload);
+  return res.data?.data || res.data;
 }
 
-export async function closeCropSeason(id: string) {
-  try {
-    return await apiClient.post(`/crop-seasons/${id}/close`);
-  } catch (err) {
-    const list = getStoredSeasons();
-    const updated = list.map((s) => (s.id === id ? { ...s, status: 'COMPLETED' as CropSeasonStatus } : s));
-    saveSeasonsToStorage(updated);
-    return { data: updated.find((s) => s.id === id) };
+export async function closeCropSeason(id: string): Promise<CropSeason> {
+  const res: any = await apiClient.post(`/crop-seasons/${id}/close`);
+  return res.data?.data || res.data;
+}
+
+export async function fetchSeasonMaterialReconciliations(seasonId: string): Promise<any[]> {
+  const res: any = await apiClient.get(`/crop-seasons/${seasonId}/material-reconciliations`);
+  const list = res.data?.data || res.data || [];
+  return Array.isArray(list) ? list : [];
+}
+
+export async function saveSeasonMaterialReconciliations(seasonId: string, items: any[]): Promise<any[]> {
+  const res: any = await apiClient.post(`/crop-seasons/${seasonId}/material-reconciliations`, { items });
+  const list = res.data?.data || res.data || [];
+  return Array.isArray(list) ? list : [];
+}
+
+export async function freezeSeasonLogbook(seasonId: string): Promise<CropSeason> {
+  const res: any = await apiClient.post(`/crop-seasons/${seasonId}/freeze-logbook`);
+  return res.data?.data || res.data;
+}
+
+export interface CropSeasonPlotAllocation {
+  id: string;
+  crop_season_id: string;
+  plot_id: string;
+  plot_code?: string;
+  plot_area?: number | null;
+  plot_status?: string;
+  plot_quarantine_until?: string | null;
+  member_id?: string | null;
+  member_code?: string | null;
+  member_name?: string | null;
+  member_phone?: string | null;
+  allocated_area: number;
+  crop_variety?: string | null;
+  planting_date: string;
+  expected_harvest_start: string;
+  expected_harvest_end: string;
+  target_yield_kg: number;
+  actual_harvested_kg: number;
+  status: 'PLANNED' | 'PLANTED' | 'GROWING' | 'HARVESTING' | 'COMPLETED' | 'CANCELLED';
+  notes?: string | null;
+  created_at?: string;
+}
+
+export interface AllocatePlotFormData {
+  plot_id: string;
+  member_id?: string | null;
+  allocated_area: number;
+  crop_variety?: string;
+  planting_date: string;
+  expected_harvest_start: string;
+  expected_harvest_end: string;
+  target_yield_kg?: number;
+  status?: string;
+  notes?: string;
+}
+
+export interface CropSeasonBomItem {
+  id: string;
+  crop_season_id: string;
+  material_id: string;
+  material_name?: string;
+  sku?: string;
+  unit?: string;
+  category?: string;
+  stage_phase?: string | null;
+  standard_rate_per_sqm: number;
+  planned_quantity: number;
+  issued_quantity: number;
+  estimated_unit_price: number;
+  estimated_total_cost: number;
+  notes?: string | null;
+}
+
+export interface SupplyDemandBalance {
+  crop_season_id: string;
+  season_name: string;
+  buyer_name: string;
+  phc_code?: string | null;
+  buyer_contract_quantity_kg: number;
+  total_committed_quantity_kg: number;
+  total_actual_harvested_kg: number;
+  fulfillment_rate_percent: number;
+  commitment_coverage_percent: number;
+  commitment_gap_kg: number;
+  is_shortage: boolean;
+  is_surplus: boolean;
+  anomaly_high_yield: boolean;
+  anomaly_low_yield: boolean;
+}
+
+export async function fetchSeasonPlots(seasonId: string): Promise<CropSeasonPlotAllocation[]> {
+  const res: any = await apiClient.get(`/crop-seasons/${seasonId}/plots`);
+  const list = res.data?.data || res.data || [];
+  return Array.isArray(list) ? list : [];
+}
+
+export async function allocateSeasonPlot(seasonId: string, payload: AllocatePlotFormData): Promise<CropSeasonPlotAllocation> {
+  const res: any = await apiClient.post(`/crop-seasons/${seasonId}/plots`, payload);
+  return res.data?.data || res.data;
+}
+
+export async function removeSeasonPlot(seasonId: string, plotId: string): Promise<void> {
+  await apiClient.delete(`/crop-seasons/${seasonId}/plots/${plotId}`);
+}
+
+export async function fetchSeasonBoms(seasonId: string): Promise<CropSeasonBomItem[]> {
+  const res: any = await apiClient.get(`/crop-seasons/${seasonId}/boms`);
+  const list = res.data?.data || res.data || [];
+  return Array.isArray(list) ? list : [];
+}
+
+export async function saveSeasonBoms(seasonId: string, items: Partial<CropSeasonBomItem>[]): Promise<CropSeasonBomItem[]> {
+  const res: any = await apiClient.post(`/crop-seasons/${seasonId}/boms`, { items });
+  const list = res.data?.data || res.data || [];
+  return Array.isArray(list) ? list : [];
+}
+
+export async function fetchSeasonSupplyDemand(seasonId: string): Promise<SupplyDemandBalance> {
+  const res: any = await apiClient.get(`/crop-seasons/${seasonId}/supply-demand`);
+  return res.data?.data || res.data;
+}
+
+export interface BomPresetItem {
+  stage_phase: string;
+  stage_name: string;
+  material: {
+    material_id?: string | null;
+    material_name: string;
+    sku: string;
+    unit: string;
+    unit_price: number;
+  };
+  standard_rate_per_sqm: number;
+  notes?: string;
+}
+
+export interface BomPreset {
+  preset_code: string;
+  preset_name: string;
+  applicable_crop: string;
+  description: string;
+  items: BomPresetItem[];
+}
+
+export async function bulkAllocateSeasonPlots(
+  seasonId: string,
+  payload: {
+    plot_ids: string[];
+    planting_date?: string;
+    expected_harvest_start?: string;
+    expected_harvest_end?: string;
+    crop_variety?: string;
+    status?: string;
+    notes?: string;
   }
+): Promise<CropSeasonPlotAllocation[]> {
+  const res: any = await apiClient.post(`/crop-seasons/${seasonId}/plots/bulk`, payload);
+  const list = res.data?.data || res.data || [];
+  return Array.isArray(list) ? list : [];
+}
+
+export async function fetchBomPresets(crop?: string): Promise<BomPreset[]> {
+  const res: any = await apiClient.get('/crop-seasons/bom-presets', { params: { crop } });
+  const list = res.data?.data || res.data || [];
+  return Array.isArray(list) ? list : [];
 }

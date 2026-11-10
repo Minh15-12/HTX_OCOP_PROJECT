@@ -63,4 +63,9 @@ class OcopApplicationModel extends Model
     {
         return $this->hasMany(\Modules\Ocop\Evidence\Infrastructure\Persistence\Models\EvidenceModel::class, 'application_id');
     }
+
+    public function finalDecision(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\Modules\Ocop\Evaluation\Infrastructure\Persistence\Models\FinalDecisionModel::class, 'application_id');
+    }
 }

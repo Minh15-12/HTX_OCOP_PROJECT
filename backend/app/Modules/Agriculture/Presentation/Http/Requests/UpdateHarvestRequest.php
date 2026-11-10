@@ -27,6 +27,9 @@ class UpdateHarvestRequest extends FormRequest
             'grade_a_kg' => ['nullable', 'numeric', 'min:0'],
             'grade_b_kg' => ['nullable', 'numeric', 'min:0'],
             'reject_kg' => ['nullable', 'numeric', 'min:0'],
+            'stage_number' => ['nullable', 'integer', 'min:1'],
+            'weighing_slip_code' => ['nullable', 'string', 'max:100'],
+            'rejection_weight_kg' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

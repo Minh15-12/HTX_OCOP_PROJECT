@@ -109,6 +109,17 @@ class CapitalContributionTest extends TestCase
             'contribution_type' => 'INITIAL',
         ]);
 
+        $this->assertDatabaseHas('cash_transactions', [
+            'cooperative_id' => $coop->id,
+            'member_id' => $member->id,
+            'transaction_type' => 'INCOME',
+            'category' => 'CAPITAL_CONTRIBUTION',
+            'amount' => 50000000.00,
+        ]);
+
+        $member->refresh();
+        $this->assertGreaterThan(0, (float) $member->credit_limit);
+
         $this->assertDatabaseHas('audit_events', [
             'action' => 'CAPITAL_CONTRIBUTION_CREATED',
             'cooperative_id' => $coop->id,

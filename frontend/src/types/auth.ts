@@ -1,6 +1,7 @@
 export interface UserRole {
-  id: string;
-  name: string;
+  id?: string;
+  code?: string;
+  name?: string;
   display_name?: string;
 }
 
@@ -10,8 +11,12 @@ export interface User {
   email: string;
   full_name: string;
   cooperative_id?: string | null;
+  cooperative_name?: string | null;
+  member_id?: string | null;
+  member_code?: string | null;
   status: string;
-  roles: UserRole[];
+  roles: any[];
+  permissions?: string[];
 }
 
 export interface AuthState {

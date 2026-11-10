@@ -185,14 +185,14 @@ class HtxTanTienFullSystemSeeder extends Seeder
             $memberIdMap[$code] = $mId;
         }
 
-        // 3. Production Units (6 Vùng sản xuất lớn chuẩn VietGAP / GlobalGAP)
+        // 3. Production Units (6 Vùng sản xuất chuyên canh Ớt chuông Sweet Palermo chuẩn VietGAP / GlobalGAP)
         $units = [
-            ['unit_code' => 'VT-DALAT-01', 'name' => 'Vùng trồng Ớt Chuông Sweet Palermo Hòn Bồ (Phường 12 - Đà Lạt)', 'crop' => 'Ớt chuông Sweet Palermo Đỏ & Vàng', 'area' => 15.0, 'puc' => 'PUC-49-015-9923', 'std' => 'VietGAP', 'lat' => 11.9501, 'lng' => 108.4712],
-            ['unit_code' => 'VT-DASAR-02', 'name' => 'Vùng trồng Liên Kết Đạ Sar - Lạc Dương (HTX Tân Tiến)', 'crop' => 'Dâu tây giống Nhật Hana & Cà chua Cherry', 'area' => 12.5, 'puc' => 'PUC-49-015-9924', 'std' => 'VietGAP', 'lat' => 11.9404, 'lng' => 108.4583],
-            ['unit_code' => 'VT-TRAMHANH-03', 'name' => 'Vùng Nông Nghiệp CNC Cầu Đất - Trạm Hành (Đà Lạt)', 'crop' => 'Xà lách thủy canh & Trà hoa cúc tiến vua', 'area' => 18.0, 'puc' => 'PUC-49-015-9925', 'std' => 'GlobalGAP', 'lat' => 11.8900, 'lng' => 108.5300],
-            ['unit_code' => 'VT-TANUNG-04', 'name' => 'Vùng Canh Tác Rau Củ Hữu Cơ Tà Nung (TP. Đà Lạt)', 'crop' => 'Cải xoăn Kale & Cà chua trái cây Ruby', 'area' => 10.0, 'puc' => 'PUC-49-015-9926', 'std' => 'Organic', 'lat' => 11.9120, 'lng' => 108.3650],
-            ['unit_code' => 'VT-LACDUONG-05', 'name' => 'Vùng Chuyên Canh Dâu Tây New Zealand Lạc Dương', 'crop' => 'Dâu tây New Zealand giá thể sơ dừa', 'area' => 8.5, 'puc' => 'PUC-49-015-9927', 'std' => 'VietGAP', 'lat' => 11.9850, 'lng' => 108.4210],
-            ['unit_code' => 'VT-DONDUONG-06', 'name' => 'Vùng Liên Kết Rau Củ Quả Công Nghệ Cao Đơn Dương', 'crop' => 'Ớt chuông Sweet Palermo & Cà chua Beef', 'area' => 14.0, 'puc' => 'PUC-49-015-9928', 'std' => 'VietGAP', 'lat' => 11.7950, 'lng' => 108.5420],
+            ['unit_code' => 'VT-DALAT-01', 'name' => 'Vùng chuyên canh Ớt Chuông Sweet Palermo Đỏ Hòn Bồ (Phường 12 - Đà Lạt)', 'crop' => 'Ớt chuông Sweet Palermo Đỏ F1', 'area' => 15.0, 'puc' => 'PUC-49-015-9923', 'std' => 'VietGAP', 'lat' => 11.9501, 'lng' => 108.4712],
+            ['unit_code' => 'VT-DASAR-02', 'name' => 'Vùng trồng Ớt Chuông Sweet Palermo Vàng Đạ Sar (HTX Tân Tiến)', 'crop' => 'Ớt chuông Sweet Palermo Vàng F1', 'area' => 12.5, 'puc' => 'PUC-49-015-9924', 'std' => 'VietGAP', 'lat' => 11.9404, 'lng' => 108.4583],
+            ['unit_code' => 'VT-TRAMHANH-03', 'name' => 'Vùng Nông Nghiệp CNC Ớt Chuông Sweet Palermo Cầu Đất - Trạm Hành', 'crop' => 'Ớt chuông Sweet Palermo Đỏ & Cam', 'area' => 18.0, 'puc' => 'PUC-49-015-9925', 'std' => 'GlobalGAP', 'lat' => 11.8900, 'lng' => 108.5300],
+            ['unit_code' => 'VT-TANUNG-04', 'name' => 'Vùng Canh Tác Ớt Chuông Sweet Palermo Hữu Cơ Tà Nung (TP. Đà Lạt)', 'crop' => 'Ớt chuông Sweet Palermo Đỏ Hữu Cơ', 'area' => 10.0, 'puc' => 'PUC-49-015-9926', 'std' => 'Organic', 'lat' => 11.9120, 'lng' => 108.3650],
+            ['unit_code' => 'VT-LACDUONG-05', 'name' => 'Vùng Chuyên Canh Ớt Chuông Sweet Palermo Giá Thể Lạc Dương', 'crop' => 'Ớt chuông Sweet Palermo Vàng & Cam', 'area' => 8.5, 'puc' => 'PUC-49-015-9927', 'std' => 'VietGAP', 'lat' => 11.9850, 'lng' => 108.4210],
+            ['unit_code' => 'VT-DONDUONG-06', 'name' => 'Vùng Liên Kết Ớt Chuông Sweet Palermo Cam Công Nghệ Cao Đơn Dương', 'crop' => 'Ớt chuông Sweet Palermo Cam F1', 'area' => 14.0, 'puc' => 'PUC-49-015-9928', 'std' => 'VietGAP', 'lat' => 11.7950, 'lng' => 108.5420],
         ];
 
         $unitIds = [];
@@ -225,21 +225,21 @@ class HtxTanTienFullSystemSeeder extends Seeder
 
         // 4. Farm Plots (15 Thửa đất nhà kính công nghệ cao)
         $plotConfigs = [
-            ['PLOT-TT-XV001-01', 'VT-DALAT-01', 4.5, 'TV001', 'Đất đỏ bazan', 'Tưới nhỏ giọt Israel bù áp'],
-            ['PLOT-TT-XV001-02', 'VT-DALAT-01', 4.0, 'TV001', 'Đất đỏ bazan', 'Tưới nhỏ giọt tự động'],
-            ['PLOT-TT-XV002-01', 'VT-DASAR-02', 6.5, 'TV002', 'Giá thể xơ dừa vi sinh', 'Tưới nhỏ giọt Fertigation'],
-            ['PLOT-TT-XV003-01', 'VT-DALAT-01', 3.5, 'TV003', 'Màng dinh dưỡng NFT hồi lưu', 'Thủy canh hồi lưu kiểm soát EC/pH'],
-            ['PLOT-TT-XV004-01', 'VT-DASAR-02', 5.0, 'TV004', 'Đất thịt nhẹ pha cát', 'Tưới nhỏ giọt Israel'],
-            ['PLOT-TT-XV005-01', 'VT-DONDUONG-06', 4.0, 'TV005', 'Đất phù sa cổ', 'Tưới phun mưa & nhỏ giọt'],
-            ['PLOT-TT-XV006-01', 'VT-DALAT-01', 3.0, 'TV006', 'Đất đỏ bazan nhà màng', 'Tưới nhỏ giọt bù áp'],
-            ['PLOT-TT-XV007-01', 'VT-TRAMHANH-03', 4.5, 'TV007', 'Đất đỏ bazan đồi núi', 'Tưới nhỏ giọt tự động Israel'],
-            ['PLOT-TT-XV011-01', 'VT-DALAT-01', 4.0, 'TV011', 'Đất đỏ bazan nhà kính', 'Tưới nhỏ giọt bù áp'],
-            ['PLOT-TT-XV012-01', 'VT-DALAT-01', 3.5, 'TV012', 'Đất đỏ bazan', 'Tưới nhỏ giọt Israel'],
-            ['PLOT-TT-XV013-01', 'VT-TRAMHANH-03', 5.0, 'TV013', 'Đất đỏ bazan nhà kính', 'Tưới nhỏ giọt bù áp tự động'],
-            ['PLOT-TT-XV014-01', 'VT-LACDUONG-05', 4.0, 'TV014', 'Giá thể xơ dừa chuyên dụng', 'Tưới nhỏ giọt tự động theo chu kỳ'],
-            ['PLOT-TT-XV015-01', 'VT-TRAMHANH-03', 4.5, 'TV015', 'Đất bazan Cầu Đất', 'Tưới nhỏ giọt bù áp'],
-            ['PLOT-TT-XV016-01', 'VT-TANUNG-04', 5.0, 'TV016', 'Đất hữu cơ vi sinh ủ phân trùn', 'Tưới phun sương tự động'],
-            ['PLOT-TT-XV017-01', 'VT-DALAT-01', 4.0, 'TV017', 'Đất đỏ bazan Hòn Bồ', 'Tưới nhỏ giọt Israel'],
+            ['PLOT-TT-XV001-01', 'VT-DALAT-01', 4.5, 'TV001', 'Đất đỏ bazan', 'Tưới nhỏ giọt Israel bù áp', 'ACTIVE', null],
+            ['PLOT-TT-XV001-02', 'VT-DALAT-01', 4.0, 'TV001', 'Đất đỏ bazan', 'Tưới nhỏ giọt tự động', 'ACTIVE', null],
+            ['PLOT-TT-XV002-01', 'VT-DASAR-02', 6.5, 'TV002', 'Giá thể xơ dừa vi sinh', 'Tưới nhỏ giọt Fertigation', 'IN_QUARANTINE', '2026-11-15'],
+            ['PLOT-TT-XV003-01', 'VT-DALAT-01', 3.5, 'TV003', 'Màng dinh dưỡng NFT hồi lưu', 'Thủy canh hồi lưu kiểm soát EC/pH', 'IN_QUARANTINE', '2026-11-14'],
+            ['PLOT-TT-XV004-01', 'VT-DASAR-02', 5.0, 'TV004', 'Đất thịt nhẹ pha cát', 'Tưới nhỏ giọt Israel', 'ACTIVE', null],
+            ['PLOT-TT-XV005-01', 'VT-DONDUONG-06', 4.0, 'TV005', 'Đất phù sa cổ', 'Tưới phun mưa & nhỏ giọt', 'ACTIVE', null],
+            ['PLOT-TT-XV006-01', 'VT-DALAT-01', 3.0, 'TV006', 'Đất đỏ bazan nhà màng', 'Tưới nhỏ giọt bù áp', 'FALLOW', null],
+            ['PLOT-TT-XV007-01', 'VT-TRAMHANH-03', 4.5, 'TV007', 'Đất đỏ bazan đồi núi', 'Tưới nhỏ giọt tự động Israel', 'ACTIVE', null],
+            ['PLOT-TT-XV011-01', 'VT-DALAT-01', 4.0, 'TV011', 'Đất đỏ bazan nhà kính', 'Tưới nhỏ giọt bù áp', 'ACTIVE', null],
+            ['PLOT-TT-XV012-01', 'VT-DALAT-01', 3.5, 'TV012', 'Đất đỏ bazan', 'Tưới nhỏ giọt Israel', 'ACTIVE', null],
+            ['PLOT-TT-XV013-01', 'VT-TRAMHANH-03', 5.0, 'TV013', 'Đất đỏ bazan nhà kính', 'Tưới nhỏ giọt bù áp tự động', 'FALLOW', null],
+            ['PLOT-TT-XV014-01', 'VT-LACDUONG-05', 4.0, 'TV014', 'Giá thể xơ dừa chuyên dụng', 'Tưới nhỏ giọt tự động theo chu kỳ', 'ACTIVE', null],
+            ['PLOT-TT-XV015-01', 'VT-TRAMHANH-03', 4.5, 'TV015', 'Đất bazan Cầu Đất', 'Tưới nhỏ giọt bù áp', 'ACTIVE', null],
+            ['PLOT-TT-XV016-01', 'VT-TANUNG-04', 5.0, 'TV016', 'Đất hữu cơ vi sinh ủ phân trùn', 'Tưới phun sương tự động', 'ACTIVE', null],
+            ['PLOT-TT-XV017-01', 'VT-DALAT-01', 4.0, 'TV017', 'Đất đỏ bazan Hòn Bồ', 'Tưới nhỏ giọt Israel', 'IN_QUARANTINE', '2026-11-16'],
         ];
 
         $plotIds = [];
@@ -247,17 +247,22 @@ class HtxTanTienFullSystemSeeder extends Seeder
             $pId = (string) Str::uuid();
             $plotIds[$p[0]] = $pId;
             $unitId = $unitIds[$p[1]];
+            $pStatus = $p[6] ?? 'ACTIVE';
+            $pQuarantine = $p[7] ?? null;
             DB::table('farm_plots')->insert([
                 'id' => $pId,
                 'production_unit_id' => $unitId,
                 'plot_code' => $p[0],
                 'area' => $p[2],
-                'status' => 'ACTIVE',
+                'status' => $pStatus,
+                'quarantine_until' => $pQuarantine,
                 'land_relation' => json_encode([
                     'gps_latitude' => 11.9500 + (count($plotIds) * 0.0015),
                     'gps_longitude' => 108.4700 + (count($plotIds) * 0.0012),
                     'soil_type' => $p[4],
                     'irrigation' => $p[5],
+                    'safe_harvest_date' => $pQuarantine,
+                    'phi_status' => $pStatus,
                 ]),
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -279,13 +284,13 @@ class HtxTanTienFullSystemSeeder extends Seeder
             }
         }
 
-        // 5. Crop Seasons (5 Mùa vụ qua các năm)
+        // 5. Crop Seasons (Mùa vụ chuyên canh Ớt chuông Sweet Palermo)
         $seasonConfigs = [
-            ['Vụ Đông Xuân 2025 - 2026 (Ớt chuông Sweet Palermo Đỏ)', 'VT-DALAT-01', 'Ớt chuông Sweet Palermo Đỏ & Vàng', '2025-11-01', '2026-03-31', null, 'IN_PROGRESS', 45000, 350000000],
-            ['Vụ Thu Đông 2025 (Đã Hoàn Tất Quyết Toán)', 'VT-DALAT-01', 'Ớt chuông Sweet Palermo & Xà lách thủy canh', '2025-06-01', '2025-10-31', '2025-10-31', 'COMPLETED', 42000, 320000000],
-            ['Vụ Hè Thu 2025 (Đã Quyết Toán VietGAP)', 'VT-DASAR-02', 'Dâu tây giống Nhật & Cà chua Cherry', '2025-02-01', '2025-05-31', '2025-05-31', 'COMPLETED', 36000, 270000000],
-            ['Vụ Xuân Hè 2026 (Kế Hoạch Mở Rộng OCOP)', 'VT-DASAR-02', 'Dâu tây Hana giống Nhật & Cà chua Cherry', '2026-04-01', '2026-08-31', null, 'PLANNED', 40000, 310000000],
-            ['Vụ Thu Đông 2026 (Kế Hoạch Xuất Khẩu)', 'VT-TRAMHANH-03', 'Xà lách thủy canh & Trà hoa cúc sấy', '2026-09-01', '2026-12-31', null, 'PLANNED', 35000, 260000000],
+            ['Vụ Đông Xuân 2025 - 2026 (Ớt chuông Sweet Palermo Đỏ & Vàng)', 'VT-DALAT-01', 'Ớt chuông Sweet Palermo Đỏ & Vàng F1', '2025-11-01', '2026-03-31', null, 'IN_PROGRESS', 45000, 350000000],
+            ['Vụ Thu Đông 2025 (Ớt chuông Sweet Palermo Đỏ - Đã Quyết Toán)', 'VT-DALAT-01', 'Ớt chuông Sweet Palermo Đỏ F1', '2025-06-01', '2025-10-31', '2025-10-31', 'COMPLETED', 42000, 320000000],
+            ['Vụ Hè Thu 2025 (Ớt chuông Sweet Palermo Vàng Đạ Sar)', 'VT-DASAR-02', 'Ớt chuông Sweet Palermo Vàng F1', '2025-02-01', '2025-05-31', '2025-05-31', 'COMPLETED', 36000, 270000000],
+            ['Vụ Xuân Hè 2026 (Kế Hoạch Mở Rộng OCOP Ớt chuông Cam)', 'VT-DONDUONG-06', 'Ớt chuông Sweet Palermo Cam F1', '2026-04-01', '2026-08-31', null, 'PLANNED', 40000, 310000000],
+            ['Vụ Thu Đông 2026 (Ớt chuông Sweet Palermo Xuất Khẩu Singapore)', 'VT-TRAMHANH-03', 'Ớt chuông Sweet Palermo Đỏ & Cam', '2026-09-01', '2026-12-31', null, 'PLANNED', 38000, 290000000],
         ];
 
         $seasonIds = [];
@@ -326,22 +331,22 @@ class HtxTanTienFullSystemSeeder extends Seeder
             'updated_at' => $now,
         ]);
 
-        // 7. Materials (14 Vật tư nông nghiệp cao cấp & bao bì OCOP)
+        // 7. Materials (14 Vật tư nông nghiệp chuyên dụng cho Ớt chuông Sweet Palermo & bao bì OCOP)
         $matDefs = [
             ['MAT-PHAN-01', 'Phân trùn quế hữu cơ Bio-Grow (25kg)', 'FERTILIZER', 'bao_25kg', 0, '100-150 kg/1000m²', 20],
             ['MAT-PHAN-02', 'Phân bón vi lượng Haifa Cal-Mag Israel (25kg)', 'FERTILIZER', 'bao_25kg', 0, '25kg / 1000L bồn dinh dưỡng', 15],
             ['MAT-PHAN-03', 'Phân bón hữu cơ sinh học rong biển Seasol Australia (Can 5L)', 'FERTILIZER', 'can_5L', 0, '100ml / bình 25L tưới kích rễ', 10],
-            ['MAT-PHAN-04', 'Phân dơi hữu cơ nguyên chất tự nhiên (Bao 10kg)', 'FERTILIZER', 'bao_10kg', 0, '50kg / 1000m² bón thúc tạo ngọt', 15],
+            ['MAT-PHAN-04', 'Phân dơi hữu cơ nguyên chất tự nhiên tạo ngọt Brix (Bao 10kg)', 'FERTILIZER', 'bao_10kg', 0, '50kg / 1000m² bón thúc tạo ngọt', 15],
+            ['MAT-PHAN-05', 'Phân bón NPK hòa tan Haifa Multi-K 13-0-46 Kali Nitrate Israel (25kg)', 'FERTILIZER', 'bao_25kg', 0, '20kg / 1000L bồn dinh dưỡng nuôi trái', 10],
             ['MAT-BVTV-01', 'Thuốc BVTV Sinh học Neem Oil 1000EC 1L (Azadirachtin)', 'PESTICIDE', 'chai_1L', 3, '20ml / bình 16L trừ bọ trĩ', 10],
             ['MAT-BVTV-02', 'Chế phẩm vi sinh đối kháng Trichoderma Bio-VT (1kg)', 'PESTICIDE', 'goi_1kg', 0, '1kg hòa 400L nước ngừa lở cổ rễ', 12],
             ['MAT-BVTV-03', 'Nấm ba màu sinh học Metarhizium phòng sâu tơ rầy mềm (1kg)', 'PESTICIDE', 'goi_1kg', 0, '50g / bình 16L nước', 10],
+            ['MAT-BVTV-04', 'Bọ xít bắt mồi Orius sauteri thiên địch diệt bọ trĩ (Hộp 500 cá thể)', 'PESTICIDE', 'hop_500con', 0, '1-2 con/m² thả phòng trừ sinh học', 5],
             ['MAT-GIONG-01', 'Hạt giống Ớt chuông Sweet Palermo Đỏ F1 (Rijk Zwaan Hà Lan)', 'SEED', 'goi_1000hat', 0, 'Tỷ lệ nảy mầm 98.5%', 5],
             ['MAT-GIONG-02', 'Hạt giống Ớt chuông Sweet Palermo Vàng F1 (Rijk Zwaan Hà Lan)', 'SEED', 'goi_1000hat', 0, 'Tỷ lệ nảy mầm 98.0%', 5],
-            ['MAT-GIONG-03', 'Cây giống Dâu tây Hana cấy mô chịu nhiệt F1 (Khay 84 cây)', 'SEED', 'khay_84cay', 0, 'Cây giống sạch virus', 20],
-            ['MAT-GIONG-04', 'Hạt giống Xà lách Thủy canh Mỡ Butterhead (Enza Zaden Hà Lan)', 'SEED', 'goi_1000hat', 0, 'Tỷ lệ nảy mầm 99%', 5],
-            ['MAT-GIONG-05', 'Hạt giống Cà chua Cherry Socola F1 (Rijk Zwaan Hà Lan)', 'SEED', 'goi_1000hat', 0, 'Tỷ lệ nảy mầm 97.5%', 5],
+            ['MAT-GIONG-03', 'Hạt giống Ớt chuông Sweet Palermo Cam F1 (Rijk Zwaan Hà Lan)', 'SEED', 'goi_1000hat', 0, 'Tỷ lệ nảy mầm 98.2%', 5],
             ['MAT-BAOBI-01', 'Thùng carton xuất khẩu 5 lớp có màng thở OCOP (Thùng 5kg)', 'OTHER', 'thung', 0, 'Đạt tiêu chuẩn bảo quản xuất khẩu', 100],
-            ['MAT-BAOBI-02', 'Túi màng sinh học tự hủy đóng gói xà lách thủy canh (Túi 300g)', 'OTHER', 'cuon_1000tui', 0, 'Thân thiện môi trường', 25],
+            ['MAT-BAOBI-02', 'Khay bã mía sinh học 2 trái có màng bọc đục lỗ thoáng khí (Thùng 500 khay)', 'OTHER', 'thung_500khay', 0, 'Bao bì xanh thân thiện môi trường đạt tiêu chuẩn OCOP', 25],
         ];
 
         $matIds = [];
@@ -502,18 +507,19 @@ class HtxTanTienFullSystemSeeder extends Seeder
             [$seasonCurrentId, 'PLOT-TT-XV001-02', 'PEST_CONTROL', '2025-12-22', 'Phun chế phẩm nấm ba màu Metarhizium phòng sâu tơ và bọ phấn trắng', 'MAT-BVTV-03', 2, 0],
             [$seasonCurrentId, 'PLOT-TT-XV001-02', 'HARVEST', '2026-01-15', 'Thu hoạch lứa đầu tiên ớt chuông Palermo vàng 1.200kg đạt độ ngọt Brix 9.2%', 'MAT-BAOBI-01', 200, 0],
 
-            // Plot 3 (Dâu tây Hana - TV002 Đạ Sar)
-            [$seasonCurrentId, 'PLOT-TT-XV002-01', 'LAND_PREPARATION', '2025-11-01', 'Trộn giá thể xơ dừa đã xử lý chát với trùn quế và vi sinh Trichoderma đóng bao màng', 'MAT-BVTV-02', 3, 0],
-            [$seasonCurrentId, 'PLOT-TT-XV002-01', 'PLANTING', '2025-11-08', 'Cấy cây giống dâu tây Hana giống Nhật F1 lên giàn chữ A nhà màng', 'MAT-GIONG-03', 20, 0],
-            [$seasonCurrentId, 'PLOT-TT-XV002-01', 'IRRIGATION', '2025-11-20', 'Tưới nhỏ giọt dung dịch dinh dưỡng hữu cơ Seasol kích thích bén rễ chùm', 'MAT-PHAN-03', 2, 0],
-            [$seasonCurrentId, 'PLOT-TT-XV002-01', 'PRUNING', '2025-12-15', 'Vặt tỉa lá già, ngắt ngó hoa lứa đầu để tập trung nuôi gốc mập mạp', null, null, 0],
-            [$seasonCurrentId, 'PLOT-TT-XV002-01', 'HARVEST', '2026-01-20', 'Thu hoạch lứa quả bói đầu vụ dâu tây Hana ngọt đậm, quả đỏ đều 90%', null, null, 0],
+            // Plot 3 (Ớt chuông Sweet Palermo Cam - TV002 Đạ Sar)
+            [$seasonCurrentId, 'PLOT-TT-XV002-01', 'LAND_PREPARATION', '2025-11-01', 'Trộn giá thể xơ dừa đã xử lý chát với trùn quế và vi sinh Trichoderma đóng bao màng nhà kính', 'MAT-BVTV-02', 3, 0],
+            [$seasonCurrentId, 'PLOT-TT-XV002-01', 'PLANTING', '2025-11-08', 'Xuống giống 1000 cây ớt chuông Sweet Palermo Cam F1 Rijk Zwaan lên giá thể xơ dừa', 'MAT-GIONG-03', 1, 0],
+            [$seasonCurrentId, 'PLOT-TT-XV002-01', 'IRRIGATION', '2025-11-20', 'Tưới nhỏ giọt dung dịch dinh dưỡng hữu cơ Seasol kết hợp vi lượng Haifa Cal-Mag nồng độ EC 2.0', 'MAT-PHAN-02', 3, 0],
+            [$seasonCurrentId, 'PLOT-TT-XV002-01', 'PRUNING', '2025-12-15', 'Tỉa cành tạo tán chữ V, giăng dây đỡ giàn và thả bọ xít thiên địch Orius phòng trừ bọ trĩ sinh học', 'MAT-BVTV-04', 1, 0],
+            [$seasonCurrentId, 'PLOT-TT-XV002-01', 'HARVEST', '2026-01-20', 'Thu hoạch lứa đầu tiên ớt chuông Palermo Cam tuyển chọn KCS Grade A đạt độ ngọt Brix 9.5%', 'MAT-BAOBI-01', 180, 0],
 
-            // Plot 4 (Xà lách thủy canh - TV003)
-            [$seasonCurrentId, 'PLOT-TT-XV003-01', 'PLANTING', '2025-12-01', 'Gieo hạt giống xà lách mỡ Butterhead lên mút ươm hạt', 'MAT-GIONG-04', 1, 0],
-            [$seasonCurrentId, 'PLOT-TT-XV003-01', 'IRRIGATION', '2025-12-10', 'Đưa cây giống lên máng thủy canh hồi lưu NFT, kiểm soát EC 1.4, pH 6.0', null, null, 0],
-            [$seasonCurrentId, 'PLOT-TT-XV003-01', 'MONITORING', '2026-01-12', 'Kiểm tra dư lượng nitrat bằng kit test nhanh: 450 ppm (ngưỡng an toàn < 1500 ppm)', null, null, 0],
-            [$seasonCurrentId, 'PLOT-TT-XV003-01', 'HARVEST', '2026-01-18', 'Thu hoạch xà lách thủy canh mỡ nguyên rễ, đóng gói túi màng sinh học 300g', 'MAT-BAOBI-02', 2, 0],
+            // Plot 4 (Ớt chuông Sweet Palermo Đỏ Vụ 2 - TV003)
+            [$seasonCurrentId, 'PLOT-TT-XV003-01', 'LAND_PREPARATION', '2025-11-03', 'Vệ sinh nhà màng, khử trùng hệ thống tưới và bón lót phân trùn quế Bio-Grow', 'MAT-PHAN-01', 10, 0],
+            [$seasonCurrentId, 'PLOT-TT-XV003-01', 'PLANTING', '2025-11-10', 'Xuống giống 1000 cây ớt chuông Sweet Palermo Đỏ F1 giống chuẩn VietGAP', 'MAT-GIONG-01', 1, 0],
+            [$seasonCurrentId, 'PLOT-TT-XV003-01', 'IRRIGATION', '2025-11-25', 'Châm phân bón NPK Haifa Multi-K qua hệ thống tưới bù áp Fertigation kiểm soát EC 2.2, pH 6.0', 'MAT-PHAN-05', 2, 0],
+            [$seasonCurrentId, 'PLOT-TT-XV003-01', 'MONITORING', '2026-01-12', 'Đo độ ngọt quả trước thu hoạch: Brix đạt 8.9°, không phát hiện dư lượng thuốc BVTV', null, null, 0],
+            [$seasonCurrentId, 'PLOT-TT-XV003-01', 'HARVEST', '2026-01-18', 'Thu hoạch ớt chuông Palermo Đỏ Grade A đóng khay bã mía sinh học 2 trái cung ứng siêu thị WinMart', 'MAT-BAOBI-02', 400, 0],
 
             // Nhật ký Vụ Thu Đông 2025 (COMPLETED - Để kiểm chứng Read-Only Freeze Guard)
             [$seasonCompletedId, 'PLOT-TT-XV001-01', 'FERTILIZATION', '2025-08-10', 'Bón thúc phân trùn quế đợt 2 cho vụ Thu Đông', 'MAT-PHAN-01', 10, 0],
@@ -546,14 +552,11 @@ class HtxTanTienFullSystemSeeder extends Seeder
             ]);
         }
 
-        // 12. Products (6 Sản phẩm OCOP đạt 3 - 4 sao & tiềm năng 5 sao)
+        // 12. Products (3 Dòng sản phẩm Ớt chuông Sweet Palermo OCOP đạt 4 sao & tiềm năng 5 sao)
         $prodConfigs = [
             ['PRD-PALERMO-RED', 'Ớt chuông Sweet Palermo Đỏ Đà Lạt', 'Rau, củ, quả, hạt tươi', 4, 'VG-49-2024-0089', 'Siêu thị WinMart, Big C, An Nam Gourmet', '≥ 8.5'],
             ['PRD-PALERMO-YEL', 'Ớt chuông Sweet Palermo Vàng Đà Lạt', 'Rau, củ, quả, hạt tươi', 4, 'VG-49-2024-0089', 'Thị trường nội địa cao cấp', '≥ 9.0'],
-            ['PRD-PALERMO-ORG', 'Ớt chuông Sweet Palermo Cam Đà Lạt', 'Rau, củ, quả, hạt tươi', 4, 'VG-49-2024-0089', 'Khách sạn 5 sao & Nhà hàng cao cấp', '≥ 9.5'],
-            ['PRD-LETTUCE-01', 'Xà Lách Thủy Canh Mỡ Đà Lạt', 'Rau ăn lá thủy canh', 3, 'VG-49-2025-0112', 'Nhà hàng, khách sạn tại Đà Lạt và TP.HCM', 'N/A'],
-            ['PRD-STRAWBERRY-01', 'Dâu Tây Hana Giống Nhật Đạ Sar', 'Trái cây tươi cao cấp', 4, 'VG-49-2024-0095', 'Chuỗi cửa hàng trái cây nhập khẩu', '≥ 11.5'],
-            ['PRD-CHERRY-01', 'Cà Chua Cherry Socola Đà Lạt', 'Rau, củ, quả, hạt tươi', 3, 'VG-49-2024-0099', 'Hệ thống cửa hàng thực phẩm sạch', '≥ 8.0'],
+            ['PRD-PALERMO-ORG', 'Ớt chuông Sweet Palermo Cam Đà Lạt', 'Rau, củ, quả, hạt tươi', 4, 'VG-49-2024-0089', 'Khách sạn 5 sao & Xuất khẩu Singapore', '≥ 9.5'],
         ];
 
         $productIds = [];
@@ -585,14 +588,14 @@ class HtxTanTienFullSystemSeeder extends Seeder
             ]);
         }
 
-        // 13. Harvests & Lots (6 Đợt thu hoạch KCS & 6 Lô hàng GS1 tem QR)
+        // 13. Harvests & Lots (6 Đợt thu hoạch KCS & 6 Lô hàng GS1 tem QR Ớt chuông Sweet Palermo)
         $harvests = [
             ['HARV-2026-001', 'PLOT-TT-XV001-01', '2026-01-10', 1500, 'GRADE_A', 8.8, 1250, 200, 50, 'LOT-TT-2026-001', 'PRD-PALERMO-RED', true],
             ['HARV-2026-002', 'PLOT-TT-XV001-02', '2026-01-15', 1200, 'GRADE_A', 9.2, 1000, 150, 50, 'LOT-TT-2026-002', 'PRD-PALERMO-YEL', false],
-            ['HARV-2026-003', 'PLOT-TT-XV003-01', '2026-01-18', 850, 'GRADE_A', null, 800, 50, 0, 'LOT-TT-2026-003', 'PRD-LETTUCE-01', false],
-            ['HARV-2026-004', 'PLOT-TT-XV002-01', '2026-01-20', 600, 'GRADE_A', 11.5, 550, 50, 0, 'LOT-TT-2026-004', 'PRD-STRAWBERRY-01', false],
+            ['HARV-2026-003', 'PLOT-TT-XV003-01', '2026-01-18', 1100, 'GRADE_A', 8.9, 950, 100, 50, 'LOT-TT-2026-003', 'PRD-PALERMO-RED', false],
+            ['HARV-2026-004', 'PLOT-TT-XV002-01', '2026-01-20', 1050, 'GRADE_A', 9.5, 900, 100, 50, 'LOT-TT-2026-004', 'PRD-PALERMO-ORG', false],
             ['HARV-2026-005', 'PLOT-TT-XV001-01', '2026-01-25', 1800, 'GRADE_A', 8.9, 1600, 150, 50, 'LOT-TT-2026-005', 'PRD-PALERMO-RED', false],
-            ['HARV-2026-006', 'PLOT-TT-XV004-01', '2026-01-28', 950, 'GRADE_A', 8.2, 900, 50, 0, 'LOT-TT-2026-006', 'PRD-CHERRY-01', false],
+            ['HARV-2026-006', 'PLOT-TT-XV001-02', '2026-01-28', 1350, 'GRADE_A', 9.3, 1150, 150, 50, 'LOT-TT-2026-006', 'PRD-PALERMO-YEL', false],
         ];
 
         foreach ($harvests as $h) {
@@ -664,8 +667,6 @@ class HtxTanTienFullSystemSeeder extends Seeder
 
         $apps = [
             ['OCOP-2026-DALAT-001', 'PRD-PALERMO-RED', 'QĐ-UBND-2026-089', '2026-01-15', 'FOUR_STAR', 'UBND Tỉnh Lâm Đồng'],
-            ['OCOP-2025-LACDUONG-002', 'PRD-LETTUCE-01', 'QĐ-UBND-2025-334', '2025-09-01', 'THREE_STAR', 'UBND Huyện Lạc Dương'],
-            ['OCOP-2026-DASAR-003', 'PRD-STRAWBERRY-01', 'QĐ-UBND-2026-112', '2026-02-10', 'FOUR_STAR', 'UBND Tỉnh Lâm Đồng'],
         ];
 
         foreach ($apps as $a) {
@@ -709,8 +710,8 @@ class HtxTanTienFullSystemSeeder extends Seeder
             ['PC-2025-003', 'TXN-2025-007', 'EXPENSE', 22500000, '2025-11-12', 'MUA_VAT_TU', 'Thanh toán tiền hạt giống ớt chuông Sweet Palermo F1 Rijk Zwaan', 'Công ty TNHH Rijk Zwaan', null],
             ['PT-2026-001', 'TXN-2026-001', 'INCOME', 43750000, '2026-01-12', 'BAN_NONG_SAN', 'Thu tiền bán 1.250kg Ớt chuông Sweet Palermo Đỏ Grade A cho Hệ thống WinMart', 'Tập đoàn WinCommerce', null],
             ['PT-2026-002', 'TXN-2026-002', 'INCOME', 35000000, '2026-01-16', 'BAN_NONG_SAN', 'Thu tiền bán 1.000kg Ớt chuông Sweet Palermo Vàng Grade A cho Siêu thị Big C', 'Tập đoàn Central Retail', null],
-            ['PT-2026-003', 'TXN-2026-003', 'INCOME', 24000000, '2026-01-19', 'BAN_NONG_SAN', 'Thu tiền bán 800kg Xà lách thủy canh cho Chuỗi An Nam Gourmet', 'An Nam Gourmet Market', null],
-            ['PT-2026-004', 'TXN-2026-004', 'INCOME', 55000000, '2026-01-22', 'BAN_NONG_SAN', 'Thu tiền bán 550kg Dâu tây Hana Đạ Sar cho Chuỗi Trái cây Nhập khẩu', 'Chuỗi Trái Cây Sạch Mia Fruit', null],
+            ['PT-2026-003', 'TXN-2026-003', 'INCOME', 28000000, '2026-01-19', 'BAN_NONG_SAN', 'Thu tiền bán 800kg Ớt chuông Sweet Palermo Cam cho Chuỗi An Nam Gourmet', 'An Nam Gourmet Market', null],
+            ['PT-2026-004', 'TXN-2026-004', 'INCOME', 66000000, '2026-01-22', 'BAN_NONG_SAN', 'Thu tiền bán 1.100kg Ớt chuông Sweet Palermo Đỏ xuất khẩu sang Singapore', 'Công ty XNK Nông Sản Xanh Singapore', null],
             ['PC-2026-001', 'TXN-2026-005', 'EXPENSE', 35156250, '2026-01-15', 'QUYET_TOAN_MUA_VU', 'Thanh toán tiền thu mua ớt chuông đợt 1 cho xã viên Nguyễn Văn A (sau khi cấn trừ 7.500.000đ nợ vật tư và 2.5% phí dịch vụ HTX)', 'Nguyễn Văn A', 'TV001'],
             ['PT-2026-005', 'TXN-2026-006', 'INCOME', 1093750, '2026-01-15', 'PHI_DICH_VU_HTX', 'Thu phí dịch vụ hỗ trợ tiêu thụ 2.5% từ đợt quyết toán thu mua ớt chuông (43.750.000đ * 2.5%)', 'Quỹ điều hành HTX Tân Tiến', null],
             ['PC-2026-002', 'TXN-2026-007', 'EXPENSE', 4500000, '2026-01-18', 'CHI_PHI_VAN_HANH', 'Chi bảo dưỡng định kỳ hệ thống tưới nhỏ giọt bù áp Israel nhà kính Hòn Bồ', 'Công ty Dịch vụ Kỹ thuật Nông nghiệp Xanh', null],

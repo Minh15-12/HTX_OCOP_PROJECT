@@ -6,7 +6,11 @@ use App\Shared\Domain\Exceptions\DomainException;
 
 class FinalDecision
 {
-    public const VALID_CLASSIFICATIONS = ['3_STAR', '4_STAR', '5_STAR', 'REJECTED'];
+    public const VALID_CLASSIFICATIONS = [
+        '3_STAR', '4_STAR', '5_STAR',
+        'THREE_STAR', 'FOUR_STAR', 'FIVE_STAR',
+        'REJECTED'
+    ];
 
     public function __construct(
         public readonly string $id,

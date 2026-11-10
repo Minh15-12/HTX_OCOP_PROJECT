@@ -17,6 +17,7 @@ class UploadEvidenceRequest extends FormRequest
             'file' => ['required', 'file', 'mimes:pdf,jpeg,jpg,png', 'max:51200'], // 50MB
             'title' => ['required', 'string', 'max:255'],
             'evidence_type' => ['required', 'string', 'in:CERTIFICATE,LAB_REPORT,PROCESS_PHOTO,LEGAL_DOCUMENT'],
+            'application_id' => ['nullable', 'string'],
         ];
     }
 }

@@ -21,6 +21,9 @@ class ReceivablePayableModel extends Model
         'counterparty_type',
         'counterparty_id',
         'counterparty_name',
+        'member_id',
+        'source_transaction_id',
+        'crop_season_id',
         'original_amount',
         'outstanding_amount',
         'due_date',
@@ -39,8 +42,19 @@ class ReceivablePayableModel extends Model
         return $this->belongsTo(CooperativeModel::class, 'cooperative_id');
     }
 
+    public function member(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Cooperative\Infrastructure\Persistence\Models\MemberModel::class, 'member_id');
+    }
+
+    public function cropSeason(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Agriculture\Infrastructure\Persistence\Models\CropSeasonModel::class, 'crop_season_id');
+    }
+
     public function settlements(): HasMany
     {
         return $this->hasMany(DebtSettlementModel::class, 'debt_id');
     }
 }
+

@@ -10,7 +10,7 @@ export const AppLayout: React.FC = () => {
       <Header />
       <div className="flex flex-1">
         <Sidebar />
-        <main className="flex-1 px-6 py-5 max-w-[1400px] w-full min-w-0">
+        <main className="flex-1 px-4 sm:px-6 py-5 max-w-[1400px] w-full min-w-0 mx-auto">
           <Breadcrumb />
           <div className="mt-3">
             <Outlet />

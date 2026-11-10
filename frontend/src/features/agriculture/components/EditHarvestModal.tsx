@@ -34,9 +34,12 @@ export const EditHarvestModal: React.FC<EditHarvestModalProps> = ({
   const [gradeAKg, setGradeAKg] = useState('');
   const [gradeBKg, setGradeBKg] = useState('');
   const [rejectKg, setRejectKg] = useState('0');
+  const [rejectionWeightKg, setRejectionWeightKg] = useState('0');
   const [qualityGrade, setQualityGrade] = useState<QualityGrade>('GRADE_A');
   const [brixLevel, setBrixLevel] = useState('8.0');
   const [uniformityRate, setUniformityRate] = useState('90.0');
+  const [stageNumber, setStageNumber] = useState('1');
+  const [weighingSlipCode, setWeighingSlipCode] = useState('');
 
   // Quick Lab Form
   const [quickLabResult, setQuickLabResult] = useState<QuickLabResult>('LAB_PASSED');
@@ -50,9 +53,12 @@ export const EditHarvestModal: React.FC<EditHarvestModalProps> = ({
       setGradeAKg(String(harvest.grade_a_kg || 0));
       setGradeBKg(String(harvest.grade_b_kg || 0));
       setRejectKg(String(harvest.reject_kg || 0));
+      setRejectionWeightKg(String(harvest.rejection_weight_kg || 0));
       setQualityGrade(harvest.quality_grade);
       setBrixLevel(String(harvest.brix_level ?? 7.5));
       setUniformityRate(String(harvest.uniformity_rate ?? 90));
+      setStageNumber(String(harvest.stage_number || 1));
+      setWeighingSlipCode(harvest.weighing_slip_code || '');
 
       if (harvest.kcs_quick_lab) {
         setQuickLabResult(harvest.kcs_quick_lab.test_result);
@@ -81,9 +87,12 @@ export const EditHarvestModal: React.FC<EditHarvestModalProps> = ({
         grade_a_kg: gA,
         grade_b_kg: gB,
         reject_kg: rej,
+        rejection_weight_kg: rej,
         quality_grade: qualityGrade,
         brix_level: brix,
         uniformity_rate: uniformity,
+        stage_number: parseInt(stageNumber, 10) || 1,
+        weighing_slip_code: weighingSlipCode.trim() || undefined,
         kcs_status: quickLabResult === 'LAB_PASSED' ? 'PASSED' : 'REJECTED',
         kcs_quick_lab: {
           test_result: quickLabResult,
@@ -155,6 +164,35 @@ export const EditHarvestModal: React.FC<EditHarvestModalProps> = ({
                 disabled
                 value={`${harvest.plot_code} - ${harvest.plot_name}`}
                 className={`${inputCls} bg-slate-100 text-slate-500 cursor-not-allowed`}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Đợt hái rải vụ (Stage)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={stageNumber}
+                onChange={(e) => setStageNumber(e.target.value)}
+                placeholder="VD: 1, 2, 3..."
+                className={inputCls}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Số phiếu cân sân kho
+              </label>
+              <input
+                type="text"
+                value={weighingSlipCode}
+                onChange={(e) => setWeighingSlipCode(e.target.value)}
+                placeholder="VD: PC-SK-101"
+                className={inputCls}
               />
             </div>
           </div>

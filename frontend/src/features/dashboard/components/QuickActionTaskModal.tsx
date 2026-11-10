@@ -17,9 +17,18 @@ export const QuickActionTaskModal: React.FC<Props> = ({
   onComplete,
 }) => {
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'BANK'>('BANK');
-  const [bankAccount, setBankAccount] = useState('1029384756 - Vietcombank');
+  const [bankAccount, setBankAccount] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setPaymentMethod('BANK');
+      setBankAccount('');
+      setNotes('');
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen || !task) return null;
 

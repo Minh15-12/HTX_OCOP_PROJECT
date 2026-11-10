@@ -108,7 +108,8 @@ class CapitalContributionController extends BaseController
             mapSheetNumber: $request->input('map_sheet_number'),
             landAreaSqm: $request->input('land_area_sqm') ? (float) $request->input('land_area_sqm') : null,
             landUseType: $request->input('land_use_type'),
-            appraisedUnitPrice: $request->input('appraised_unit_price') ? (float) $request->input('appraised_unit_price') : null
+            appraisedUnitPrice: $request->input('appraised_unit_price') ? (float) $request->input('appraised_unit_price') : null,
+            cadastralStatus: $request->input('cadastral_status')
         );
 
         $contribution = $this->contributionService->createContribution($dto);

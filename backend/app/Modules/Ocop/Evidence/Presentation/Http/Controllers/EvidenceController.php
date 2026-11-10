@@ -64,6 +64,21 @@ class EvidenceController extends BaseController
         );
     }
 
+    public function store(UploadEvidenceRequest $request): JsonResponse
+    {
+        $applicationId = $request->input('application_id');
+        if (!$applicationId) {
+            $latestApp = \Modules\Ocop\Dossier\Infrastructure\Persistence\Models\OcopApplicationModel::orderBy('created_at', 'desc')->first();
+            $applicationId = $latestApp ? $latestApp->id : null;
+        }
+
+        if (!$applicationId) {
+            return $this->error('Không tìm thấy hồ sơ OCOP nào để đính kèm minh chứng. Vui lòng tạo hồ sơ OCOP trước.', 400);
+        }
+
+        return $this->storeInApplication($applicationId, $request);
+    }
+
     public function storeInApplication(string $applicationId, UploadEvidenceRequest $request): JsonResponse
     {
         $payload = array_merge($request->validated(), ['application_id' => $applicationId]);
@@ -80,15 +95,15 @@ class EvidenceController extends BaseController
     public function extractInternal(string $applicationId, Request $request): JsonResponse
     {
         $type = $request->input('extraction_type', 'ALL');
+        $productionUnitId = $request->input('production_unit_id');
         $requestedBy = auth()->id() ?: 'SYSTEM';
-        $result = $this->autoExtractionService->extractInternalEvidence($applicationId, $type, $requestedBy);
+        $result = $this->autoExtractionService->extractInternalEvidence($applicationId, $type, $requestedBy, $productionUnitId);
 
         if (is_array($result)) {
-            $data = [
-                'farm_plot' => new EvidenceDetailResource($result['farm_plot']),
-                'member_list' => new EvidenceDetailResource($result['member_list']),
-                'phi_journal' => new EvidenceDetailResource($result['phi_journal']),
-            ];
+            $data = [];
+            foreach ($result as $key => $item) {
+                $data[$key] = new EvidenceDetailResource($item);
+            }
             $msg = 'Trích xuất tự động toàn bộ minh chứng nội bộ HTX thành công';
         } else {
             $data = new EvidenceDetailResource($result);

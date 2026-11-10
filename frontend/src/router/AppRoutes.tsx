@@ -11,10 +11,12 @@ const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPag
 const MembersPage = lazy(() => import('@/features/members/pages/MembersPage').then(m => ({ default: m.MembersPage })));
 const CapitalPage = lazy(() => import('@/features/members/pages/CapitalPage').then(m => ({ default: m.CapitalPage })));
 const ProfitPage = lazy(() => import('@/features/members/pages/ProfitPage').then(m => ({ default: m.ProfitPage })));
+const MeetingsPage = lazy(() => import('@/features/members/pages/MeetingsPage').then(m => ({ default: m.MeetingsPage })));
 const CoopProfilePage = lazy(() => import('@/features/members/pages/CoopProfilePage').then(m => ({ default: m.CoopProfilePage })));
 const FarmPlotsPage = lazy(() => import('@/features/agriculture/pages/FarmPlotsPage').then(m => ({ default: m.FarmPlotsPage })));
 const CropSeasonsPage = lazy(() => import('@/features/agriculture/pages/CropSeasonsPage').then(m => ({ default: m.CropSeasonsPage })));
 const FarmingLogsPage = lazy(() => import('@/features/agriculture/pages/FarmingLogsPage').then(m => ({ default: m.FarmingLogsPage })));
+const FieldLogEntryPage = lazy(() => import('@/features/agriculture/pages/FieldLogEntryPage').then(m => ({ default: m.FieldLogEntryPage })));
 const HarvestsPage = lazy(() => import('@/features/agriculture/pages/HarvestsPage').then(m => ({ default: m.HarvestsPage })));
 const LotTraceabilityPage = lazy(() => import('@/features/agriculture/pages/LotTraceabilityPage').then(m => ({ default: m.LotTraceabilityPage })));
 const PublicTraceabilityPage = lazy(() => import('@/features/agriculture/pages/PublicTraceabilityPage').then(m => ({ default: m.PublicTraceabilityPage })));
@@ -57,6 +59,7 @@ export const AppRoutes: React.FC = () => {
         {/* Public Consumer QR Traceability Routes (No Auth Required) */}
         <Route path="/trace/:lotId" element={<PublicTraceabilityPage />} />
         <Route path="/public/trace/:lotId" element={<PublicTraceabilityPage />} />
+        <Route path="/truy-xuat/:lotId" element={<PublicTraceabilityPage />} />
 
         {/* Protected App Routes */}
         <Route element={<ProtectedRoute />}>
@@ -66,13 +69,16 @@ export const AppRoutes: React.FC = () => {
             {/* QUẢN LÝ HTX Module */}
             <Route path="/cooperative" element={<CoopProfilePage />} />
             <Route path="/members" element={<MembersPage />} />
+            <Route path="/meetings" element={<MeetingsPage />} />
             <Route path="/capital" element={<CapitalPage />} />
             <Route path="/profit-distribution" element={<ProfitPage />} />
+            <Route path="/profit" element={<ProfitPage />} />
 
             {/* Agriculture Production Module */}
             <Route path="/agriculture/plots" element={<FarmPlotsPage />} />
             <Route path="/agriculture/seasons" element={<CropSeasonsPage />} />
             <Route path="/agriculture/logs" element={<FarmingLogsPage />} />
+            <Route path="/agriculture/field-entry" element={<FieldLogEntryPage />} />
             <Route path="/agriculture/harvests" element={<HarvestsPage />} />
             <Route path="/agriculture/lots/:id/traceability" element={<LotTraceabilityPage />} />
 
@@ -84,6 +90,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/ocop/criteria" element={<CriteriaPage />} />
             <Route path="/ocop/dossiers" element={<DossiersPage />} />
             <Route path="/ocop/dossiers/new" element={<CreateDossierWizardPage />} />
+            <Route path="/ocop/dossiers/create" element={<CreateDossierWizardPage />} />
             <Route path="/ocop/dossiers/:id" element={<DossierDetailPage />} />
             <Route path="/ocop/evidences" element={<EvidencesPage />} />
             <Route path="/ocop/evaluation" element={<EvaluationsPage />} />
@@ -95,6 +102,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/finance/*" element={<FinancePage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/audit" element={<AuditPage />} />
+            <Route path="/system/audit" element={<AuditPage />} />
             <Route path="/system/settings" element={<SystemSettingsPage />} />
             <Route path="/settings" element={<Navigate to="/system/settings" replace />} />
           </Route>

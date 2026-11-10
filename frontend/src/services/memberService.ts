@@ -861,31 +861,22 @@ export const mapApiMemberToFrontend = (item: any): Member => {
 };
 
 export const getMembersFromApi = async (filters?: { search?: string; status?: string; member_type?: string; per_page?: number }): Promise<Member[]> => {
-  let apiMembers: Member[] = [];
   try {
     const params = { per_page: 100, ...filters };
     const res: any = await apiClient.get('/members', { params });
-    const rawList = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
-    if (rawList.length > 0) {
-      apiMembers = rawList.map(mapApiMemberToFrontend);
+    const rawList = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : null);
+    if (rawList !== null) {
+      const apiMembers = rawList.map(mapApiMemberToFrontend);
+      const deduplicated = deduplicateMembers(apiMembers);
+      saveMembersToStorage(deduplicated);
+      return deduplicated;
     }
   } catch (error) {
     console.warn('Backend API connection warning, using local DB store:', error);
   }
 
-  if (apiMembers.length > 0) {
-    const deduplicated = deduplicateMembers(apiMembers);
-    saveMembersToStorage(deduplicated);
-    return deduplicated;
-  }
-
   const stored = getStoredMembers();
-  if (!stored || stored.length === 0) {
-    saveMembersToStorage(mockMembersList);
-    return mockMembersList;
-  }
-
-  return stored;
+  return stored || [];
 };
 
 export const createMemberApi = async (memberData: Partial<Member>): Promise<Member> => {
@@ -961,44 +952,37 @@ export const createMemberApi = async (memberData: Partial<Member>): Promise<Memb
 };
 
 export const updateMemberApi = async (id: string, memberData: Partial<Member>): Promise<Member> => {
-  let updatedMember: Member | null = null;
-  try {
-    const payload = {
-      member_type: memberData.member_type,
-      admission_date: memberData.join_date,
-      committed_capital: memberData.committed_capital,
-      credit_limit: (memberData as any).credit_limit,
-      identity_information: {
-        full_name: memberData.full_name,
-        gender: memberData.gender,
-        dob: memberData.dob,
-        citizen_id: memberData.cccd,
-        cccd_issue_date: memberData.cccd_issue_date,
-        cccd_issue_place: memberData.cccd_issue_place,
-        phone_number: memberData.phone,
-        email: memberData.email,
-        province: memberData.province,
-        district: memberData.district,
-        ward: memberData.ward,
-        detail_address: memberData.detail_address,
-        address: memberData.address,
-        bank_name: memberData.bank_name,
-        bank_account: memberData.bank_account,
-        account_holder: memberData.account_holder,
-      },
-    };
-    const res: any = await apiClient.patch(`/members/${id}`, payload);
-    if (res && res.data) {
-      updatedMember = mapApiMemberToFrontend(res.data);
-    }
-  } catch (error) {
-    console.warn('API update member notice:', error);
-  }
+  const payload = {
+    member_type: memberData.member_type,
+    admission_date: memberData.join_date,
+    committed_capital: memberData.committed_capital,
+    credit_limit: (memberData as any).credit_limit,
+    identity_information: {
+      full_name: memberData.full_name,
+      gender: memberData.gender,
+      dob: memberData.dob,
+      citizen_id: memberData.cccd,
+      cccd_issue_date: memberData.cccd_issue_date,
+      cccd_issue_place: memberData.cccd_issue_place,
+      phone_number: memberData.phone,
+      email: memberData.email,
+      province: memberData.province,
+      district: memberData.district,
+      ward: memberData.ward,
+      detail_address: memberData.detail_address,
+      address: memberData.address,
+      bank_name: memberData.bank_name,
+      bank_account: memberData.bank_account,
+      account_holder: memberData.account_holder,
+    },
+  };
+  const res: any = await apiClient.patch(`/members/${id}`, payload);
+  const updatedMember = mapApiMemberToFrontend(res.data);
 
   const stored = getStoredMembers();
   if (stored) {
     const nextList = stored.map((m) =>
-      m.id === id ? { ...m, ...memberData, ...(updatedMember || {}) } : m
+      m.id === id ? { ...m, ...memberData, ...updatedMember } : m
     );
     saveMembersToStorage(nextList);
     const target = nextList.find((m) => m.id === id);
@@ -1009,12 +993,7 @@ export const updateMemberApi = async (id: string, memberData: Partial<Member>): 
 };
 
 export const deleteMemberApi = async (id: string): Promise<boolean> => {
-  try {
-    await apiClient.delete(`/members/${id}`);
-  } catch (error) {
-    console.warn('API delete member notice:', error);
-  }
-
+  await apiClient.delete(`/members/${id}`);
   const stored = getStoredMembers();
   if (stored) {
     const nextList = stored.filter((m) => m.id !== id);
@@ -1024,12 +1003,7 @@ export const deleteMemberApi = async (id: string): Promise<boolean> => {
 };
 
 export const approveMemberApi = async (id: string): Promise<boolean> => {
-  try {
-    await apiClient.post(`/members/${id}/approve`);
-  } catch (error) {
-    console.warn('API approve notice:', error);
-  }
-
+  await apiClient.post(`/members/${id}/approve`);
   const stored = getStoredMembers();
   if (stored) {
     const updated = stored.map(m => (m.id === id ? { ...m, status: 'ACTIVE' as const } : m));
@@ -1039,18 +1013,44 @@ export const approveMemberApi = async (id: string): Promise<boolean> => {
 };
 
 export const transitionMemberStatusApi = async (id: string, targetStatus: string, reason?: string): Promise<boolean> => {
-  try {
-    await apiClient.post(`/members/${id}/status-transitions`, { target_status: targetStatus, reason });
-  } catch (error) {
-    console.warn('API transition status notice:', error);
-  }
-
+  await apiClient.post(`/members/${id}/status-transitions`, { target_status: targetStatus, reason });
   const stored = getStoredMembers();
   if (stored) {
     const updated = stored.map(m => (m.id === id ? { ...m, status: targetStatus as any } : m));
     saveMembersToStorage(updated);
   }
   return true;
+};
+
+export interface SuggestedCreditLimitResponse {
+  member_id: string;
+  member_code: string;
+  current_credit_limit: number;
+  total_area_ha: number;
+  plot_area_ha: number;
+  contributed_land_ha: number;
+  rate_per_ha: number;
+  suggested_credit_limit: number;
+  can_override: boolean;
+}
+
+export const getSuggestedCreditLimitApi = async (memberId: string): Promise<SuggestedCreditLimitResponse> => {
+  try {
+    const res: any = await apiClient.get(`/members/${memberId}/suggested-credit-limit`);
+    return res.data?.data || res.data;
+  } catch (err) {
+    return {
+      member_id: memberId,
+      member_code: '',
+      current_credit_limit: 0,
+      total_area_ha: 1.0,
+      plot_area_ha: 1.0,
+      contributed_land_ha: 0,
+      rate_per_ha: 15000000,
+      suggested_credit_limit: 15000000,
+      can_override: true,
+    };
+  }
 };
 
 
@@ -1067,9 +1067,9 @@ export const getCapitalSummaryApi = async (): Promise<any> => {
 export const getCapitalContributionsApi = async (filters?: any): Promise<CapitalTransaction[]> => {
   try {
     const res: any = await apiClient.get('/capital-contributions', { params: filters });
-    const items = res?.data || [];
-    if (Array.isArray(items) && items.length > 0) {
-      return items.map((item: any) => {
+    const rawItems = res?.data;
+    if (Array.isArray(rawItems)) {
+      const mapped = rawItems.map((item: any) => {
         const methodMap: Record<string, 'CASH' | 'BANK_TRANSFER' | 'LAND' | 'ASSET'> = {
           TIEN_MAT: 'CASH',
           CHUYEN_KHOAN: 'BANK_TRANSFER',
@@ -1119,13 +1119,15 @@ export const getCapitalContributionsApi = async (filters?: any): Promise<Capital
           } : undefined,
         };
       });
+      saveCapitalTransactionsToStorage(mapped);
+      return mapped;
     }
   } catch (error) {
     console.warn('API capital contributions notice:', error);
   }
 
   const stored = getStoredCapitalTransactions();
-  return stored && stored.length > 0 ? stored : mockCapitalTransactions;
+  return stored || [];
 };
 
 export const createCapitalContributionApi = async (memberId: string, data: any): Promise<CapitalTransaction | null> => {
@@ -1141,6 +1143,7 @@ export const createCapitalContributionApi = async (memberId: string, data: any):
       land_area_sqm: data.land_area_sqm,
       land_use_type: data.land_use_type,
       appraised_unit_price: data.appraised_unit_price,
+      cadastral_status: data.cadastral_status,
     };
     const res: any = await apiClient.post(`/members/${memberId}/capital-contributions`, payload);
     const item = res?.data;
@@ -1186,49 +1189,40 @@ export const createCapitalContributionApi = async (memberId: string, data: any):
       return createdTx;
     }
   } catch (error) {
-    console.warn('API create capital contribution notice:', error);
+    console.error('API create capital contribution failed:', error);
+    throw error;
   }
-
-  // Fallback to local storage if API unreachable
-  const fallbackTx: CapitalTransaction = {
-    id: `TX-${Date.now()}`,
-    member_id: memberId,
-    member_code: data.member_code || 'TV001',
-    member_name: data.member_name || 'Xã viên',
-    transaction_code: data.receipt_number || `PT${Date.now().toString().slice(-6)}`,
-    amount: Number(data.amount || 0),
-    share_quantity: Math.floor(Number(data.amount || 0) / 100000),
-    contribution_date: data.date || data.contribution_date || new Date().toISOString().split('T')[0],
-    payment_method: data.payment_method || 'CASH',
-    receipt_number: data.receipt_number || `PT${Date.now().toString().slice(-6)}`,
-    content: data.content || 'Góp vốn HTX',
-    notes: data.notes || '',
-    status: 'APPROVED',
-    certificate_code: `GCN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-  };
-  const stored = getStoredCapitalTransactions() || [];
-  saveCapitalTransactionsToStorage([fallbackTx, ...stored]);
-  return fallbackTx;
+  return null;
 };
 
 /** API Client methods for Surplus Distribution Plans (Modules\Finance) */
 export const fetchSurplusPlansApi = async (params?: any) => {
   try {
-    const response = await apiClient.get('/surplus-distribution-plans', { params });
-    return response.data;
+    const response: any = await apiClient.get('/surplus-distribution-plans', { params });
+    // Normalize: If response is already the data array or object
+    if (Array.isArray(response)) {
+      return { data: response };
+    }
+    if (response?.data && Array.isArray(response.data)) {
+      return response;
+    }
+    if (Array.isArray(response?.data?.data)) {
+      return { data: response.data.data };
+    }
+    return { data: response?.data || [] };
   } catch (error) {
-    console.warn('API fetchSurplusPlans failed:', error);
-    return { data: [mockSurplusPlan] };
+    console.error('API fetchSurplusPlans failed:', error);
+    return { data: [] };
   }
 };
 
 export const fetchSurplusPlanByIdApi = async (id: string) => {
   try {
-    const response = await apiClient.get(`/surplus-distribution-plans/${id}`);
-    return response.data;
+    const response: any = await apiClient.get(`/surplus-distribution-plans/${id}`);
+    return response?.data || response;
   } catch (error) {
-    console.warn(`API fetchSurplusPlanById failed for ${id}:`, error);
-    return { data: mockSurplusPlan };
+    console.error(`API fetchSurplusPlanById failed for ${id}:`, error);
+    throw error;
   }
 };
 
@@ -1251,6 +1245,18 @@ export const submitSurplusPlanApi = async (id: string) => {
 
 export const approveSurplusPlanApi = async (id: string) => {
   const response = await apiClient.post(`/surplus-distribution-plans/${id}/approve`);
+  return response.data;
+};
+
+export const executeSurplusPlanApi = async (
+  id: string,
+  options?: {
+    reinvest_as_capital?: boolean;
+    reinvest_member_ids?: string[];
+    notes?: string;
+  }
+) => {
+  const response = await apiClient.post(`/surplus-distribution-plans/${id}/execute`, options || {});
   return response.data;
 };
 

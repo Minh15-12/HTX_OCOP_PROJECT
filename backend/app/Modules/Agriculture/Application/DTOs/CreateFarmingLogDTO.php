@@ -20,6 +20,25 @@ class CreateFarmingLogDTO extends BaseDTO
         public readonly ?string $unit = null,
         public readonly ?int $phiDays = null,
         public readonly ?float $gpsLatitude = null,
-        public readonly ?float $gpsLongitude = null
+        public readonly ?float $gpsLongitude = null,
+        public readonly ?string $fertigationMethod = null,
+        public readonly ?float $ecSolution = null,
+        public readonly ?float $ecDrain = null,
+        public readonly ?float $phSolution = null,
+        public readonly ?array $tankComposition = null,
+        public readonly ?string $pestTarget = null,
+        public readonly ?string $pestDensity = null,
+        public readonly ?string $activeIngredient = null,
+        public readonly ?string $resistanceGroup = null,
+        public readonly ?string $materialLotNumber = null,
+        public readonly ?string $materialExportSlipCode = null,
+        public readonly ?string $biocontrolAgentName = null,
+        public readonly ?string $biocontrolReleaseRate = null,
+        public readonly ?float $waterVolumeLiters = null,
+        public readonly ?string $applicationEquipment = null,
+        public readonly ?string $clientUuid = null,
+        public readonly ?array $items = null,
+        public readonly ?string $voiceRawText = null,
+        public readonly ?string $status = null
     ) {}
 }

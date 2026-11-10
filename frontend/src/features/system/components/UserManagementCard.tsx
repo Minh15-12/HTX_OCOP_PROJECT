@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Users, Plus, Search, Edit, Lock, Unlock, UserCheck, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { UserItem } from '@/services/systemService';
+import { Pagination } from '@/components/ui/Pagination';
 
 interface Props {
   users: UserItem[];
@@ -12,12 +13,23 @@ interface Props {
 
 export const UserManagementCard: React.FC<Props> = ({ users, onAddUser, onEditUser, onToggleStatus }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const filtered = users.filter(u =>
     u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const paginatedUsers = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   const getRoleBadge = (roles: any) => {
     if (!roles || roles.length === 0) {
@@ -62,7 +74,7 @@ export const UserManagementCard: React.FC<Props> = ({ users, onAddUser, onEditUs
           />
         </div>
         <span className="text-xs text-slate-500">
-          Hiển thị 1 - {filtered.length} trong tổng số {users.length} người dùng
+          Hiển thị {filtered.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} - {Math.min(currentPage * pageSize, filtered.length)} trong tổng số {filtered.length} người dùng
         </span>
       </div>
 
@@ -79,9 +91,11 @@ export const UserManagementCard: React.FC<Props> = ({ users, onAddUser, onEditUs
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filtered.map((u, idx) => (
+            {paginatedUsers.map((u, idx) => (
               <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                <td className="py-3 px-4 text-center font-mono text-slate-500">{idx + 1}</td>
+                <td className="py-3 px-4 text-center font-mono text-slate-500">
+                  {(currentPage - 1) * pageSize + idx + 1}
+                </td>
                 <td className="py-3 px-4 font-mono font-semibold text-slate-800">{u.username}</td>
                 <td className="py-3 px-4 font-medium text-slate-800">
                   <div>{u.full_name}</div>
@@ -123,9 +137,31 @@ export const UserManagementCard: React.FC<Props> = ({ users, onAddUser, onEditUs
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-slate-400">
+                  Không tìm thấy người dùng phù hợp.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+      {filtered.length > 0 && (
+        <div className="p-3 border-t border-slate-100 bg-white">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
+            pageSizeOptions={[5, 10, 20]}
+          />
+        </div>
+      )}
     </div>
   );
 };

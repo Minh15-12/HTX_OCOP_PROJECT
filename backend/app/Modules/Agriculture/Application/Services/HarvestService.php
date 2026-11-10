@@ -118,14 +118,53 @@ class HarvestService
         $qualityInfo['reject_kg'] = $dto->rejectKg !== null ? (float) $dto->rejectKg : ($grade === 'REJECT' ? (float) $dto->quantity : 0.0);
         if ($dto->brixLevel !== null) $qualityInfo['brix_level'] = $dto->brixLevel;
         if ($dto->uniformityRate !== null) $qualityInfo['uniformity_rate'] = $dto->uniformityRate;
-        $qualityInfo['final_grade'] = $grade;
+        $maxStage = HarvestModel::where('crop_season_id', $season->id)->where('plot_id', $plot->id)->max('stage_number');
+        $stageNumber = $dto->stageNumber ?? (($maxStage ?? 0) + 1);
+
+        $latestSprayLog = FarmingLogModel::where('crop_season_id', $season->id)
+            ->where('plot_id', $plot->id)
+            ->whereNotNull('active_ingredient')
+            ->where('activity_date', '<=', $dto->harvestDate)
+            ->orderBy('activity_date', 'desc')
+            ->first();
+
+        $lastSprayDate = $latestSprayLog?->activity_date;
+        $lastActiveIngredient = $latestSprayLog?->active_ingredient;
+        $daysSinceLastSpray = $lastSprayDate ? \Carbon\Carbon::parse($dto->harvestDate)->diffInDays($lastSprayDate) : null;
+        $weighingSlip = $dto->weighingSlipCode ?? ('PC-SK-' . strtoupper(substr(str_replace('-', '', (string) Str::uuid()), 0, 6)));
+
+        // Anti-fraud: calculate ecological harvest quota & detect over-quota
+        $harvestQty = (float) $domainEntity->quantity;
+        $accumulated = (float) HarvestModel::where('plot_id', $plot->id)
+            ->where('crop_season_id', $season->id)
+            ->sum('quantity');
+        $totalProjected = $accumulated + $harvestQty;
+        $plotQuota = $plot->calculateHarvestQuota();
+
+        $isOverQuota = false;
+        $quotaExcessKg = 0.0;
+        $quotaAuditStatus = 'APPROVED';
+        $quotaAuditNote = null;
+
+        if ($plotQuota > 0 && $totalProjected > $plotQuota) {
+            $isOverQuota = true;
+            $quotaExcessKg = round($totalProjected - $plotQuota, 2);
+            $quotaAuditStatus = 'NEEDS_RECONCILIATION';
+            $quotaAuditNote = "Sản lượng lũy kế ({$totalProjected} kg) vượt định mức trần sinh thái ({$plotQuota} kg) của thửa đất [{$plot->plot_code}]. Cần Ban Kiểm Soát đối soát thực địa.";
+        }
 
         $harvest = HarvestModel::create([
             'id' => $domainEntity->id,
             'crop_season_id' => $domainEntity->cropSeasonId,
             'plot_id' => $domainEntity->plotId,
+            'stage_number' => $stageNumber,
             'harvest_date' => $domainEntity->harvestDate,
+            'last_spray_date' => $lastSprayDate,
+            'last_active_ingredient' => $lastActiveIngredient,
+            'days_since_last_spray' => $daysSinceLastSpray,
+            'weighing_slip_code' => $weighingSlip,
             'quantity' => $domainEntity->quantity,
+            'rejection_weight_kg' => $dto->rejectionWeightKg ?? 0,
             'unit' => $domainEntity->unit,
             'quality_information' => $qualityInfo,
             'kcs_status' => $dto->kcsStatus ?? 'PENDING_KCS',
@@ -134,6 +173,10 @@ class HarvestService
             'grade' => $grade,
             'brix_level' => $dto->brixLevel,
             'uniformity_rate' => $dto->uniformityRate,
+            'is_over_quota' => $isOverQuota,
+            'quota_excess_kg' => $quotaExcessKg,
+            'quota_audit_status' => $quotaAuditStatus,
+            'quota_audit_note' => $quotaAuditNote,
         ]);
 
         $this->auditService->log(
@@ -186,10 +229,9 @@ class HarvestService
         if ($dto->rejectKg !== null) $currentQuality['reject_kg'] = (float) $dto->rejectKg;
         if ($dto->brixLevel !== null) $currentQuality['brix_level'] = $dto->brixLevel;
         if ($dto->uniformityRate !== null) $currentQuality['uniformity_rate'] = $dto->uniformityRate;
-        if ($dto->grade !== null) $currentQuality['final_grade'] = $dto->grade;
-        if (!empty($currentQuality)) {
-            $updates['quality_information'] = $currentQuality;
-        }
+        if ($dto->stageNumber !== null) $updates['stage_number'] = $dto->stageNumber;
+        if ($dto->weighingSlipCode !== null) $updates['weighing_slip_code'] = $dto->weighingSlipCode;
+        if ($dto->rejectionWeightKg !== null) $updates['rejection_weight_kg'] = $dto->rejectionWeightKg;
 
         if (!empty($updates)) {
             $harvest->update($updates);
@@ -395,5 +437,27 @@ class HarvestService
                 400
             );
         }
+    }
+
+    public function auditQuota(string $id, string $status, ?string $note = null): HarvestModel
+    {
+        $harvest = $this->getHarvestById($id);
+        $before = $harvest->toArray();
+
+        $harvest->update([
+            'quota_audit_status' => $status,
+            'quota_audit_note' => $note,
+        ]);
+
+        $this->auditService->log(
+            action: 'HARVEST_QUOTA_AUDITED',
+            entityType: 'Harvest',
+            entityId: $harvest->id,
+            before: $before,
+            after: $harvest->toArray(),
+            cooperativeId: $harvest->cropSeason->productionUnit->cooperative_id
+        );
+
+        return $harvest->fresh(['cropSeason.productionUnit', 'plot', 'lot']);
     }
 }

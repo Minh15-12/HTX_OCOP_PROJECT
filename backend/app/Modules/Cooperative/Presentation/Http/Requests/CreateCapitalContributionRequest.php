@@ -25,6 +25,7 @@ class CreateCapitalContributionRequest extends FormRequest
             'land_area_sqm' => ['nullable', 'numeric', 'min:0'],
             'land_use_type' => ['nullable', 'string', 'max:100'],
             'appraised_unit_price' => ['nullable', 'numeric', 'min:0'],
+            'cadastral_status' => ['nullable', 'string', 'in:PENDING,NOTARIZED,REGISTERED_CHANGE'],
         ];
     }
 

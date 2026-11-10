@@ -21,6 +21,9 @@ class CreateHarvestDTO extends BaseDTO
         public readonly ?float $uniformityRate = null,
         public readonly ?float $gradeAKg = null,
         public readonly ?float $gradeBKg = null,
-        public readonly ?float $rejectKg = null
+        public readonly ?float $rejectKg = null,
+        public readonly ?int $stageNumber = null,
+        public readonly ?string $weighingSlipCode = null,
+        public readonly ?float $rejectionWeightKg = null
     ) {}
 }

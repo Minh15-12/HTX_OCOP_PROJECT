@@ -26,7 +26,7 @@ class ReceivablePayableService
 
     public function listDebts(array $filters = [], int $perPage = 15, string $sort = '-created_at'): LengthAwarePaginator
     {
-        $query = ReceivablePayableModel::with(['cooperative', 'settlements']);
+        $query = ReceivablePayableModel::with(['cooperative', 'settlements', 'cropSeason']);
 
         if ($this->tenantContext->hasTenant()) {
             $query->where('cooperative_id', $this->tenantContext->getCooperativeId());
@@ -38,6 +38,14 @@ class ReceivablePayableService
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['crop_season_id'])) {
+            $query->where('crop_season_id', $filters['crop_season_id']);
+        }
+
+        if (!empty($filters['member_id'])) {
+            $query->where('member_id', $filters['member_id']);
         }
 
         if (!empty($filters['search'])) {
@@ -325,6 +333,23 @@ class ReceivablePayableService
                 ]);
             }
 
+            // Record HTX service fee as income in cashbook
+            if ($serviceFee > 0 && $coopId) {
+                CashTransactionModel::create([
+                    'id' => (string) Str::uuid(),
+                    'cooperative_id' => $coopId,
+                    'voucher_number' => strtoupper("PT-DV-" . now()->format('Ymd') . '-' . Str::random(4)),
+                    'transaction_type' => 'INCOME',
+                    'amount' => $serviceFee,
+                    'transaction_date' => now()->toDateString(),
+                    'category' => 'FEE_SERVICE',
+                    'description' => "Thu phí dịch vụ hỗ trợ thu mua nông sản",
+                    'member_id' => $memberId,
+                    'status' => 'POSTED',
+                    'created_by' => auth()->check() ? auth()->id() : null,
+                ]);
+            }
+
             $this->auditService->log(
                 action: 'HARVEST_SETTLEMENT_PROCESSED',
                 entityType: 'Member',
@@ -346,5 +371,80 @@ class ReceivablePayableService
                 'remaining_member_debt' => max(0.0, $totalMemberDebt - $debtOffset),
             ];
         });
+    }
+
+    public function getDebtSummary(array $filters = []): array
+    {
+        $query = ReceivablePayableModel::query();
+
+        if ($this->tenantContext->hasTenant()) {
+            $query->where('cooperative_id', $this->tenantContext->getCooperativeId());
+        }
+
+        $allDebts = $query->where('status', '!=', 'PAID')->get();
+
+        $today = now()->startOfDay();
+
+        $totalReceivable = 0.0;
+        $overdueReceivable = 0.0;
+        $totalPayable = 0.0;
+        $overduePayable = 0.0;
+
+        $aging = [
+            'current' => 0.0,       // not overdue
+            'overdue_1_30' => 0.0,  // 1-30 days overdue
+            'overdue_31_60' => 0.0, // 31-60 days overdue
+            'overdue_61_90' => 0.0, // 61-90 days overdue
+            'overdue_90_plus' => 0.0, // > 90 days overdue
+        ];
+
+        foreach ($allDebts as $debt) {
+            $amount = (float) $debt->outstanding_amount;
+            $dueDate = $debt->due_date ? \Carbon\Carbon::parse($debt->due_date)->startOfDay() : null;
+            $isOverdue = $dueDate && $dueDate->lt($today);
+
+            if ($debt->debt_type === 'RECEIVABLE') {
+                $totalReceivable += $amount;
+                if ($isOverdue) {
+                    $overdueReceivable += $amount;
+                }
+            } else {
+                $totalPayable += $amount;
+                if ($isOverdue) {
+                    $overduePayable += $amount;
+                }
+            }
+
+            if (!$dueDate || $dueDate->gte($today)) {
+                $aging['current'] += $amount;
+            } else {
+                $daysOverdue = abs((int) $today->diffInDays($dueDate));
+                if ($daysOverdue <= 30) {
+                    $aging['overdue_1_30'] += $amount;
+                } elseif ($daysOverdue <= 60) {
+                    $aging['overdue_31_60'] += $amount;
+                } elseif ($daysOverdue <= 90) {
+                    $aging['overdue_61_90'] += $amount;
+                } else {
+                    $aging['overdue_90_plus'] += $amount;
+                }
+            }
+        }
+
+        return [
+            'total_receivable' => round($totalReceivable, 2),
+            'overdue_receivable' => round($overdueReceivable, 2),
+            'total_payable' => round($totalPayable, 2),
+            'overdue_payable' => round($overduePayable, 2),
+            'net_debt_position' => round($totalReceivable - $totalPayable, 2),
+            'total_open_debts_count' => $allDebts->count(),
+            'aging_breakdown' => [
+                'current' => round($aging['current'], 2),
+                'overdue_1_30' => round($aging['overdue_1_30'], 2),
+                'overdue_31_60' => round($aging['overdue_31_60'], 2),
+                'overdue_61_90' => round($aging['overdue_61_90'], 2),
+                'overdue_90_plus' => round($aging['overdue_90_plus'], 2),
+            ],
+        ];
     }
 }

@@ -51,4 +51,58 @@ export const auditApi = {
     const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
     return data.map(mapApiAuditLogToFrontend);
   },
+
+  async traceMember(memberId: string): Promise<{
+    member: {
+      id: string;
+      member_code: string;
+      full_name: string;
+      citizen_id: string;
+      status: string;
+      admission_date: string;
+      committed_capital: number;
+    };
+    audit_timeline: Array<{
+      id: string;
+      action: string;
+      entity_type: string;
+      entity_id: string;
+      actor_id: string;
+      before?: Record<string, any>;
+      after?: Record<string, any>;
+      current_hash: string;
+      timestamp: string;
+    }>;
+  }> {
+    const res = await apiClient.get<any>(`/audit-logs/trace/member/${memberId}`);
+    return res.data?.data || res.data || res;
+  },
+
+  async verifyHashChain(): Promise<HashChainVerificationResult> {
+    const res = await apiClient.get<any>('/audit-logs/verify/hash-chain');
+    return res.data?.data || res.data || res;
+  },
 };
+
+export interface HashChainVerificationResult {
+  is_valid: boolean;
+  integrity_score: number;
+  total_blocks_checked: number;
+  verified_continuous_blocks: number;
+  anomaly_count: number;
+  anomalies: Array<{
+    event_id: string;
+    action: string;
+    entity_type: string;
+    index: number;
+    anomaly_type: string;
+    description: string;
+    expected: string;
+    actual: string;
+    timestamp?: string;
+  }>;
+  latest_block_hash: string;
+  algorithm: string;
+  verified_at: string;
+  compliance_standard: string;
+}

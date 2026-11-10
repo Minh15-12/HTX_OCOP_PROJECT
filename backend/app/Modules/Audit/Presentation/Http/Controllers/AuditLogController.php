@@ -69,4 +69,30 @@ class AuditLogController extends BaseController
             message: 'Truy vết chuỗi lịch sử dữ liệu hồ sơ OCOP thành công'
         );
     }
+
+    public function traceMember(string $memberId): JsonResponse
+    {
+        $traceData = $this->auditQueryService->traceMember($memberId);
+
+        return $this->success(
+            data: $traceData,
+            message: 'Truy vết chuỗi lịch sử dữ liệu xã viên thành công'
+        );
+    }
+
+    public function verifyHashChain(Request $request): JsonResponse
+    {
+        $coopId = $request->query('cooperative_id');
+        $user = auth()->user();
+        if ($user && $user->cooperative_id && empty($coopId)) {
+            $coopId = $user->cooperative_id;
+        }
+
+        $result = $this->auditQueryService->verifyHashChain($coopId);
+
+        return $this->success(
+            data: $result,
+            message: 'Kiểm tra tính toàn vẹn chuỗi khối kiểm toán SHA-256 thành công'
+        );
+    }
 }
