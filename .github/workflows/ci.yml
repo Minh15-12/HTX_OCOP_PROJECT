@@ -95,9 +95,7 @@ jobs:
 
     - name: Install Frontend Dependencies
       working-directory: ./frontend
-      run: |
-        npm ci
-        npm install --no-save @rollup/rollup-linux-x64-gnu
+      run: npm install
 
     - name: Run ESLint
       working-directory: ./frontend
