@@ -39,7 +39,7 @@ jobs:
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.2'
+        php-version: '8.3'
         extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_pgsql, pdo_sqlite, sqlite3, dom, filter, gd, json, redis, bcmath, curl, fileinfo
         coverage: none
 
@@ -89,13 +89,15 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
         cache-dependency-path: ./frontend/package-lock.json
 
     - name: Install Frontend Dependencies
       working-directory: ./frontend
-      run: npm ci
+      run: |
+        npm ci
+        npm install --no-save @rollup/rollup-linux-x64-gnu
 
     - name: Run ESLint
       working-directory: ./frontend
